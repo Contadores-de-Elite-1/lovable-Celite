@@ -89,6 +89,60 @@ export type Database = {
         }
         Relationships: []
       }
+      bonus_historico: {
+        Row: {
+          competencia: string
+          conquistado_em: string | null
+          contador_id: string
+          id: string
+          marco_atingido: number | null
+          observacao: string | null
+          pago_em: string | null
+          status: string | null
+          tipo_bonus: string
+          valor: number
+        }
+        Insert: {
+          competencia: string
+          conquistado_em?: string | null
+          contador_id: string
+          id?: string
+          marco_atingido?: number | null
+          observacao?: string | null
+          pago_em?: string | null
+          status?: string | null
+          tipo_bonus: string
+          valor: number
+        }
+        Update: {
+          competencia?: string
+          conquistado_em?: string | null
+          contador_id?: string
+          id?: string
+          marco_atingido?: number | null
+          observacao?: string | null
+          pago_em?: string | null
+          status?: string | null
+          tipo_bonus?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bonus_historico_contador_id_fkey"
+            columns: ["contador_id"]
+            isOneToOne: false
+            referencedRelation: "contadores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bonus_historico_contador_id_fkey"
+            columns: ["contador_id"]
+            isOneToOne: false
+            referencedRelation: "vw_dashboard_contador"
+            referencedColumns: ["contador_id"]
+          },
+        ]
+      }
       click_logs: {
         Row: {
           contador_id: string
@@ -222,45 +276,57 @@ export type Database = {
       }
       comissoes: {
         Row: {
+          auditado: boolean | null
           cliente_id: string | null
           competencia: string
           contador_id: string
           created_at: string | null
           id: string
+          nivel_sponsor: string | null
           observacao: string | null
+          origem_cliente_id: string | null
           pagamento_id: string | null
           pago_em: string | null
           percentual: number | null
+          referencia_mes: string | null
           status: Database["public"]["Enums"]["status_comissao"] | null
           tipo: Database["public"]["Enums"]["tipo_comissao"]
           updated_at: string | null
           valor: number
         }
         Insert: {
+          auditado?: boolean | null
           cliente_id?: string | null
           competencia: string
           contador_id: string
           created_at?: string | null
           id?: string
+          nivel_sponsor?: string | null
           observacao?: string | null
+          origem_cliente_id?: string | null
           pagamento_id?: string | null
           pago_em?: string | null
           percentual?: number | null
+          referencia_mes?: string | null
           status?: Database["public"]["Enums"]["status_comissao"] | null
           tipo: Database["public"]["Enums"]["tipo_comissao"]
           updated_at?: string | null
           valor: number
         }
         Update: {
+          auditado?: boolean | null
           cliente_id?: string | null
           competencia?: string
           contador_id?: string
           created_at?: string | null
           id?: string
+          nivel_sponsor?: string | null
           observacao?: string | null
+          origem_cliente_id?: string | null
           pagamento_id?: string | null
           pago_em?: string | null
           percentual?: number | null
+          referencia_mes?: string | null
           status?: Database["public"]["Enums"]["status_comissao"] | null
           tipo?: Database["public"]["Enums"]["tipo_comissao"]
           updated_at?: string | null
@@ -296,6 +362,20 @@ export type Database = {
             referencedColumns: ["contador_id"]
           },
           {
+            foreignKeyName: "comissoes_origem_cliente_id_fkey"
+            columns: ["origem_cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comissoes_origem_cliente_id_fkey"
+            columns: ["origem_cliente_id"]
+            isOneToOne: false
+            referencedRelation: "vw_comissoes_detalhadas"
+            referencedColumns: ["cliente_id"]
+          },
+          {
             foreignKeyName: "comissoes_pagamento_id_fkey"
             columns: ["pagamento_id"]
             isOneToOne: false
@@ -308,6 +388,54 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "vw_comissoes_detalhadas"
             referencedColumns: ["pagamento_id"]
+          },
+        ]
+      }
+      comissoes_calculo_log: {
+        Row: {
+          calculado_em: string | null
+          calculado_por: string | null
+          comissao_id: string | null
+          id: string
+          observacoes: string | null
+          regra_aplicada: string
+          resultado_final: number | null
+          valores_intermediarios: Json | null
+        }
+        Insert: {
+          calculado_em?: string | null
+          calculado_por?: string | null
+          comissao_id?: string | null
+          id?: string
+          observacoes?: string | null
+          regra_aplicada: string
+          resultado_final?: number | null
+          valores_intermediarios?: Json | null
+        }
+        Update: {
+          calculado_em?: string | null
+          calculado_por?: string | null
+          comissao_id?: string | null
+          id?: string
+          observacoes?: string | null
+          regra_aplicada?: string
+          resultado_final?: number | null
+          valores_intermediarios?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comissoes_calculo_log_comissao_id_fkey"
+            columns: ["comissao_id"]
+            isOneToOne: false
+            referencedRelation: "comissoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comissoes_calculo_log_comissao_id_fkey"
+            columns: ["comissao_id"]
+            isOneToOne: false
+            referencedRelation: "vw_comissoes_detalhadas"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -437,6 +565,57 @@ export type Database = {
           },
           {
             foreignKeyName: "contador_conquistas_contador_id_fkey"
+            columns: ["contador_id"]
+            isOneToOne: false
+            referencedRelation: "vw_dashboard_contador"
+            referencedColumns: ["contador_id"]
+          },
+        ]
+      }
+      contador_performance_anual: {
+        Row: {
+          ano: number
+          contador_id: string
+          id: string
+          indicacoes_diretas: number | null
+          participacao_eventos: number | null
+          retencao_percentual: number | null
+          status_vitaliciedade: string | null
+          total_eventos_ano: number | null
+          ultima_atualizacao: string | null
+        }
+        Insert: {
+          ano: number
+          contador_id: string
+          id?: string
+          indicacoes_diretas?: number | null
+          participacao_eventos?: number | null
+          retencao_percentual?: number | null
+          status_vitaliciedade?: string | null
+          total_eventos_ano?: number | null
+          ultima_atualizacao?: string | null
+        }
+        Update: {
+          ano?: number
+          contador_id?: string
+          id?: string
+          indicacoes_diretas?: number | null
+          participacao_eventos?: number | null
+          retencao_percentual?: number | null
+          status_vitaliciedade?: string | null
+          total_eventos_ano?: number | null
+          ultima_atualizacao?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contador_performance_anual_contador_id_fkey"
+            columns: ["contador_id"]
+            isOneToOne: false
+            referencedRelation: "contadores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contador_performance_anual_contador_id_fkey"
             columns: ["contador_id"]
             isOneToOne: false
             referencedRelation: "vw_dashboard_contador"
@@ -1518,6 +1697,8 @@ export type Database = {
         | "bonus_ltv"
         | "bonus_rede"
         | "lead_diamante"
+        | "bonus_volume"
+        | "bonus_contador"
       tipo_indicacao: "cliente" | "contador"
       tipo_pagamento: "ativacao" | "recorrente"
       tipo_plano: "basico" | "profissional" | "premium" | "enterprise"
@@ -1683,6 +1864,8 @@ export const Constants = {
         "bonus_ltv",
         "bonus_rede",
         "lead_diamante",
+        "bonus_volume",
+        "bonus_contador",
       ],
       tipo_indicacao: ["cliente", "contador"],
       tipo_pagamento: ["ativacao", "recorrente"],

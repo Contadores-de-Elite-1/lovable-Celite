@@ -1,1 +1,10 @@
 project_id = "zytxwdgzjqrcmbnpgofj"
+
+[functions.webhook-asaas]
+verify_jwt = false
+
+[functions.calcular-comissoes]
+verify_jwt = false
+
+[functions.processar-pagamento-comissoes]
+verify_jwt = false

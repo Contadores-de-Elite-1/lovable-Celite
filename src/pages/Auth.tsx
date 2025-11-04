@@ -236,7 +236,7 @@ const Auth = () => {
                       <button
                         type="button"
                         onClick={() => setIsForgotPassword(true)}
-                        className="text-xs text-secondary hover:text-secondary/80 transition-colors"
+                        className="text-xs text-primary hover:text-primary/80 font-medium transition-colors underline"
                       >
                         Esqueceu a senha?
                       </button>

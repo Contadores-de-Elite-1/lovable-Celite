@@ -52,8 +52,14 @@ const menuItems = {
 };
 
 export function AppSidebar() {
-  const { open, toggleSidebar } = useSidebar();
+  const { open, toggleSidebar, isMobile, setOpenMobile } = useSidebar();
   const { user } = useAuth();
+
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   const getNavClass = ({ isActive }: { isActive: boolean }) =>
     isActive
@@ -69,18 +75,20 @@ export function AppSidebar() {
               Contadores de Elite
             </h2>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleSidebar}
-            className="ml-auto h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
-          >
-            {open ? (
-              <ChevronLeft className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4" />
-            )}
-          </Button>
+          {!isMobile && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleSidebar}
+              className="ml-auto h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
+            >
+              {open ? (
+                <ChevronLeft className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+            </Button>
+          )}
         </div>
       </SidebarHeader>
 
@@ -94,7 +102,7 @@ export function AppSidebar() {
               {menuItems.principal.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild tooltip={item.title}>
-                    <NavLink to={item.url} className={getNavClass}>
+                    <NavLink to={item.url} className={getNavClass} onClick={handleLinkClick}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
                     </NavLink>
@@ -114,7 +122,7 @@ export function AppSidebar() {
               {menuItems.recursos.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild tooltip={item.title}>
-                    <NavLink to={item.url} className={getNavClass}>
+                    <NavLink to={item.url} className={getNavClass} onClick={handleLinkClick}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
                     </NavLink>
@@ -134,7 +142,7 @@ export function AppSidebar() {
               {menuItems.configuracoes.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild tooltip={item.title}>
-                    <NavLink to={item.url} className={getNavClass}>
+                    <NavLink to={item.url} className={getNavClass} onClick={handleLinkClick}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
                     </NavLink>

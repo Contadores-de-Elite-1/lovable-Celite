@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { MobileHeader } from "@/components/MobileHeader";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
@@ -44,8 +45,10 @@ const App = () => (
                   <SidebarProvider>
                     <div className="flex min-h-screen w-full">
                       <AppSidebar />
-                      <main className="flex-1">
-                        <Routes>
+                      <div className="flex-1 flex flex-col w-full">
+                        <MobileHeader />
+                        <main className="flex-1 pt-14 md:pt-0">
+                          <Routes>
                           <Route path="/dashboard" element={<Dashboard />} />
                           <Route path="/comissoes" element={<Comissoes />} />
                           <Route path="/links" element={<LinksIndicacao />} />
@@ -59,7 +62,8 @@ const App = () => (
                           <Route path="/auth-security" element={<AuthSecurityDashboard />} />
                           <Route path="*" element={<NotFound />} />
                         </Routes>
-                      </main>
+                        </main>
+                      </div>
                     </div>
                   </SidebarProvider>
                 </ProtectedRoute>

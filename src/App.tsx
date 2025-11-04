@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
@@ -16,6 +18,9 @@ import Educacao from "./pages/Educacao";
 import Materiais from "./pages/Materiais";
 import Assistente from "./pages/Assistente";
 import AuthSecurityDashboard from "./pages/AuthSecurityDashboard";
+import Perfil from "./pages/Perfil";
+import Rede from "./pages/Rede";
+import Relatorios from "./pages/Relatorios";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,48 +37,34 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/auth/reset-password" element={<ResetPassword />} />
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/comissoes" element={
-              <ProtectedRoute>
-                <Comissoes />
-              </ProtectedRoute>
-            } />
-            <Route path="/links" element={
-              <ProtectedRoute>
-                <LinksIndicacao />
-              </ProtectedRoute>
-            } />
-            <Route path="/simulador" element={
-              <ProtectedRoute>
-                <Simulador />
-              </ProtectedRoute>
-            } />
-            <Route path="/educacao" element={
-              <ProtectedRoute>
-                <Educacao />
-              </ProtectedRoute>
-            } />
-            <Route path="/materiais" element={
-              <ProtectedRoute>
-                <Materiais />
-              </ProtectedRoute>
-            } />
-            <Route path="/assistente" element={
-              <ProtectedRoute>
-                <Assistente />
-              </ProtectedRoute>
-            } />
-            <Route path="/auth-security" element={
-              <ProtectedRoute>
-                <AuthSecurityDashboard />
-              </ProtectedRoute>
-            } />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
+            <Route
+              path="/*"
+              element={
+                <ProtectedRoute>
+                  <SidebarProvider>
+                    <div className="flex min-h-screen w-full">
+                      <AppSidebar />
+                      <main className="flex-1">
+                        <Routes>
+                          <Route path="/dashboard" element={<Dashboard />} />
+                          <Route path="/comissoes" element={<Comissoes />} />
+                          <Route path="/links" element={<LinksIndicacao />} />
+                          <Route path="/simulador" element={<Simulador />} />
+                          <Route path="/rede" element={<Rede />} />
+                          <Route path="/educacao" element={<Educacao />} />
+                          <Route path="/materiais" element={<Materiais />} />
+                          <Route path="/assistente" element={<Assistente />} />
+                          <Route path="/perfil" element={<Perfil />} />
+                          <Route path="/relatorios" element={<Relatorios />} />
+                          <Route path="/auth-security" element={<AuthSecurityDashboard />} />
+                          <Route path="*" element={<NotFound />} />
+                        </Routes>
+                      </main>
+                    </div>
+                  </SidebarProvider>
+                </ProtectedRoute>
+              }
+            />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>

@@ -136,9 +136,16 @@ Deno.serve(async (req) => {
           valorOverride = input.valor_liquido * nivelSponsor.override;
           percentualOverride = nivelSponsor.override;
         } else {
-          // Override recorrente = 5% fixo (MMN)
-          valorOverride = input.valor_liquido * 0.05;
-          percentualOverride = 0.05;
+          // Override recorrente = percentual baseado no nível do sponsor
+          if (nivelSponsor.nivel === 'bronze') {
+            percentualOverride = 0.03;
+          } else if (nivelSponsor.nivel === 'prata') {
+            percentualOverride = 0.04;
+          } else {
+            // ouro ou diamante
+            percentualOverride = 0.05;
+          }
+          valorOverride = input.valor_liquido * percentualOverride;
         }
 
         const { data: comissaoOverride } = await supabase

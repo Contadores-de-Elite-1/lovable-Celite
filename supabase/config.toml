@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.processar-pagamento-comissoes]
 verify_jwt = false
+
+[functions.verificar-ltv-bonus]
+verify_jwt = false
+
+[functions.aprovar-comissoes]
+verify_jwt = false

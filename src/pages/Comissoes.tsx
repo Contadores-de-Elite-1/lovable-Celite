@@ -39,9 +39,14 @@ const Comissoes = () => {
     enabled: !!user
   });
 
-  const diretas = comissoes?.filter(c => c.tipo === 'recorrente') || [];
-  const indiretasN1 = comissoes?.filter(c => c.tipo === 'ativacao') || [];
-  const indiretasN2 = comissoes?.filter(c => c.tipo === 'bonus_rede') || [];
+  const diretas = comissoes?.filter(c => c.tipo === 'ativacao' || c.tipo === 'recorrente') || [];
+  const overrides = comissoes?.filter(c => c.tipo === 'override') || [];
+  const bonus = comissoes?.filter(c => 
+    c.tipo === 'bonus_progressao' || 
+    c.tipo === 'bonus_volume' || 
+    c.tipo === 'bonus_ltv' || 
+    c.tipo === 'bonus_contador'
+  ) || [];
 
   const totalProvisionadas = comissoes?.filter(c => c.status === 'calculada').reduce((acc, c) => acc + Number(c.valor), 0) || 0;
   const totalLiberadas = comissoes?.filter(c => c.status === 'paga').reduce((acc, c) => acc + Number(c.valor), 0) || 0;
@@ -54,6 +59,19 @@ const Comissoes = () => {
       cancelada: { variant: 'destructive', label: 'Cancelada' }
     };
     return variants[status] || variants.calculada;
+  };
+
+  const getTipoLabel = (tipo: string): string => {
+    const labels: Record<string, string> = {
+      'ativacao': 'Ativação',
+      'recorrente': 'Recorrente',
+      'override': 'Override',
+      'bonus_progressao': 'Bônus Progressão',
+      'bonus_volume': 'Bônus Volume',
+      'bonus_ltv': 'Bônus LTV',
+      'bonus_contador': 'Bônus Contador'
+    };
+    return labels[tipo] || tipo.replace('_', ' ');
   };
 
   const ComissoesTable = ({ data }: { data: any[] }) => (
@@ -81,7 +99,7 @@ const Comissoes = () => {
               <TableRow key={comissao.id}>
                 <TableCell className="font-medium">{comissao.clientes?.nome}</TableCell>
                 <TableCell>{new Date(comissao.competencia).toLocaleDateString('pt-BR')}</TableCell>
-                <TableCell className="capitalize">{comissao.tipo.replace('_', ' ')}</TableCell>
+                <TableCell className="capitalize">{getTipoLabel(comissao.tipo)}</TableCell>
                 <TableCell className="font-semibold text-foreground">
                   R$ {Number(comissao.valor).toFixed(2)}
                 </TableCell>
@@ -166,20 +184,20 @@ const Comissoes = () => {
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="diretas">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="diretas">Diretas ({diretas.length})</TabsTrigger>
-                  <TabsTrigger value="indiretas-n1">Indiretas N1 ({indiretasN1.length})</TabsTrigger>
-                  <TabsTrigger value="indiretas-n2">Indiretas N2 ({indiretasN2.length})</TabsTrigger>
-                </TabsList>
-                <TabsContent value="diretas" className="mt-6">
-                  <ComissoesTable data={diretas} />
-                </TabsContent>
-                <TabsContent value="indiretas-n1" className="mt-6">
-                  <ComissoesTable data={indiretasN1} />
-                </TabsContent>
-                <TabsContent value="indiretas-n2" className="mt-6">
-                  <ComissoesTable data={indiretasN2} />
-                </TabsContent>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="diretas">Comissões Diretas ({diretas.length})</TabsTrigger>
+            <TabsTrigger value="overrides">Overrides ({overrides.length})</TabsTrigger>
+            <TabsTrigger value="bonus">Bônus ({bonus.length})</TabsTrigger>
+          </TabsList>
+          <TabsContent value="diretas" className="mt-6">
+            <ComissoesTable data={diretas} />
+          </TabsContent>
+          <TabsContent value="overrides" className="mt-6">
+            <ComissoesTable data={overrides} />
+          </TabsContent>
+          <TabsContent value="bonus" className="mt-6">
+            <ComissoesTable data={bonus} />
+          </TabsContent>
               </Tabs>
             </CardContent>
           </Card>

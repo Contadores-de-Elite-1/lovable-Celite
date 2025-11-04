@@ -33,9 +33,23 @@ const Dashboard = () => {
 
     if (contadorData) {
       setContador(contadorData);
+      
+      // Buscar comissões do mês atual
+      const hoje = new Date();
+      const primeiroDiaMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+      const primeiroDiaMesFormatado = primeiroDiaMes.toISOString().split('T')[0];
+      
+      const { data: comissoesData } = await supabase
+        .from('comissoes')
+        .select('valor, status')
+        .eq('contador_id', contadorData.id)
+        .gte('competencia', primeiroDiaMesFormatado);
+      
+      const totalComissoes = comissoesData?.reduce((sum, c) => sum + Number(c.valor), 0) || 0;
+      
       setStats({
         clientes: contadorData.clientes_ativos,
-        comissoes: 0,
+        comissoes: totalComissoes,
         xp: contadorData.xp,
         nivel: contadorData.nivel
       });

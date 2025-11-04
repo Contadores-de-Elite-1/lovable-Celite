@@ -8,14 +8,18 @@ import {
   GraduationCap,
   FileText,
   Bot,
+  User,
   BarChart,
   Shield,
-  Settings,
-  Sparkles,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
@@ -23,23 +27,33 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
 
-const menuItems = [
-  { title: "Dashboard", url: "/dashboard", icon: Home },
-  { title: "Comissões", url: "/comissoes", icon: DollarSign },
-  { title: "Links de Indicação", url: "/links", icon: LinkIcon },
-  { title: "Simulador", url: "/simulador", icon: Calculator },
-  { title: "Rede", url: "/rede", icon: Users },
-  { title: "Educação", url: "/educacao", icon: GraduationCap },
-  { title: "Materiais", url: "/materiais", icon: FileText },
-  { title: "Assistente Virtual", url: "/assistente", icon: Bot },
-  { title: "Relatórios", url: "/relatorios", icon: BarChart },
-  { title: "Segurança", url: "/auth-security", icon: Shield },
-];
+const menuItems = {
+  principal: [
+    { title: "Dashboard", url: "/dashboard", icon: Home },
+    { title: "Comissões", url: "/comissoes", icon: DollarSign },
+    { title: "Links de Indicação", url: "/links", icon: LinkIcon },
+    { title: "Simulador", url: "/simulador", icon: Calculator },
+    { title: "Rede", url: "/rede", icon: Users },
+  ],
+  recursos: [
+    { title: "Educação", url: "/educacao", icon: GraduationCap },
+    { title: "Materiais", url: "/materiais", icon: FileText },
+    { title: "Assistente Virtual", url: "/assistente", icon: Bot },
+  ],
+  configuracoes: [
+    { title: "Perfil", url: "/perfil", icon: User },
+    { title: "Relatórios", url: "/relatorios", icon: BarChart },
+    { title: "Segurança", url: "/auth-security", icon: Shield },
+  ],
+};
 
 export function AppSidebar() {
-  const { isMobile, setOpenMobile } = useSidebar();
+  const { open, toggleSidebar, isMobile, setOpenMobile } = useSidebar();
+  const { user } = useAuth();
 
   const handleLinkClick = () => {
     if (isMobile) {
@@ -48,44 +62,117 @@ export function AppSidebar() {
   };
 
   const getNavClass = ({ isActive }: { isActive: boolean }) =>
-    cn(
-      "w-full h-12 flex items-center justify-center relative transition-all duration-200",
-      "text-gray-400 hover:text-white hover:bg-blue-500/10",
-      isActive && "text-blue-500 bg-blue-500/5 border-l-4 border-blue-500"
-    );
+    isActive
+      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+      : "hover:bg-sidebar-accent/50 text-sidebar-foreground/80 hover:text-sidebar-foreground";
 
   return (
-    <Sidebar className="w-[70px] bg-[#1a1d29] border-r border-gray-800">
-      <SidebarHeader className="h-14 flex items-center justify-center border-b border-gray-800">
-        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-          <Sparkles className="h-5 w-5 text-white" />
+    <Sidebar collapsible="icon" className="border-r border-sidebar-border">
+      <SidebarHeader className="border-b border-sidebar-border p-4">
+        <div className="flex items-center justify-between">
+          {open && (
+            <h2 className="text-lg font-semibold text-sidebar-foreground">
+              Contadores de Elite
+            </h2>
+          )}
+          {!isMobile && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleSidebar}
+              className="ml-auto h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
+            >
+              {open ? (
+                <ChevronLeft className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+            </Button>
+          )}
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="flex flex-col items-center py-4">
-        <SidebarMenu className="flex flex-col gap-1 w-full">
-          {menuItems.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild tooltip={item.title}>
-                <NavLink to={item.url} className={getNavClass} onClick={handleLinkClick}>
-                  <item.icon className="h-6 w-6" />
-                </NavLink>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-sidebar-foreground/60 uppercase text-xs">
+            Principal
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {menuItems.principal.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild tooltip={item.title}>
+                    <NavLink to={item.url} className={getNavClass} onClick={handleLinkClick}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-sidebar-foreground/60 uppercase text-xs">
+            Recursos
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {menuItems.recursos.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild tooltip={item.title}>
+                    <NavLink to={item.url} className={getNavClass} onClick={handleLinkClick}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-sidebar-foreground/60 uppercase text-xs">
+            Configurações
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {menuItems.configuracoes.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild tooltip={item.title}>
+                    <NavLink to={item.url} className={getNavClass} onClick={handleLinkClick}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-gray-800 p-0">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Configurações">
-              <NavLink to="/perfil" className={getNavClass}>
-                <Settings className="h-6 w-6" />
-              </NavLink>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+      <SidebarFooter className="border-t border-sidebar-border p-4">
+        <div className="flex items-center gap-3">
+          <Avatar className="h-8 w-8">
+            <AvatarImage src="" alt={user?.email || ""} />
+            <AvatarFallback className="bg-sidebar-accent text-sidebar-accent-foreground">
+              {user?.email?.charAt(0).toUpperCase() || "U"}
+            </AvatarFallback>
+          </Avatar>
+          {open && (
+            <div className="flex flex-col overflow-hidden">
+              <span className="text-sm font-medium text-sidebar-foreground truncate">
+                {user?.user_metadata?.nome || "Usuário"}
+              </span>
+              <span className="text-xs text-sidebar-foreground/60 truncate">
+                {user?.email}
+              </span>
+            </div>
+          )}
+        </div>
       </SidebarFooter>
     </Sidebar>
   );

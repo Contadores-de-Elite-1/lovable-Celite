@@ -18,15 +18,22 @@ const ResetPassword = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Verificar se há um token de recuperação na URL
-    const accessToken = searchParams.get('access_token');
+    // Verificar access_token na URL (query ou hash)
+    const accessToken = searchParams.get('access_token') || 
+                        window.location.hash.match(/access_token=([^&]+)/)?.[1];
+    
     if (!accessToken) {
-      toast({
-        title: 'Link inválido',
-        description: 'Este link de recuperação é inválido ou expirou.',
-        variant: 'destructive',
+      // Verificar se há uma sessão ativa (o Supabase pode ter feito login automaticamente)
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!session) {
+          toast({
+            title: 'Link inválido',
+            description: 'Este link de recuperação é inválido ou expirou.',
+            variant: 'destructive',
+          });
+          navigate('/auth');
+        }
       });
-      navigate('/auth');
     }
   }, [searchParams, navigate, toast]);
 

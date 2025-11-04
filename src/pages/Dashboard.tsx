@@ -48,11 +48,11 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="bg-primary text-primary-foreground p-6">
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-brand-navy text-white p-6 shadow-md">
         <div className="container mx-auto flex justify-between items-center">
           <h1 className="text-3xl font-serif font-bold">Contadores de Elite</h1>
-          <Button variant="outline" onClick={handleLogout} className="bg-transparent border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">
+          <Button variant="outline" onClick={handleLogout} className="border-white text-white hover:bg-white hover:text-brand-navy">
             Sair
           </Button>
         </div>
@@ -70,15 +70,15 @@ const Dashboard = () => {
               <h2 className="text-2xl font-serif font-bold text-foreground">
                 Bem-vindo, {contador?.user_id || 'Contador'}!
               </h2>
-              <p className="text-muted-foreground">Nível: <span className="text-secondary capitalize font-semibold">{stats.nivel}</span></p>
+              <p className="text-muted-foreground">Nível: <span className="text-brand-gold capitalize font-semibold">{stats.nivel}</span></p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="bg-card border-border">
+            <Card className="bg-white border-gray-200 shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">Clientes Ativos</CardTitle>
-                <Users className="h-4 w-4 text-secondary" />
+                <Users className="h-4 w-4 text-brand-gold" />
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-serif font-bold text-foreground">{stats.clientes}</div>
@@ -86,10 +86,10 @@ const Dashboard = () => {
               </CardContent>
             </Card>
 
-            <Card className="bg-card border-border">
+            <Card className="bg-white border-gray-200 shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">Comissões</CardTitle>
-                <DollarSign className="h-4 w-4 text-secondary" />
+                <DollarSign className="h-4 w-4 text-brand-gold" />
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-serif font-bold text-foreground">R$ {stats.comissoes.toFixed(2)}</div>
@@ -97,10 +97,10 @@ const Dashboard = () => {
               </CardContent>
             </Card>
 
-            <Card className="bg-card border-border">
+            <Card className="bg-white border-gray-200 shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">Experiência</CardTitle>
-                <Award className="h-4 w-4 text-secondary" />
+                <Award className="h-4 w-4 text-brand-gold" />
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-serif font-bold text-foreground">{stats.xp}</div>
@@ -108,10 +108,10 @@ const Dashboard = () => {
               </CardContent>
             </Card>
 
-            <Card className="bg-card border-border">
+            <Card className="bg-white border-gray-200 shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">Crescimento</CardTitle>
-                <TrendingUp className="h-4 w-4 text-secondary" />
+                <TrendingUp className="h-4 w-4 text-brand-gold" />
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-serif font-bold text-foreground">+0%</div>
@@ -120,22 +120,22 @@ const Dashboard = () => {
             </Card>
           </div>
 
-          <Card className="bg-card border-border">
+          <Card className="bg-white border-gray-200 shadow-sm">
             <CardHeader>
-              <CardTitle className="font-serif">Primeiros Passos</CardTitle>
+              <CardTitle className="font-serif text-brand-navy">Primeiros Passos</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground">
                 Bem-vindo ao Programa Contadores de Elite! Complete seu perfil e comece a indicar clientes.
               </p>
               <div className="grid gap-2">
-                <Button className="bg-primary hover:bg-secondary" onClick={() => navigate('/links')}>
+                <Button className="bg-brand-navy hover:bg-brand-gold hover:text-brand-navy" onClick={() => navigate('/links')}>
                   Gerar Link de Indicação
                 </Button>
-                <Button variant="outline" onClick={() => navigate('/simulador')}>
+                <Button variant="outline" className="border-brand-navy text-brand-navy hover:bg-brand-navy hover:text-white" onClick={() => navigate('/simulador')}>
                   Ver Simulador de Crescimento
                 </Button>
-                <Button variant="outline" onClick={() => navigate('/comissoes')}>
+                <Button variant="outline" className="border-brand-navy text-brand-navy hover:bg-brand-navy hover:text-white" onClick={() => navigate('/comissoes')}>
                   Ver Minhas Comissões
                 </Button>
               </div>

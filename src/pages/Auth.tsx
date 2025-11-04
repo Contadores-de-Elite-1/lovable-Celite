@@ -104,7 +104,7 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand-navy via-brand-burgundy to-black flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -278,8 +278,8 @@ const Auth = () => {
           </CardContent>
         </Card>
 
-        <p className="text-center text-brand-offwhite/60 text-sm mt-6">
-          Powered by <span className="text-secondary">Top Class Escritório Virtual</span>
+        <p className="text-center text-gray-500 text-sm mt-6">
+          Powered by <span className="text-brand-gold font-medium">Top Class Escritório Virtual</span>
         </p>
       </motion.div>
     </div>

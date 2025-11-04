@@ -8,6 +8,12 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import Comissoes from "./pages/Comissoes";
+import LinksIndicacao from "./pages/LinksIndicacao";
+import Simulador from "./pages/Simulador";
+import Educacao from "./pages/Educacao";
+import Materiais from "./pages/Materiais";
+import Assistente from "./pages/Assistente";
 import AuthSecurityDashboard from "./pages/AuthSecurityDashboard";
 import NotFound from "./pages/NotFound";
 
@@ -26,6 +32,36 @@ const App = () => (
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/comissoes" element={
+              <ProtectedRoute>
+                <Comissoes />
+              </ProtectedRoute>
+            } />
+            <Route path="/links" element={
+              <ProtectedRoute>
+                <LinksIndicacao />
+              </ProtectedRoute>
+            } />
+            <Route path="/simulador" element={
+              <ProtectedRoute>
+                <Simulador />
+              </ProtectedRoute>
+            } />
+            <Route path="/educacao" element={
+              <ProtectedRoute>
+                <Educacao />
+              </ProtectedRoute>
+            } />
+            <Route path="/materiais" element={
+              <ProtectedRoute>
+                <Materiais />
+              </ProtectedRoute>
+            } />
+            <Route path="/assistente" element={
+              <ProtectedRoute>
+                <Assistente />
               </ProtectedRoute>
             } />
             <Route path="/auth-security" element={

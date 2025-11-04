@@ -129,11 +129,14 @@ const Dashboard = () => {
                 Bem-vindo ao Programa Contadores de Elite! Complete seu perfil e comece a indicar clientes.
               </p>
               <div className="grid gap-2">
-                <Button className="bg-primary hover:bg-secondary">
+                <Button className="bg-primary hover:bg-secondary" onClick={() => navigate('/links')}>
                   Gerar Link de Indicação
                 </Button>
-                <Button variant="outline">
+                <Button variant="outline" onClick={() => navigate('/simulador')}>
                   Ver Simulador de Crescimento
+                </Button>
+                <Button variant="outline" onClick={() => navigate('/comissoes')}>
+                  Ver Minhas Comissões
                 </Button>
               </div>
             </CardContent>

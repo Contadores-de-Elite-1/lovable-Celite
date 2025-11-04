@@ -30,13 +30,18 @@ Deno.serve(async (req) => {
     const competencia = `${mesAtual}-01`; // Primeiro dia do mês
 
     // 1. BUSCAR CLIENTES QUE COMPLETARAM 12 MESES EXATOS
+    // Exemplo: Se hoje é 01/04/2025, busca clientes que ativaram entre 01/04/2024 e 30/04/2024
+    const inicioPeriodo = new Date(dataReferencia12Meses.getFullYear(), dataReferencia12Meses.getMonth(), 1);
+    const fimPeriodo = new Date(dataReferencia12Meses.getFullYear(), dataReferencia12Meses.getMonth() + 1, 1);
+    
+    console.log(`📅 Buscando clientes ativados entre ${inicioPeriodo.toISOString().slice(0, 10)} e ${fimPeriodo.toISOString().slice(0, 10)}`);
+    
     const { data: clientesElegiveis, error: erroClientes } = await supabase
       .from('clientes')
       .select('id, contador_id, data_ativacao, valor_mensal, nome_empresa')
       .eq('status', 'ativo')
-      .lte('data_ativacao', dataReferencia12Meses.toISOString().slice(0, 10))
-      .gte('data_ativacao', new Date(dataReferencia12Meses.getFullYear(), dataReferencia12Meses.getMonth(), 1).toISOString().slice(0, 10))
-      .lt('data_ativacao', new Date(dataReferencia12Meses.getFullYear(), dataReferencia12Meses.getMonth() + 1, 1).toISOString().slice(0, 10));
+      .gte('data_ativacao', inicioPeriodo.toISOString().slice(0, 10))
+      .lt('data_ativacao', fimPeriodo.toISOString().slice(0, 10));
 
     if (erroClientes) {
       throw erroClientes;

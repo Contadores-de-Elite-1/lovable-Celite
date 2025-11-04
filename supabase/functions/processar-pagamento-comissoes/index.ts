@@ -25,12 +25,15 @@ Deno.serve(async (req) => {
     console.log('📅 Processando competência:', competencia);
 
     // Buscar todas as comissões aprovadas do mês anterior
+    const primeiroDiaProximoMes = new Date(mesAnterior.getFullYear(), mesAnterior.getMonth() + 1, 1);
+    const dataFinalCompetencia = primeiroDiaProximoMes.toISOString().slice(0, 10);
+    
     const { data: comissoes, error: comissoesError } = await supabase
       .from('comissoes')
       .select('id, contador_id, valor, tipo, observacao')
       .eq('status', 'aprovada')
       .gte('competencia', `${competencia}-01`)
-      .lt('competencia', `${competencia}-32`);
+      .lt('competencia', dataFinalCompetencia);
 
     if (comissoesError) {
       throw comissoesError;

@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      assistente_logs: {
+        Row: {
+          contador_id: string | null
+          created_at: string | null
+          id: string
+          mensagem_usuario: string
+          resposta_assistente: string | null
+        }
+        Insert: {
+          contador_id?: string | null
+          created_at?: string | null
+          id?: string
+          mensagem_usuario: string
+          resposta_assistente?: string | null
+        }
+        Update: {
+          contador_id?: string | null
+          created_at?: string | null
+          id?: string
+          mensagem_usuario?: string
+          resposta_assistente?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assistente_logs_contador_id_fkey"
+            columns: ["contador_id"]
+            isOneToOne: false
+            referencedRelation: "contadores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           acao: string
@@ -49,6 +81,55 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      click_logs: {
+        Row: {
+          contador_id: string
+          created_at: string | null
+          id: string
+          ip: unknown
+          link_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          contador_id: string
+          created_at?: string | null
+          id?: string
+          ip?: unknown
+          link_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          contador_id?: string
+          created_at?: string | null
+          id?: string
+          ip?: unknown
+          link_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "click_logs_contador_id_fkey"
+            columns: ["contador_id"]
+            isOneToOne: false
+            referencedRelation: "contadores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "click_logs_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "click_logs_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "vw_links_desempenho"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       clientes: {
         Row: {
@@ -188,6 +269,50 @@ export type Database = {
           },
         ]
       }
+      comissoes_status_historico: {
+        Row: {
+          alterado_em: string | null
+          alterado_por: string | null
+          comissao_id: string
+          id: string
+          ip_address: unknown
+          motivo: string
+          status_anterior: string | null
+          status_novo: string
+          user_agent: string | null
+        }
+        Insert: {
+          alterado_em?: string | null
+          alterado_por?: string | null
+          comissao_id: string
+          id?: string
+          ip_address?: unknown
+          motivo: string
+          status_anterior?: string | null
+          status_novo: string
+          user_agent?: string | null
+        }
+        Update: {
+          alterado_em?: string | null
+          alterado_por?: string | null
+          comissao_id?: string
+          id?: string
+          ip_address?: unknown
+          motivo?: string
+          status_anterior?: string | null
+          status_novo?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comissoes_status_historico_comissao_id_fkey"
+            columns: ["comissao_id"]
+            isOneToOne: false
+            referencedRelation: "comissoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conquistas: {
         Row: {
           ativo: boolean | null
@@ -307,6 +432,78 @@ export type Database = {
           xp?: number | null
         }
         Relationships: []
+      }
+      courses: {
+        Row: {
+          ativo: boolean
+          created_at: string | null
+          duracao: number | null
+          id: string
+          nivel: string | null
+          titulo: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string | null
+          duracao?: number | null
+          id?: string
+          nivel?: string | null
+          titulo: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string | null
+          duracao?: number | null
+          id?: string
+          nivel?: string | null
+          titulo?: string
+        }
+        Relationships: []
+      }
+      enrollments: {
+        Row: {
+          certificado_url: string | null
+          contador_id: string
+          course_id: string
+          created_at: string | null
+          id: string
+          progresso: number
+          status: string
+        }
+        Insert: {
+          certificado_url?: string | null
+          contador_id: string
+          course_id: string
+          created_at?: string | null
+          id?: string
+          progresso?: number
+          status?: string
+        }
+        Update: {
+          certificado_url?: string | null
+          contador_id?: string
+          course_id?: string
+          created_at?: string | null
+          id?: string
+          progresso?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enrollments_contador_id_fkey"
+            columns: ["contador_id"]
+            isOneToOne: false
+            referencedRelation: "contadores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enrollments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       evento_participantes: {
         Row: {
@@ -537,6 +734,138 @@ export type Database = {
         }
         Relationships: []
       }
+      links: {
+        Row: {
+          canal: Database["public"]["Enums"]["link_channel"]
+          cliques: number
+          contador_id: string
+          conversoes: number
+          created_at: string | null
+          id: string
+          target_url: string | null
+          tipo: Database["public"]["Enums"]["link_type"]
+          token: string
+        }
+        Insert: {
+          canal?: Database["public"]["Enums"]["link_channel"]
+          cliques?: number
+          contador_id: string
+          conversoes?: number
+          created_at?: string | null
+          id?: string
+          target_url?: string | null
+          tipo: Database["public"]["Enums"]["link_type"]
+          token: string
+        }
+        Update: {
+          canal?: Database["public"]["Enums"]["link_channel"]
+          cliques?: number
+          contador_id?: string
+          conversoes?: number
+          created_at?: string | null
+          id?: string
+          target_url?: string | null
+          tipo?: Database["public"]["Enums"]["link_type"]
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "links_contador_id_fkey"
+            columns: ["contador_id"]
+            isOneToOne: false
+            referencedRelation: "contadores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      materiais: {
+        Row: {
+          categoria: string | null
+          created_at: string | null
+          downloads: number
+          id: string
+          owner_id: string | null
+          publico: boolean
+          tags: string[] | null
+          tipo: Database["public"]["Enums"]["material_tipo"]
+          titulo: string
+        }
+        Insert: {
+          categoria?: string | null
+          created_at?: string | null
+          downloads?: number
+          id?: string
+          owner_id?: string | null
+          publico?: boolean
+          tags?: string[] | null
+          tipo: Database["public"]["Enums"]["material_tipo"]
+          titulo: string
+        }
+        Update: {
+          categoria?: string | null
+          created_at?: string | null
+          downloads?: number
+          id?: string
+          owner_id?: string | null
+          publico?: boolean
+          tags?: string[] | null
+          tipo?: Database["public"]["Enums"]["material_tipo"]
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "materiais_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "contadores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notificacoes: {
+        Row: {
+          contador_id: string
+          created_at: string | null
+          id: string
+          lida: boolean | null
+          lida_em: string | null
+          mensagem: string
+          payload: Json | null
+          tipo: string
+          titulo: string
+        }
+        Insert: {
+          contador_id: string
+          created_at?: string | null
+          id?: string
+          lida?: boolean | null
+          lida_em?: string | null
+          mensagem: string
+          payload?: Json | null
+          tipo: string
+          titulo: string
+        }
+        Update: {
+          contador_id?: string
+          created_at?: string | null
+          id?: string
+          lida?: boolean | null
+          lida_em?: string | null
+          mensagem?: string
+          payload?: Json | null
+          tipo?: string
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notificacoes_contador_id_fkey"
+            columns: ["contador_id"]
+            isOneToOne: false
+            referencedRelation: "contadores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pagamentos: {
         Row: {
           asaas_event_id: string | null
@@ -638,6 +967,48 @@ export type Database = {
         }
         Relationships: []
       }
+      reconciliacoes: {
+        Row: {
+          competencia: string
+          created_at: string | null
+          diferenca: number | null
+          id: string
+          observacoes: string | null
+          payload_asaas: Json | null
+          reconciliado_em: string | null
+          reconciliado_por: string | null
+          status: string | null
+          total_asaas: number
+          total_banco: number
+        }
+        Insert: {
+          competencia: string
+          created_at?: string | null
+          diferenca?: number | null
+          id?: string
+          observacoes?: string | null
+          payload_asaas?: Json | null
+          reconciliado_em?: string | null
+          reconciliado_por?: string | null
+          status?: string | null
+          total_asaas: number
+          total_banco: number
+        }
+        Update: {
+          competencia?: string
+          created_at?: string | null
+          diferenca?: number | null
+          id?: string
+          observacoes?: string | null
+          payload_asaas?: Json | null
+          reconciliado_em?: string | null
+          reconciliado_por?: string | null
+          status?: string | null
+          total_asaas?: number
+          total_banco?: number
+        }
+        Relationships: []
+      }
       rede_contadores: {
         Row: {
           child_id: string
@@ -671,6 +1042,53 @@ export type Database = {
           {
             foreignKeyName: "rede_contadores_sponsor_id_fkey"
             columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "contadores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      simulacoes: {
+        Row: {
+          clientes_mes: number
+          clientes_por_contador: number
+          contador_id: string
+          contadores_mes: number
+          created_at: string | null
+          id: string
+          resultado_conservador: number
+          resultado_otimista: number
+          resultado_realista: number
+          valor_mensalidade: number
+        }
+        Insert: {
+          clientes_mes?: number
+          clientes_por_contador?: number
+          contador_id: string
+          contadores_mes?: number
+          created_at?: string | null
+          id?: string
+          resultado_conservador?: number
+          resultado_otimista?: number
+          resultado_realista?: number
+          valor_mensalidade?: number
+        }
+        Update: {
+          clientes_mes?: number
+          clientes_por_contador?: number
+          contador_id?: string
+          contadores_mes?: number
+          created_at?: string | null
+          id?: string
+          resultado_conservador?: number
+          resultado_otimista?: number
+          resultado_realista?: number
+          valor_mensalidade?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulacoes_contador_id_fkey"
+            columns: ["contador_id"]
             isOneToOne: false
             referencedRelation: "contadores"
             referencedColumns: ["id"]
@@ -736,9 +1154,75 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      cursos_edu: {
+        Row: {
+          certificado_url: string | null
+          contador_id: string | null
+          duracao: number | null
+          id: string | null
+          nivel: string | null
+          progresso: number | null
+          status: string | null
+          titulo: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enrollments_contador_id_fkey"
+            columns: ["contador_id"]
+            isOneToOne: false
+            referencedRelation: "contadores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vw_links_desempenho: {
+        Row: {
+          canal: Database["public"]["Enums"]["link_channel"] | null
+          cliques: number | null
+          contador_id: string | null
+          conversoes: number | null
+          created_at: string | null
+          id: string | null
+          taxa: number | null
+          tipo: Database["public"]["Enums"]["link_type"] | null
+          token: string | null
+        }
+        Insert: {
+          canal?: Database["public"]["Enums"]["link_channel"] | null
+          cliques?: number | null
+          contador_id?: string | null
+          conversoes?: number | null
+          created_at?: string | null
+          id?: string | null
+          taxa?: never
+          tipo?: Database["public"]["Enums"]["link_type"] | null
+          token?: string | null
+        }
+        Update: {
+          canal?: Database["public"]["Enums"]["link_channel"] | null
+          cliques?: number | null
+          contador_id?: string | null
+          conversoes?: number | null
+          created_at?: string | null
+          id?: string | null
+          taxa?: never
+          tipo?: Database["public"]["Enums"]["link_type"] | null
+          token?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "links_contador_id_fkey"
+            columns: ["contador_id"]
+            isOneToOne: false
+            referencedRelation: "contadores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      decrypt_sensitive: { Args: { encrypted: string }; Returns: string }
+      encrypt_sensitive: { Args: { data: string }; Returns: string }
       get_contador_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
@@ -747,10 +1231,38 @@ export type Database = {
         }
         Returns: boolean
       }
+      registrar_clique: {
+        Args: { p_token: string }
+        Returns: {
+          contador_id: string
+          link_id: string
+          redirect: string
+          tipo: Database["public"]["Enums"]["link_type"]
+        }[]
+      }
+      sanitize_audit_payload: { Args: { raw_payload: Json }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "contador" | "suporte"
+      cliente_status: "lead" | "ativo" | "inativo" | "cancelado"
+      commission_status:
+        | "calculada"
+        | "aprovada"
+        | "paga"
+        | "estornada"
+        | "cancelada"
+      commission_type: "direta" | "indireta_n1" | "indireta_n2" | "bonus"
+      link_channel: "whatsapp" | "email" | "linkedin" | "outros"
+      link_type: "cliente" | "contador"
+      material_tipo: "pdf" | "xlsx" | "pptx" | "mp4" | "docx"
       nivel_contador: "bronze" | "prata" | "ouro" | "diamante"
+      payment_status:
+        | "pending"
+        | "confirmed"
+        | "failed"
+        | "refunded"
+        | "chargeback"
+      payment_type: "ativacao" | "recorrente"
       status_cliente: "lead" | "ativo" | "cancelado" | "inadimplente"
       status_comissao: "calculada" | "aprovada" | "paga" | "cancelada"
       status_contador: "ativo" | "inativo" | "tier_1" | "tier_2" | "tier_3"
@@ -895,7 +1407,27 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "contador", "suporte"],
+      cliente_status: ["lead", "ativo", "inativo", "cancelado"],
+      commission_status: [
+        "calculada",
+        "aprovada",
+        "paga",
+        "estornada",
+        "cancelada",
+      ],
+      commission_type: ["direta", "indireta_n1", "indireta_n2", "bonus"],
+      link_channel: ["whatsapp", "email", "linkedin", "outros"],
+      link_type: ["cliente", "contador"],
+      material_tipo: ["pdf", "xlsx", "pptx", "mp4", "docx"],
       nivel_contador: ["bronze", "prata", "ouro", "diamante"],
+      payment_status: [
+        "pending",
+        "confirmed",
+        "failed",
+        "refunded",
+        "chargeback",
+      ],
+      payment_type: ["ativacao", "recorrente"],
       status_cliente: ["lead", "ativo", "cancelado", "inadimplente"],
       status_comissao: ["calculada", "aprovada", "paga", "cancelada"],
       status_contador: ["ativo", "inativo", "tier_1", "tier_2", "tier_3"],

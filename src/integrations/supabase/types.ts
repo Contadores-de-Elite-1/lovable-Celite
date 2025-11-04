@@ -44,6 +44,13 @@ export type Database = {
             referencedRelation: "contadores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "assistente_logs_contador_id_fkey"
+            columns: ["contador_id"]
+            isOneToOne: false
+            referencedRelation: "vw_dashboard_contador"
+            referencedColumns: ["contador_id"]
+          },
         ]
       }
       audit_logs: {
@@ -114,6 +121,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "contadores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "click_logs_contador_id_fkey"
+            columns: ["contador_id"]
+            isOneToOne: false
+            referencedRelation: "vw_dashboard_contador"
+            referencedColumns: ["contador_id"]
           },
           {
             foreignKeyName: "click_logs_link_id_fkey"
@@ -197,6 +211,13 @@ export type Database = {
             referencedRelation: "contadores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "clientes_contador_id_fkey"
+            columns: ["contador_id"]
+            isOneToOne: false
+            referencedRelation: "vw_dashboard_contador"
+            referencedColumns: ["contador_id"]
+          },
         ]
       }
       comissoes: {
@@ -254,6 +275,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "comissoes_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "vw_comissoes_detalhadas"
+            referencedColumns: ["cliente_id"]
+          },
+          {
             foreignKeyName: "comissoes_contador_id_fkey"
             columns: ["contador_id"]
             isOneToOne: false
@@ -261,11 +289,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "comissoes_contador_id_fkey"
+            columns: ["contador_id"]
+            isOneToOne: false
+            referencedRelation: "vw_dashboard_contador"
+            referencedColumns: ["contador_id"]
+          },
+          {
             foreignKeyName: "comissoes_pagamento_id_fkey"
             columns: ["pagamento_id"]
             isOneToOne: false
             referencedRelation: "pagamentos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comissoes_pagamento_id_fkey"
+            columns: ["pagamento_id"]
+            isOneToOne: false
+            referencedRelation: "vw_comissoes_detalhadas"
+            referencedColumns: ["pagamento_id"]
           },
         ]
       }
@@ -309,6 +351,13 @@ export type Database = {
             columns: ["comissao_id"]
             isOneToOne: false
             referencedRelation: "comissoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comissoes_status_historico_comissao_id_fkey"
+            columns: ["comissao_id"]
+            isOneToOne: false
+            referencedRelation: "vw_comissoes_detalhadas"
             referencedColumns: ["id"]
           },
         ]
@@ -385,6 +434,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "contadores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contador_conquistas_contador_id_fkey"
+            columns: ["contador_id"]
+            isOneToOne: false
+            referencedRelation: "vw_dashboard_contador"
+            referencedColumns: ["contador_id"]
           },
         ]
       }
@@ -497,6 +553,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "enrollments_contador_id_fkey"
+            columns: ["contador_id"]
+            isOneToOne: false
+            referencedRelation: "vw_dashboard_contador"
+            referencedColumns: ["contador_id"]
+          },
+          {
             foreignKeyName: "enrollments_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
@@ -534,6 +597,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "contadores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evento_participantes_contador_id_fkey"
+            columns: ["contador_id"]
+            isOneToOne: false
+            referencedRelation: "vw_dashboard_contador"
+            referencedColumns: ["contador_id"]
           },
           {
             foreignKeyName: "evento_participantes_evento_id_fkey"
@@ -632,8 +702,29 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "indicacoes_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "vw_comissoes_detalhadas"
+            referencedColumns: ["cliente_id"]
+          },
+          {
             foreignKeyName: "indicacoes_contador_id_fkey"
             columns: ["contador_id"]
+            isOneToOne: false
+            referencedRelation: "contadores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "indicacoes_contador_id_fkey"
+            columns: ["contador_id"]
+            isOneToOne: false
+            referencedRelation: "vw_dashboard_contador"
+            referencedColumns: ["contador_id"]
+          },
+          {
+            foreignKeyName: "indicacoes_contador_indicado_id_fkey"
+            columns: ["contador_indicado_id"]
             isOneToOne: false
             referencedRelation: "contadores"
             referencedColumns: ["id"]
@@ -642,8 +733,8 @@ export type Database = {
             foreignKeyName: "indicacoes_contador_indicado_id_fkey"
             columns: ["contador_indicado_id"]
             isOneToOne: false
-            referencedRelation: "contadores"
-            referencedColumns: ["id"]
+            referencedRelation: "vw_dashboard_contador"
+            referencedColumns: ["contador_id"]
           },
           {
             foreignKeyName: "indicacoes_invite_id_fkey"
@@ -701,6 +792,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "contadores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invites_emissor_id_fkey"
+            columns: ["emissor_id"]
+            isOneToOne: false
+            referencedRelation: "vw_dashboard_contador"
+            referencedColumns: ["contador_id"]
           },
         ]
       }
@@ -776,6 +874,13 @@ export type Database = {
             referencedRelation: "contadores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "links_contador_id_fkey"
+            columns: ["contador_id"]
+            isOneToOne: false
+            referencedRelation: "vw_dashboard_contador"
+            referencedColumns: ["contador_id"]
+          },
         ]
       }
       materiais: {
@@ -820,6 +925,13 @@ export type Database = {
             referencedRelation: "contadores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "materiais_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_dashboard_contador"
+            referencedColumns: ["contador_id"]
+          },
         ]
       }
       notificacoes: {
@@ -863,6 +975,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "contadores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notificacoes_contador_id_fkey"
+            columns: ["contador_id"]
+            isOneToOne: false
+            referencedRelation: "vw_dashboard_contador"
+            referencedColumns: ["contador_id"]
           },
         ]
       }
@@ -919,6 +1038,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clientes"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagamentos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "vw_comissoes_detalhadas"
+            referencedColumns: ["cliente_id"]
           },
         ]
       }
@@ -1040,11 +1166,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "rede_contadores_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "vw_dashboard_contador"
+            referencedColumns: ["contador_id"]
+          },
+          {
             foreignKeyName: "rede_contadores_sponsor_id_fkey"
             columns: ["sponsor_id"]
             isOneToOne: false
             referencedRelation: "contadores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rede_contadores_sponsor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "vw_dashboard_contador"
+            referencedColumns: ["contador_id"]
           },
         ]
       }
@@ -1092,6 +1232,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "contadores"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "simulacoes_contador_id_fkey"
+            columns: ["contador_id"]
+            isOneToOne: false
+            referencedRelation: "vw_dashboard_contador"
+            referencedColumns: ["contador_id"]
           },
         ]
       }
@@ -1173,7 +1320,74 @@ export type Database = {
             referencedRelation: "contadores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "enrollments_contador_id_fkey"
+            columns: ["contador_id"]
+            isOneToOne: false
+            referencedRelation: "vw_dashboard_contador"
+            referencedColumns: ["contador_id"]
+          },
         ]
+      }
+      vw_comissoes_detalhadas: {
+        Row: {
+          cliente_cnpj: string | null
+          cliente_id: string | null
+          cliente_nome: string | null
+          cliente_plano: Database["public"]["Enums"]["tipo_plano"] | null
+          competencia: string | null
+          contador_id: string | null
+          created_at: string | null
+          id: string | null
+          pagamento_competencia: string | null
+          pagamento_id: string | null
+          pagamento_status:
+            | Database["public"]["Enums"]["status_pagamento"]
+            | null
+          pagamento_tipo: Database["public"]["Enums"]["tipo_pagamento"] | null
+          pagamento_valor: number | null
+          pago_em: string | null
+          percentual: number | null
+          status: Database["public"]["Enums"]["status_comissao"] | null
+          tipo: Database["public"]["Enums"]["tipo_comissao"] | null
+          valor: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comissoes_contador_id_fkey"
+            columns: ["contador_id"]
+            isOneToOne: false
+            referencedRelation: "contadores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comissoes_contador_id_fkey"
+            columns: ["contador_id"]
+            isOneToOne: false
+            referencedRelation: "vw_dashboard_contador"
+            referencedColumns: ["contador_id"]
+          },
+        ]
+      }
+      vw_dashboard_contador: {
+        Row: {
+          clientes_ativos: number | null
+          clientes_ativos_count: number | null
+          contador_id: string | null
+          cursos_concluidos: number | null
+          cursos_matriculados: number | null
+          nivel: Database["public"]["Enums"]["nivel_contador"] | null
+          total_cliques: number | null
+          total_comissoes_diretas: number | null
+          total_comissoes_indiretas: number | null
+          total_comissoes_pagas: number | null
+          total_comissoes_provisionadas: number | null
+          total_conversoes: number | null
+          total_links: number | null
+          user_id: string | null
+          xp: number | null
+        }
+        Relationships: []
       }
       vw_links_desempenho: {
         Row: {
@@ -1217,10 +1431,21 @@ export type Database = {
             referencedRelation: "contadores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "links_contador_id_fkey"
+            columns: ["contador_id"]
+            isOneToOne: false
+            referencedRelation: "vw_dashboard_contador"
+            referencedColumns: ["contador_id"]
+          },
         ]
       }
     }
     Functions: {
+      atualizar_progresso_curso: {
+        Args: { p_enrollment_id: string; p_progresso: number }
+        Returns: Json
+      }
       decrypt_sensitive: { Args: { encrypted: string }; Returns: string }
       encrypt_sensitive: { Args: { data: string }; Returns: string }
       get_contador_id: { Args: { _user_id: string }; Returns: string }
@@ -1231,6 +1456,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      iniciar_curso: {
+        Args: { p_contador_id: string; p_course_id: string }
+        Returns: string
+      }
       registrar_clique: {
         Args: { p_token: string }
         Returns: {
@@ -1239,6 +1468,19 @@ export type Database = {
           redirect: string
           tipo: Database["public"]["Enums"]["link_type"]
         }[]
+      }
+      salvar_simulacao: {
+        Args: {
+          p_clientes_mes: number
+          p_clientes_por_contador: number
+          p_contador_id: string
+          p_contadores_mes: number
+          p_resultado_conservador: number
+          p_resultado_otimista: number
+          p_resultado_realista: number
+          p_valor_mensalidade: number
+        }
+        Returns: string
       }
       sanitize_audit_payload: { Args: { raw_payload: Json }; Returns: Json }
     }

@@ -136,24 +136,70 @@ Sistema completo de cálculo, aprovação e pagamento de comissões e bônus par
 
 ---
 
-### 6. Bônus LTV (Lifetime Value) - IMPLEMENTADO ✅
-**Trigger:** Cliente completa 12 meses ativos
-**Valor:** % sobre ticket médio dos últimos 6 meses
+### 6. Bônus LTV (Lifetime Value) - Bonificações 14-16
+**Trigger:** Grupo de clientes completa 12 meses e atinge 13º mês
 **Tipo:** `bonus_ltv`
+**Verificação:** CRON mensal (dia 1 de cada mês via `verificar-bonus-ltv`)
 
-| Clientes Ativos do Contador | Percentual LTV |
-|-----------------------------|----------------|
-| 1-4                         | 15%            |
-| 5-14                        | 30%            |
-| 15+                         | 50%            |
+**Regras de Elegibilidade:**
+1. Clientes devem ter sido ativados no **MESMO MÊS**
+2. Grupo deve ter pelo menos **5 clientes ATIVOS** no 13º mês
+3. Bônus é pago **UMA ÚNICA VEZ por grupo**
 
-**Exemplo:**
-- Contador Diamante (18 clientes)
-- Cliente completa 12 meses
-- Ticket médio últimos 6 meses: R$ 220
-- Bônus: R$ 110 (50% de R$ 220)
+**Percentuais por Tamanho do Grupo:**
 
-**Execução:** Edge function `verificar-ltv-bonus` (rodar mensalmente)
+| Clientes Ativos no Grupo | Percentual | Bonificação |
+|--------------------------|------------|-------------|
+| 5-9 clientes             | 15%        | #14         |
+| 10-14 clientes           | 30%        | #15         |
+| 15+ clientes             | 50%        | #16         |
+
+**Cálculo:**
+```
+Valor Bônus = (Soma das Mensalidades dos Clientes Ativos do Grupo) × Percentual
+```
+
+**Exemplo 1: Grupo Pequeno (8 clientes - Bonificação #14)**
+```
+Ativados: Janeiro/2025 (10 clientes iniciais)
+13º Mês: Janeiro/2026
+Ativos no 13º mês: 8 clientes (80% retenção)
+
+Mensalidades:
+- 8 clientes × R$ 130 = R$ 1.040,00
+
+Bônus LTV: R$ 1.040 × 15% = R$ 156,00
+```
+
+**Exemplo 2: Grupo Médio (12 clientes - Bonificação #15)**
+```
+Ativados: Janeiro/2025 (15 clientes iniciais)
+13º Mês: Janeiro/2026
+Ativos no 13º mês: 12 clientes (80% retenção)
+
+Mensalidades:
+- 12 clientes × R$ 130 = R$ 1.560,00
+
+Bônus LTV: R$ 1.560 × 30% = R$ 468,00
+```
+
+**Exemplo 3: Grupo Grande (18 clientes - Bonificação #16)**
+```
+Ativados: Janeiro/2025 (20 clientes iniciais)
+13º Mês: Janeiro/2026
+Ativos no 13º mês: 18 clientes (90% retenção)
+
+Mensalidades:
+- 18 clientes × R$ 130 = R$ 2.340,00
+
+Bônus LTV: R$ 2.340 × 50% = R$ 1.170,00
+```
+
+**Observações Importantes:**
+- Bônus LTV premia a **QUALIDADE** (retenção) e não apenas quantidade
+- Incentiva contadores a manterem clientes ativos por longo prazo
+- Grupos diferentes do mesmo contador podem receber múltiplos bônus LTV
+- Apenas clientes que completaram 12 meses E estão ativos contam
 
 ---
 
@@ -288,17 +334,45 @@ Sistema completo de cálculo, aprovação e pagamento de comissões e bônus par
 
 ---
 
-### 5. verificar-ltv-bonus ✅ NOVO
-**Função:** Calcula bônus LTV para clientes 12 meses
-**Trigger:** CRON mensal (sugerido: dia 1 de cada mês)
-**Ações:**
-1. Identifica clientes que completaram 12 meses exatos
-2. Calcula ticket médio últimos 6 meses
-3. Determina percentual (15%, 30% ou 50%)
-4. Cria bônus e comissão
-5. Log de auditoria
+### 5. verificar-bonus-ltv
+**Gatilho:** CRON (1º dia de cada mês às 10:00)
+**Endpoint:** `/functions/v1/verificar-bonus-ltv`
+**Entrada:** Automática (sem body)
+**Saída:** Lista de bônus LTV criados por grupo
 
-**Endpoint:** `/functions/v1/verificar-ltv-bonus`
+**O que faz:**
+1. Identifica grupos de clientes ativados há 13 meses (ex: Jan/2024 processado em Fev/2025)
+2. Agrupa por contador + mês de ativação
+3. Conta quantos clientes do grupo ainda estão ativos
+4. Se >= 5 clientes ativos:
+   - Determina percentual: 15% (5-9), 30% (10-14), 50% (15+)
+   - Calcula bônus sobre soma das mensalidades do grupo ativo
+   - Cria `bonus_historico` + `comissoes` com tipo `bonus_ltv`
+5. Registra em `audit_logs`
+6. **Não processa grupos que já receberam bônus LTV**
+
+**Exemplo Payload de Saída:**
+```json
+{
+  "success": true,
+  "mes_grupo": "2024-01",
+  "competencia_pagamento": "2025-02-01",
+  "contadores_processados": 15,
+  "grupos_elegiveis": 8,
+  "bonus_criados": [
+    {
+      "contador_id": "uuid",
+      "grupo": "2024-01",
+      "clientes_ativos": 8,
+      "clientes_iniciais": 10,
+      "percentual": 0.15,
+      "valor": 156.00,
+      "bonificacao": 14
+    }
+  ],
+  "total_distribuido": 3450.00
+}
+```
 
 ---
 
@@ -319,20 +393,24 @@ SELECT cron.schedule(
 );
 ```
 
-### 2. Verificar Bônus LTV (Dia 1)
+### CRON 2: Verificar Bônus LTV por Grupo (Dia 1 de Cada Mês)
+
 ```sql
 SELECT cron.schedule(
-  'verificar-ltv-bonus-dia-1',
-  '0 10 1 * *', -- Dia 1 às 10:00 todo mês
+  'verificar-bonus-ltv-grupo',
+  '0 10 1 * *', -- 1º dia do mês, 10:00
   $$
-  SELECT net.http_post(
-    url:='https://zytxwdgzjqrcmbnpgofj.supabase.co/functions/v1/verificar-ltv-bonus',
-    headers:='{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp5dHh3ZGd6anFyY21ibnBnb2ZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODY2NDIsImV4cCI6MjA3NjU2MjY0Mn0.KXvdfxHITLvW2r1Qiiv5CSVG-B1pGYrO4Qu7HWq-nQw"}'::jsonb,
-    body:='{}'::jsonb
-  ) AS request_id;
+  SELECT
+    net.http_post(
+        url:='https://zytxwdgzjqrcmbnpgofj.supabase.co/functions/v1/verificar-bonus-ltv',
+        headers:='{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}'::jsonb,
+        body:='{}'::jsonb
+    ) as request_id;
   $$
 );
 ```
+
+**Importante:** Ver instruções completas em `CONFIGURAR_CRON_LTV.md`
 
 **⚠️ IMPORTANTE:** Execute esses SQLs no SQL Editor do Supabase para ativar os CRONs.
 

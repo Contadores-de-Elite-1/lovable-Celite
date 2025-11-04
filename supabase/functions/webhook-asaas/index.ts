@@ -136,115 +136,9 @@ Deno.serve(async (req) => {
 
     console.log('✅ Comissões calculadas:', calculoResult);
 
-    // ============================================
-    // VERIFICAR BÔNUS LTV (12 MESES)
-    // ============================================
-    let bonusLtvCriado = null;
-    
-    if (cliente.data_ativacao) {
-      const dataAtivacao = new Date(cliente.data_ativacao);
-      const dataAtual = new Date();
-      const mesesAtivo = Math.floor((dataAtual.getTime() - dataAtivacao.getTime()) / (1000 * 60 * 60 * 24 * 30));
-      
-      console.log(`📅 Cliente ativo há ${mesesAtivo} meses (desde ${cliente.data_ativacao})`);
-      
-      // Se completou 12 meses ou mais
-      if (mesesAtivo >= 12) {
-        // Verificar se já recebeu bônus LTV
-        const { data: bonusExistente } = await supabase
-          .from('bonus_historico')
-          .select('id')
-          .eq('contador_id', cliente.contador_id)
-          .eq('tipo_bonus', 'bonus_ltv')
-          .ilike('observacao', `%Cliente: ${cliente.id}%`)
-          .single();
-        
-        if (!bonusExistente) {
-          console.log('🎯 Cliente elegível para Bônus LTV! Calculando...');
-          
-          // Calcular ticket médio dos últimos 6 meses
-          const data6MesesAtras = new Date();
-          data6MesesAtras.setMonth(data6MesesAtras.getMonth() - 6);
-          
-          const { data: pagamentos6Meses } = await supabase
-            .from('pagamentos')
-            .select('valor_liquido')
-            .eq('cliente_id', cliente.id)
-            .eq('status', 'confirmed')
-            .gte('competencia', data6MesesAtras.toISOString().slice(0, 10))
-            .order('competencia', { ascending: false })
-            .limit(6);
-          
-          const ticketMedio = pagamentos6Meses && pagamentos6Meses.length > 0
-            ? pagamentos6Meses.reduce((sum, p) => sum + (p.valor_liquido || 0), 0) / pagamentos6Meses.length
-            : cliente.valor_mensal || 0;
-          
-          console.log(`💰 Ticket médio (últimos 6 meses): R$ ${ticketMedio.toFixed(2)}`);
-          
-          // Contar total de clientes ativos do contador
-          const { count: totalClientesAtivos } = await supabase
-            .from('clientes')
-            .select('id', { count: 'exact', head: true })
-            .eq('contador_id', cliente.contador_id)
-            .eq('status', 'ativo');
-          
-          // Determinar percentual de bônus LTV
-          let percentualLTV = 0.15; // Padrão: 15%
-          let descricaoNivel = '1-4 clientes';
-          
-          if (totalClientesAtivos && totalClientesAtivos >= 15) {
-            percentualLTV = 0.50; // 50%
-            descricaoNivel = '15+ clientes';
-          } else if (totalClientesAtivos && totalClientesAtivos >= 5) {
-            percentualLTV = 0.30; // 30%
-            descricaoNivel = '5-14 clientes';
-          }
-          
-          const valorBonus = ticketMedio * percentualLTV;
-          
-          console.log(`🎁 Bônus LTV: ${(percentualLTV * 100)}% sobre R$ ${ticketMedio.toFixed(2)} = R$ ${valorBonus.toFixed(2)}`);
-          
-          // Criar bônus no histórico
-          const mesAtual = dataAtual.toISOString().slice(0, 7);
-          const competenciaBonus = `${mesAtual}-01`;
-          
-          const { data: bonus, error: erroBonus } = await supabase
-            .from('bonus_historico')
-            .insert({
-              contador_id: cliente.contador_id,
-              tipo_bonus: 'bonus_ltv',
-              valor: valorBonus,
-              competencia: competenciaBonus,
-              status: 'pendente',
-              observacao: `LTV 12 meses - Cliente: ${cliente.id} - Ticket: R$ ${ticketMedio.toFixed(2)} - ${descricaoNivel}`,
-              marco_atingido: 12,
-            })
-            .select()
-            .single();
-          
-          if (!erroBonus && bonus) {
-            // Criar comissão vinculada ao bônus
-            await supabase.from('comissoes').insert({
-              contador_id: cliente.contador_id,
-              cliente_id: cliente.id,
-              tipo: 'bonus_ltv',
-              valor: valorBonus,
-              percentual: percentualLTV,
-              competencia: competenciaBonus,
-              status: 'calculada',
-              observacao: `Bônus LTV 12 meses - ${(percentualLTV * 100)}% sobre ticket médio`,
-            });
-            
-            bonusLtvCriado = bonus;
-            console.log(`✅ Bônus LTV criado: R$ ${valorBonus.toFixed(2)}`);
-          } else {
-            console.error('❌ Erro ao criar bônus LTV:', erroBonus);
-          }
-        } else {
-          console.log('⏭️ Cliente já recebeu Bônus LTV anteriormente');
-        }
-      }
-    }
+    // Bônus LTV agora é processado pela edge function verificar-bonus-ltv
+    // executada mensalmente via CRON (dia 1 de cada mês)
+    const bonusLtvCriado = null;
 
     // Log de auditoria
     await supabase.from('audit_logs').insert({
@@ -257,7 +151,6 @@ Deno.serve(async (req) => {
         cliente_id: cliente.id,
         valor: payment.value,
         comissoes_criadas: calculoResult?.comissoes_criadas || 0,
-        bonus_ltv_criado: bonusLtvCriado ? bonusLtvCriado.id : null,
       },
     });
 
@@ -266,11 +159,6 @@ Deno.serve(async (req) => {
         success: true,
         pagamento_id: novoPagamento.id,
         comissoes: calculoResult,
-        bonus_ltv: bonusLtvCriado ? {
-          id: bonusLtvCriado.id,
-          valor: bonusLtvCriado.valor,
-          observacao: bonusLtvCriado.observacao,
-        } : null,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

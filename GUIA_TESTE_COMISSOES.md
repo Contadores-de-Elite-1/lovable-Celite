@@ -292,9 +292,40 @@ LIMIT 10;
 - **Cliente:** Indicado por Bronze (sponsor: Prata)
 - **Override esperado (Prata):** 4% sobre R$500 = R$20,00
 
-### ✅ Cenário 3: Bônus LTV (12 meses)
-- **Cliente:** Ativo há 12 meses, ticket médio R$475
-- **Bônus esperado (Bronze, 15%):** R$71,25
+### Cenário 3: Testar Bônus LTV (Bonificações 14-16)
+
+**Pré-requisito:** Criar grupo de clientes ativados há 13 meses
+
+```sql
+-- Criar 8 clientes ativados há 13 meses (grupo elegível para 15%)
+INSERT INTO clientes (contador_id, cnpj, nome_empresa, valor_mensal, status, data_ativacao, plano)
+SELECT 
+  '00000000-0000-0000-0000-000000000001', -- Contador Bronze
+  '1111111100010' || i,
+  'Empresa LTV ' || i,
+  130,
+  'ativo',
+  (CURRENT_DATE - INTERVAL '13 months'),
+  'basic'
+FROM generate_series(1, 8) i;
+```
+
+**Executar Edge Function Manualmente:**
+```sql
+SELECT
+  net.http_post(
+    url:='https://zytxwdgzjqrcmbnpgofj.supabase.co/functions/v1/verificar-bonus-ltv',
+    headers:='{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}'::jsonb,
+    body:='{}'::jsonb
+  );
+```
+
+**Resultado Esperado:**
+- ✅ Identifica grupo de 8 clientes ativos
+- ✅ Aplica 15% (Bonificação #14) - grupo de 5-9 clientes
+- ✅ Calcula: 8 × R$ 130 = R$ 1.040 → 15% = R$ 156,00
+- ✅ Cria `bonus_historico` com observação: "LTV 12 meses - Grupo: YYYY-MM - 8/8 clientes ativos (5-9 clientes) - Bonificação #14"
+- ✅ Cria `comissoes` tipo `bonus_ltv` com valor R$ 156,00
 
 ### ✅ Cenário 4: Pagamento Acumulado
 - **Contador:** Total de comissões R$85 (< R$100)

@@ -9,7 +9,7 @@ verify_jwt = false
 [functions.processar-pagamento-comissoes]
 verify_jwt = false
 
-[functions.verificar-ltv-bonus]
+[functions.verificar-bonus-ltv]
 verify_jwt = false
 
 [functions.aprovar-comissoes]

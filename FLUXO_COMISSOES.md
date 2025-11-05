@@ -334,11 +334,13 @@ Bônus LTV: R$ 2.340 × 50% = R$ 1.170,00
 
 ---
 
-### 5. verificar-bonus-ltv
+### 5. verificar-bonus-ltv ⚠️ CRÍTICO
 **Gatilho:** CRON (1º dia de cada mês às 10:00)
 **Endpoint:** `/functions/v1/verificar-bonus-ltv`
 **Entrada:** Automática (sem body)
 **Saída:** Lista de bônus LTV criados por grupo
+
+**⚠️ IMPORTANTE:** Este é o ÚNICO momento em que Bônus LTV são calculados. O webhook Asaas NÃO calcula LTV (conforme regras de negócio: pagamento no 13º mês, não em tempo real).
 
 **O que faz:**
 1. Identifica grupos de clientes ativados há 13 meses (ex: Jan/2024 processado em Fev/2025)
@@ -376,9 +378,23 @@ Bônus LTV: R$ 2.340 × 50% = R$ 1.170,00
 
 ---
 
+## ⚠️ AVISO CRÍTICO: NÃO DESABILITAR CRONs
+
+**ATENÇÃO:** Os CRONs configurados são ESSENCIAIS para o funcionamento correto do sistema de comissões. Desabilitar qualquer um deles resultará em:
+- ❌ Perda de pagamentos de comissões mensais
+- ❌ Perda de bônus LTV (risco jurídico e financeiro)
+- ❌ Quebra de contrato com parceiros e contadores
+
+**NUNCA desabilite os CRONs sem revisar completamente o `GUIA_MANUTENCAO_SEGURA.md`**
+
+---
+
 ## ⏰ CRON Jobs - CONFIGURAÇÃO NECESSÁRIA
 
-### 1. Processar Pagamentos (Dia 25)
+### 1. Processar Pagamentos (Dia 25) ✅ ATIVO
+
+**Status:** OBRIGATÓRIO - NÃO DESABILITAR
+
 ```sql
 SELECT cron.schedule(
   'processar-pagamentos-dia-25',
@@ -393,7 +409,11 @@ SELECT cron.schedule(
 );
 ```
 
-### CRON 2: Verificar Bônus LTV por Grupo (Dia 1 de Cada Mês)
+### CRON 2: Verificar Bônus LTV por Grupo (Dia 1 de Cada Mês) ✅ ATIVO
+
+**Status:** OBRIGATÓRIO - NÃO DESABILITAR
+
+**⚠️ ATENÇÃO:** Este CRON implementa as regras de negócio 14-16 (Bônus de Qualidade LTV). Desabilitá-lo resultará em ZERO bônus LTV pagos, causando problemas jurídicos e financeiros graves.
 
 ```sql
 SELECT cron.schedule(

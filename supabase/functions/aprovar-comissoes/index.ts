@@ -67,10 +67,17 @@ Deno.serve(async (req) => {
     // 2. ATUALIZAR STATUS PARA 'APROVADA'
     const comissoesIds = comissoesCalculadas.map((c) => c.id);
     
+    // VALIDAÇÃO CRÍTICA: Garantir status válido
+    const statusValidos = ['calculada', 'aprovada', 'paga', 'cancelada'] as const;
+    const novoStatus = 'aprovada';
+    if (!statusValidos.includes(novoStatus)) {
+      throw new Error(`ERRO CRÍTICO: status_comissao inválido: ${novoStatus}. Valores permitidos: ${statusValidos.join(', ')}`);
+    }
+    
     const { error: erroAtualizacao, count } = await supabase
       .from('comissoes')
       .update({
-        status: 'aprovada',
+        status: novoStatus,
         observacao: input.observacao || 'Aprovada automaticamente',
         updated_at: new Date().toISOString(),
       })

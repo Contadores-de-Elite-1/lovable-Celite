@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
 
     // 2. COMISSÃO DIRETA
     let valorComissaoDireta = 0;
-    let tipoComissao = '';
+    let tipoComissao: 'ativacao' | 'recorrente' | 'override' | 'bonus' = 'ativacao';
     let percentualAplicado = 0;
 
     if (input.is_primeira_mensalidade) {
@@ -73,6 +73,19 @@ Deno.serve(async (req) => {
       percentualAplicado = nivelAtual.comissao_direta;
     }
 
+    // VALIDAÇÃO CRÍTICA: Garantir tipo válido antes de INSERT
+    const tiposValidos = ['ativacao', 'recorrente', 'override', 'bonus'] as const;
+    if (!tiposValidos.includes(tipoComissao)) {
+      throw new Error(`ERRO CRÍTICO: tipo_comissao inválido: ${tipoComissao}. Valores permitidos: ${tiposValidos.join(', ')}`);
+    }
+
+    // VALIDAÇÃO CRÍTICA: Garantir status válido antes de INSERT
+    const statusValidos = ['calculada', 'aprovada', 'paga', 'cancelada'] as const;
+    const statusInserir = 'calculada';
+    if (!statusValidos.includes(statusInserir)) {
+      throw new Error(`ERRO CRÍTICO: status_comissao inválido: ${statusInserir}. Valores permitidos: ${statusValidos.join(', ')}`);
+    }
+
     const { data: comissaoDireta, error: erroComissaoDireta } = await supabase
       .from('comissoes')
       .insert({
@@ -83,7 +96,7 @@ Deno.serve(async (req) => {
         valor: valorComissaoDireta,
         percentual: percentualAplicado,
         competencia: input.competencia,
-        status: 'calculada',
+        status: statusInserir,
         observacao: `Comissão ${tipoComissao} - Nível: ${nivelAtual.nivel}`,
         origem_cliente_id: input.cliente_id,
       })

@@ -78,10 +78,17 @@ Deno.serve(async (req) => {
         // PAGAR: Total >= R$100
         const ids = comissoesContador.map((c) => c.id);
         
+        // VALIDAÇÃO CRÍTICA: Garantir status válido
+        const statusValidos = ['calculada', 'aprovada', 'paga', 'cancelada'] as const;
+        const novoStatus = 'paga';
+        if (!statusValidos.includes(novoStatus)) {
+          throw new Error(`ERRO CRÍTICO: status_comissao inválido: ${novoStatus}. Valores permitidos: ${statusValidos.join(', ')}`);
+        }
+        
         const { error: updateError } = await supabase
           .from('comissoes')
           .update({
-            status: 'paga',
+            status: novoStatus,
             pago_em: new Date().toISOString(),
           })
           .in('id', ids);

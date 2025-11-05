@@ -382,13 +382,6 @@ export type Database = {
             referencedRelation: "pagamentos"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "comissoes_pagamento_id_fkey"
-            columns: ["pagamento_id"]
-            isOneToOne: false
-            referencedRelation: "vw_comissoes_detalhadas"
-            referencedColumns: ["pagamento_id"]
-          },
         ]
       }
       comissoes_calculo_log: {
@@ -743,6 +736,13 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enrollments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "cursos_edu"
             referencedColumns: ["id"]
           },
         ]
@@ -1545,6 +1545,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "vw_dashboard_contador"
             referencedColumns: ["contador_id"]
+          },
+          {
+            foreignKeyName: "comissoes_pagamento_id_fkey"
+            columns: ["pagamento_id"]
+            isOneToOne: false
+            referencedRelation: "pagamentos"
+            referencedColumns: ["id"]
           },
         ]
       }

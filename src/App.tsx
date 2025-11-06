@@ -19,6 +19,7 @@ import Educacao from "./pages/Educacao";
 import Materiais from "./pages/Materiais";
 import Assistente from "./pages/Assistente";
 import AuthSecurityDashboard from "./pages/AuthSecurityDashboard";
+import AuditoriaComissoes from "./pages/AuditoriaComissoes";
 import Perfil from "./pages/Perfil";
 import Rede from "./pages/Rede";
 import Relatorios from "./pages/Relatorios";
@@ -60,6 +61,7 @@ const App = () => (
                           <Route path="/perfil" element={<Perfil />} />
                           <Route path="/relatorios" element={<Relatorios />} />
                           <Route path="/auth-security" element={<AuthSecurityDashboard />} />
+                          <Route path="/auditoria-comissoes" element={<AuditoriaComissoes />} />
                           <Route path="*" element={<NotFound />} />
                         </Routes>
                         </main>

@@ -13,6 +13,7 @@ import {
   Shield,
   ChevronLeft,
   ChevronRight,
+  ClipboardCheck,
 } from "lucide-react";
 import {
   Sidebar,
@@ -48,6 +49,7 @@ const menuItems = {
     { title: "Perfil", url: "/perfil", icon: User },
     { title: "Relatórios", url: "/relatorios", icon: BarChart },
     { title: "Segurança", url: "/auth-security", icon: Shield },
+    { title: "Auditoria Comissões", url: "/auditoria-comissoes", icon: ClipboardCheck },
   ],
 };
 

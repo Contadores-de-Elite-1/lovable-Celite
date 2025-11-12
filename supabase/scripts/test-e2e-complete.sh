@@ -6,7 +6,9 @@ set -e
 # Carregar variáveis do .env se existir
 # ============================================================================
 if [ -f ".env" ]; then
-  export $(grep -v '^#' .env | grep -v '^$' | xargs)
+  set -a
+  source .env
+  set +a
 fi
 
 # Fallback para SUPABASE_PROJECT_REF

@@ -15,16 +15,15 @@ set -e
 # ============================================================================
 if [ -f ".env" ]; then
   echo "Carregando variáveis de .env..."
-  # Usar grep para extrair e exportar variáveis (simples e robusto)
-  export $(grep -v '^#' .env | grep -v '^$' | xargs)
+  set -a
+  source .env
+  set +a
 fi
 
 # Verificar se SUPABASE_PROJECT_REF está definido, senão usar VITE_SUPABASE_PROJECT_ID
-if [ -z "$SUPABASE_PROJECT_REF" ]; then
-  if [ -n "$VITE_SUPABASE_PROJECT_ID" ]; then
-    export SUPABASE_PROJECT_REF="$VITE_SUPABASE_PROJECT_ID"
-    echo "✓ SUPABASE_PROJECT_REF='$SUPABASE_PROJECT_REF' (from VITE_SUPABASE_PROJECT_ID)"
-  fi
+if [ -z "$SUPABASE_PROJECT_REF" ] && [ -n "$VITE_SUPABASE_PROJECT_ID" ]; then
+  export SUPABASE_PROJECT_REF="$VITE_SUPABASE_PROJECT_ID"
+  echo "✓ SUPABASE_PROJECT_REF='$SUPABASE_PROJECT_REF' (from VITE_SUPABASE_PROJECT_ID)"
 fi
 
 BLUE='\033[0;34m'

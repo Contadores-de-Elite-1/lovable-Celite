@@ -1,0 +1,67 @@
+╔════════════════════════════════════════════════════════════════════════╗
+║                     QUICK START - E2E TESTING                           ║
+║                  Teste o sistema em 3 comandos                          ║
+╚════════════════════════════════════════════════════════════════════════╝
+
+PASSO 1: Iniciar Supabase (se não estiver rodando)
+──────────────────────────────────────────────────
+$ supabase start
+
+Aguarde até ver:
+"Started supabase local development server."
+
+
+PASSO 2: Rodar os testes E2E
+──────────────────────────────
+$ bash supabase/scripts/test-e2e-complete.sh
+
+O script vai:
+  ✓ Resetar banco de dados
+  ✓ Aplicar migrations
+  ✓ Executar seed
+  ✓ Simular pagamento ASAAS
+  ✓ Testar fluxo completo (pagamento → cálculo → aprovação → processamento)
+  ✓ Validar RLS
+  ✓ Verificar audit logs
+
+Duração: ~30-60 segundos
+
+
+PASSO 3: Ver resultado
+──────────────────────
+Se vir isso:
+  ✓ TODOS OS TESTES PASSARAM!
+
+Quer dizer que TUDO está funcionando corretamente!
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TROUBLESHOOTING RÁPIDO:
+
+❌ "Supabase não está rodando"
+  → supabase start
+
+❌ "jq: command not found"
+  → brew install jq (macOS) ou sudo apt-get install jq (Linux)
+
+❌ "permission denied"
+  → chmod +x supabase/scripts/test-e2e-complete.sh
+
+❌ "Webhook retornou erro"
+  → Verificar se dados de teste existem:
+    psql postgresql://postgres:postgres@localhost:54322/postgres
+    SELECT COUNT(*) FROM clientes;
+    SELECT COUNT(*) FROM contadores;
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PRÓXIMOS PASSOS:
+
+1. Se teste passou: Começar frontend (Semana 2-3)
+2. Se teste falhou: Debug com:
+   - supabase functions logs webhook-asaas
+   - tail -f .supabase/logs/realtime.log
+
+3. Ver guia completo em: E2E_TEST_GUIDE.md

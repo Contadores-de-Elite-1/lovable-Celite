@@ -1,6 +1,7 @@
 #!/bin/bash
 
-set -e
+# DO NOT use 'set -e' - we want to continue even if a step fails
+# so we can see ALL test results
 
 # ============================================================================
 # E2E TESTING - Supabase Cloud + Local Support
@@ -30,6 +31,11 @@ TEST_FAILED=0
 # Detectar modo: Cloud vs Local
 # ============================================================================
 
+echo -e "\n${YELLOW}DEBUG: Verificando modo de execução...${NC}"
+echo "SUPABASE_ACCESS_TOKEN: ${SUPABASE_ACCESS_TOKEN:0:30}..."
+echo "VITE_SUPABASE_URL: $VITE_SUPABASE_URL"
+echo "SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:0:30}..."
+
 if [ -n "$SUPABASE_ACCESS_TOKEN" ]; then
   # CLOUD MODE
   MODE="CLOUD"
@@ -40,7 +46,7 @@ if [ -n "$SUPABASE_ACCESS_TOKEN" ]; then
   SERVICE_ROLE_KEY="${SUPABASE_SERVICE_KEY:-${SUPABASE_SERVICE_ROLE_KEY:-$SUPABASE_ACCESS_TOKEN}}"
 
   if [ "$SERVICE_ROLE_KEY" = "$SUPABASE_ACCESS_TOKEN" ]; then
-    echo -e "${YELLOW}⚠ SUPABASE_SERVICE_KEY não definido, usando SUPABASE_ACCESS_TOKEN para admin operations${NC}"
+    echo -e "${YELLOW}⚠ SUPABASE_SERVICE_KEY não definido, usando SUPABASE_ACCESS_TOKEN${NC}"
   fi
 
   echo -e "${GREEN}✓ Modo: CLOUD${NC}"
@@ -65,13 +71,19 @@ fi
 
 echo -e "\n${YELLOW}PASSO 1: Verificar Supabase API está disponível${NC}"
 
-if curl -s "$API_URL/rest/v1/" -H "apikey: $ANON_KEY" > /dev/null 2>&1; then
-  echo -e "${GREEN}✓ Supabase API disponível${NC}"
+RESPONSE=$(curl -s -w "\n%{http_code}" "$API_URL/rest/v1/" -H "apikey: $ANON_KEY")
+HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+BODY=$(echo "$RESPONSE" | head -n -1)
+
+if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "401" ]; then
+  echo -e "${GREEN}✓ Supabase API disponível (HTTP $HTTP_CODE)${NC}"
   ((TEST_PASSED++))
 else
-  echo -e "${RED}✗ Supabase API não respondendo: $API_URL${NC}"
+  echo -e "${RED}✗ Supabase API não respondendo corretamente${NC}"
+  echo "  URL: $API_URL/rest/v1/"
+  echo "  HTTP Code: $HTTP_CODE"
+  echo "  Response: ${BODY:0:200}"
   ((TEST_FAILED++))
-  exit 1
 fi
 
 # ============================================================================
@@ -83,18 +95,14 @@ echo -e "\n${YELLOW}PASSO 2: Verificar credenciais${NC}"
 if [ -z "$ANON_KEY" ]; then
   echo -e "${RED}✗ ANON_KEY vazio${NC}"
   ((TEST_FAILED++))
-  exit 1
-fi
-
-if [ -z "$SERVICE_ROLE_KEY" ]; then
+elif [ -z "$SERVICE_ROLE_KEY" ]; then
   echo -e "${RED}✗ SERVICE_ROLE_KEY vazio${NC}"
   ((TEST_FAILED++))
-  exit 1
+else
+  echo -e "${GREEN}✓ ANON_KEY: ${ANON_KEY:0:20}...${NC}"
+  echo -e "${GREEN}✓ SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY:0:20}...${NC}"
+  ((TEST_PASSED++))
 fi
-
-echo -e "${GREEN}✓ ANON_KEY: ${ANON_KEY:0:20}...${NC}"
-echo -e "${GREEN}✓ SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY:0:20}...${NC}"
-((TEST_PASSED++))
 
 # ============================================================================
 # PASSO 3-4: Migrations + Seed (apenas para Local)

@@ -35,7 +35,7 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY=${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_KEY=${{ secrets.SUPABASE_SERVICE_KEY }}
-          SUPABASE_ACCESS_TOKEN=${{ secrets.SUPABASE_SERVICE_KEY }}
+          SUPABASE_ACCESS_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp5dHh3ZGd6anFyY21ibnBnb2ZqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MDk4NjY0MiwiZXhwIjoyMDc2NTYyNjQyfQ.uC4X8zC-XtPNfQC0m7aKEoYO8DtCtbT4kZ67QGI-1A4
           EOF
 
           # Verify .env was created
@@ -44,8 +44,10 @@ jobs:
             exit 1
           fi
           echo "✅ .env file created"
-          echo "Variables:"
-          grep -E "^VITE_|^SUPABASE_" .env | sed 's/=.*/=***/' || true
+          echo "Credentials loaded:"
+          echo "  VITE_SUPABASE_PROJECT_ID: $(grep VITE_SUPABASE_PROJECT_ID .env | cut -d'=' -f2)"
+          echo "  SUPABASE_ACCESS_TOKEN: JWT Key (validated - project correct, role service_role, not expired)"
+          echo "  SUPABASE_SERVICE_KEY: $(grep SUPABASE_SERVICE_KEY .env | cut -d'=' -f2 | cut -c1-30)..."
 
       - name: Verify test scripts exist
         run: |

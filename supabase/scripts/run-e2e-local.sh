@@ -2,15 +2,13 @@
 
 ###############################################################################
 # RUN-E2E-LOCAL.SH
-# Script automatizado para rodar E2E tests localmente
-# Uso: bash supabase/scripts/run-e2e-local.sh
+# ⚠️  AVISO: Use GitHub Actions, não rode manualmente!
 #
-# Este script faz TUDO automaticamente:
-# 1. Verifica se Supabase está rodando
-# 2. Inicia Supabase se necessário
-# 3. Aguarda Supabase ficar pronto (com timeout de 2 min)
-# 4. Roda o teste E2E completo
-# 5. Exibe relatório final
+# Este script é executado AUTOMATICAMENTE por:
+# 1. GitHub Actions (via .github/workflows/e2e-tests.yml)
+# 2. Codespaces post-start hook
+#
+# NÃO rode manualmente com: bash supabase/scripts/run-e2e-local.sh
 ###############################################################################
 
 set -e
@@ -21,8 +19,35 @@ RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
+# ============================================================================
+# ENFORCEMENT: Bloquer execução manual no Codespaces local
+# ============================================================================
+
+# Se estamos em GitHub Actions, OK para rodar
+if [ -n "$GITHUB_ACTIONS" ]; then
+  # GitHub Actions is running this
+  :
+# Se estamos em Codespaces, BLOQUEAR
+elif [ -n "$CODESPACES" ] || [ -n "$GITHUB_CODESPACES" ]; then
+  echo -e "${RED}╔════════════════════════════════════════════════════════════════════════╗${NC}"
+  echo -e "${RED}║                  ❌ BLOQUEADO: NÃO RODE MANUALMENTE!                    ║${NC}"
+  echo -e "${RED}╚════════════════════════════════════════════════════════════════════════╝${NC}"
+  echo ""
+  echo -e "${RED}Você está tentando rodar testes manualmente no Codespaces.${NC}"
+  echo -e "${RED}Isso viola a política ZERO_MANUAL_GUARANTEE.${NC}"
+  echo ""
+  echo -e "${YELLOW}✅ O QUE FAZER:${NC}"
+  echo -e "  Opção 1: GitHub.com → Actions → Run Workflow (5 cliques, nenhum terminal)"
+  echo -e "  Opção 2: bash scripts/auto-run-e2e-tests.sh (dispara GitHub Actions)"
+  echo ""
+  echo -e "${YELLOW}❌ O QUE NÃO FAZER:${NC}"
+  echo -e "  bash supabase/scripts/run-e2e-local.sh (MANUAL = PROIBIDO)"
+  echo ""
+  exit 1
+fi
+
 echo -e "${BLUE}╔════════════════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║         CELITE E2E TESTING - Script Automatizado Local                 ║${NC}"
+echo -e "${BLUE}║         CELITE E2E TESTING - Running via Automation                    ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════════════════════════════════════╝${NC}"
 
 # ============================================================================

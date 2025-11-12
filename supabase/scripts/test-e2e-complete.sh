@@ -55,12 +55,21 @@ fi
 echo -e "\n${YELLOW}PASSO 2: Obter credenciais${NC}"
 STATUS_OUTPUT=$(supabase status 2>/dev/null || echo "")
 
-ANON_KEY=$(echo "$STATUS_OUTPUT" | grep "anon key:" | awk '{print $NF}' | tr -d '[:space:]')
-SERVICE_ROLE_KEY=$(echo "$STATUS_OUTPUT" | grep "service_role key:" | awk '{print $NF}' | tr -d '[:space:]')
-
+# Tentar novo formato primeiro (Publishable key / Secret key), depois antigo (anon key / service_role key)
+ANON_KEY=$(echo "$STATUS_OUTPUT" | grep "Publishable key:" | awk '{print $NF}' | tr -d '[:space:]')
 if [ -z "$ANON_KEY" ]; then
-  echo -e "${RED}✗ Não consegui obter ANON_KEY${NC}"
-  echo "Tente executar: supabase status"
+  ANON_KEY=$(echo "$STATUS_OUTPUT" | grep "anon key:" | awk '{print $NF}' | tr -d '[:space:]')
+fi
+
+SERVICE_ROLE_KEY=$(echo "$STATUS_OUTPUT" | grep "Secret key:" | awk '{print $NF}' | tr -d '[:space:]')
+if [ -z "$SERVICE_ROLE_KEY" ]; then
+  SERVICE_ROLE_KEY=$(echo "$STATUS_OUTPUT" | grep "service_role key:" | awk '{print $NF}' | tr -d '[:space:]')
+fi
+
+if [ -z "$ANON_KEY" ] || [ -z "$SERVICE_ROLE_KEY" ]; then
+  echo -e "${RED}✗ Não consegui obter ANON_KEY ou SERVICE_ROLE_KEY${NC}"
+  echo "Status output:"
+  echo "$STATUS_OUTPUT"
   exit 1
 fi
 

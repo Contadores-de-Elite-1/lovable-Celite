@@ -3,7 +3,7 @@
 # ==============================================================================
 # TESTE COMPLETO LOCAL: JORNADA DE FLÁVIO AUGUSTO (42 PÁGINAS)
 # ==============================================================================
-# Usa endpoint LOCAL (localhost:54321) em vez de Cloud
+# Usa endpoint LOCAL (127.0.0.1:54321) em vez de Cloud
 # ==============================================================================
 
 set +e
@@ -16,7 +16,7 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 # Configuração LOCAL
-API_URL="http://localhost:54321"
+API_URL="http://127.0.0.1:54321"
 CONTADOR_ID="550e8400-e29b-41d4-a716-446655440001"
 
 echo -e "${BLUE}╔════════════════════════════════════════════════════════════════╗${NC}"
@@ -28,12 +28,12 @@ echo ""
 # VALIDAR CONEXÃO LOCAL
 # ==============================================================================
 
-echo -e "${YELLOW}Verificando conexão local (localhost:54321)...${NC}"
+echo -e "${YELLOW}Verificando conexão local (127.0.0.1:54321)...${NC}"
 
 HEALTH=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/functions/v1/webhook-asaas" --max-time 2)
 
 if [ "$HEALTH" != "405" ] && [ "$HEALTH" != "200" ]; then
-  echo -e "${RED}❌ Supabase local não está rodando em localhost:54321${NC}"
+  echo -e "${RED}❌ Supabase local não está rodando em 127.0.0.1:54321${NC}"
   echo -e "${YELLOW}Execute na Mac:${NC}"
   echo "  npx supabase start"
   exit 1
@@ -54,7 +54,7 @@ if [ ! -f "supabase/scripts/flavio-augusto-jornada-completa.sql" ]; then
 fi
 
 # Para local, executar SQL via psql se disponível
-SUPABASE_DB_URL="postgresql://postgres:postgres@localhost:54322/postgres"
+SUPABASE_DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
 
 if command -v psql &> /dev/null; then
   psql "$SUPABASE_DB_URL" -f supabase/scripts/flavio-augusto-jornada-completa.sql 2>/dev/null

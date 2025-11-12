@@ -32,8 +32,19 @@ npm install > /dev/null 2>&1 || (
 
 echo -e "\n${YELLOW}Installing Supabase CLI...${NC}"
 if ! command -v supabase &> /dev/null; then
-  npm install -g @supabase/cli > /dev/null 2>&1
-  echo -e "${GREEN}✓ Supabase CLI installed${NC}"
+  # Install Supabase CLI via official installer
+  curl -fsSL https://raw.githubusercontent.com/supabase/cli/main/install.sh | bash > /dev/null 2>&1 || (
+    # Fallback: try apt-get for Linux environments
+    apt-get update > /dev/null 2>&1 && apt-get install -y supabase > /dev/null 2>&1
+  ) || (
+    echo -e "${YELLOW}⚠ Warning: Could not install Supabase CLI automatically${NC}"
+  )
+
+  if command -v supabase &> /dev/null; then
+    echo -e "${GREEN}✓ Supabase CLI installed${NC}"
+  else
+    echo -e "${YELLOW}⚠ Supabase CLI installation may have failed${NC}"
+  fi
 else
   echo -e "${GREEN}✓ Supabase CLI already installed${NC}"
 fi

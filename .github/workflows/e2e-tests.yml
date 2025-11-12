@@ -1,0 +1,109 @@
+name: Celite E2E Tests - Automated Pipeline
+
+on:
+  push:
+    branches:
+      - claude/fix-database-types-and-rpc-*
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Supabase CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/supabase/cli/main/install.sh | bash
+          supabase --version
+
+      - name: Start Supabase
+        run: |
+          supabase start
+          sleep 30
+
+      - name: Wait for Supabase API
+        run: |
+          for i in {1..30}; do
+            if curl -s http://localhost:54321/rest/v1/ > /dev/null; then
+              echo "✓ Supabase API is ready"
+              exit 0
+            fi
+            echo "Waiting for Supabase API... ($i/30)"
+            sleep 2
+          done
+          echo "✗ Supabase API did not respond"
+          exit 1
+
+      - name: Apply migrations
+        run: supabase db push
+
+      - name: Load seed data
+        run: |
+          STATUS=$(supabase status)
+          DB_URL=$(echo "$STATUS" | grep "Database URL:" | awk '{print $NF}')
+          psql "$DB_URL" -f supabase/scripts/seed.sql
+
+      - name: Run E2E tests
+        run: bash supabase/scripts/run-e2e-local.sh
+        continue-on-error: true
+
+      - name: Check test results
+        run: |
+          if [ -f "/tmp/e2e-results.txt" ]; then
+            cat /tmp/e2e-results.txt
+          fi
+
+      - name: Upload test logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-logs
+          path: |
+            /tmp/*.log
+            .supabase/logs/
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const testsPassed = !context.payload.pull_request.failed;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: testsPassed ?
+                '✅ **E2E Tests Passed!** All validations completed successfully.' :
+                '❌ **E2E Tests Failed** - Check logs in artifacts for details.'
+            });

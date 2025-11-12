@@ -139,6 +139,9 @@ if [ $TEST_RESULT -eq 0 ]; then
   echo "  1. Manter Supabase rodando: supabase start"
   echo "  2. Começar desenvolvimento do frontend"
   echo "  3. Rodar testes novamente antes de commits importantes"
+
+  # Save result for CI/CD pipelines
+  echo "PASSED" > /tmp/e2e-results.txt
   exit 0
 else
   echo -e "\n${RED}╔════════════════════════════════════════════════════════════════════════╗${NC}"
@@ -152,6 +155,9 @@ else
   echo "     psql postgresql://postgres:postgres@localhost:54322/postgres"
   echo "  3. Verificar migrations:"
   echo "     supabase db push --dry-run"
+
+  # Save result for CI/CD pipelines
+  echo "FAILED" > /tmp/e2e-results.txt
   echo ""
   echo "Manter Supabase rodando para investigar:"
   echo "  supabase start"

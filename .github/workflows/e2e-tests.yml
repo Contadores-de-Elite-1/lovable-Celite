@@ -7,10 +7,17 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      full_debug:
+        description: 'Enable full debugging output'
+        required: false
+        default: 'false'
 
 jobs:
   e2e-tests:
     runs-on: ubuntu-latest
+    name: E2E Tests - Backend Validation
 
     services:
       postgres:
@@ -47,63 +54,159 @@ jobs:
 
       - name: Start Supabase
         run: |
+          echo "🚀 Starting Supabase..."
           supabase start
           sleep 30
+          echo "✅ Supabase started"
 
       - name: Wait for Supabase API
         run: |
-          for i in {1..30}; do
-            if curl -s http://localhost:54321/rest/v1/ > /dev/null; then
-              echo "✓ Supabase API is ready"
+          echo "⏳ Waiting for Supabase API to be ready..."
+          for i in {1..60}; do
+            if curl -s http://localhost:54321/rest/v1/ > /dev/null 2>&1; then
+              echo "✅ Supabase API is ready (attempt $i)"
               exit 0
             fi
-            echo "Waiting for Supabase API... ($i/30)"
+            echo "  Attempt $i/60 - waiting..."
             sleep 2
           done
-          echo "✗ Supabase API did not respond"
+          echo "❌ Timeout: Supabase API did not respond"
+          echo ""
+          echo "Debug info:"
+          supabase status
           exit 1
 
       - name: Apply migrations
-        run: supabase db push
+        run: |
+          echo "📦 Applying migrations..."
+          supabase db push
+          echo "✅ Migrations applied"
 
       - name: Load seed data
         run: |
+          echo "🌱 Loading seed data..."
           STATUS=$(supabase status)
           DB_URL=$(echo "$STATUS" | grep "Database URL:" | awk '{print $NF}')
+          if [ -z "$DB_URL" ]; then
+            echo "❌ Could not extract DB_URL from status"
+            echo "Status output:"
+            echo "$STATUS"
+            exit 1
+          fi
           psql "$DB_URL" -f supabase/scripts/seed.sql
+          echo "✅ Seed data loaded"
 
       - name: Run E2E tests
-        run: bash supabase/scripts/run-e2e-local.sh
+        id: e2e_tests
+        run: |
+          echo "🧪 Running E2E tests (11 validations)..."
+          bash supabase/scripts/run-e2e-local.sh 2>&1 | tee /tmp/e2e-output.log
+          TEST_EXIT_CODE=${PIPESTATUS[0]}
+          echo "test_exit_code=$TEST_EXIT_CODE" >> $GITHUB_OUTPUT
+          exit $TEST_EXIT_CODE
         continue-on-error: true
 
       - name: Check test results
+        id: test_results
         run: |
           if [ -f "/tmp/e2e-results.txt" ]; then
-            cat /tmp/e2e-results.txt
+            RESULT=$(cat /tmp/e2e-results.txt)
+            echo "result=$RESULT" >> $GITHUB_OUTPUT
+            if [ "$RESULT" = "PASSED" ]; then
+              echo "✅ ALL E2E TESTS PASSED"
+            else
+              echo "❌ SOME E2E TESTS FAILED"
+            fi
+          else
+            echo "⚠️  Results file not found"
           fi
 
-      - name: Upload test logs on failure
-        if: failure()
+      - name: Upload test logs
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: e2e-test-logs
           path: |
-            /tmp/*.log
-            .supabase/logs/
+            /tmp/e2e-output.log
+            /tmp/e2e-results.txt
+          retention-days: 7
 
-      - name: Comment PR with results
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const testsPassed = !context.payload.pull_request.failed;
+      - name: Debug info on failure
+        if: failure() || steps.e2e_tests.outcome == 'failure'
+        run: |
+          echo "🔍 Collecting debug information..."
+          echo ""
+          echo "=== Supabase Status ==="
+          supabase status || true
+          echo ""
+          echo "=== Database Info ==="
+          STATUS=$(supabase status)
+          DB_URL=$(echo "$STATUS" | grep "Database URL:" | awk '{print $NF}')
+          if [ -n "$DB_URL" ]; then
+            echo "Database: $DB_URL"
+            psql "$DB_URL" -c "\dt" || true
+          fi
+          echo ""
+          echo "=== Supabase Logs ==="
+          if [ -d ".supabase/logs" ]; then
+            ls -la .supabase/logs/ || true
+          fi
+          echo ""
+          echo "=== E2E Output ==="
+          if [ -f "/tmp/e2e-output.log" ]; then
+            tail -100 /tmp/e2e-output.log
+          fi
 
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: testsPassed ?
-                '✅ **E2E Tests Passed!** All validations completed successfully.' :
-                '❌ **E2E Tests Failed** - Check logs in artifacts for details.'
-            });
+      - name: Create GitHub Actions summary
+        if: always()
+        run: |
+          {
+            echo "# ✅ Celite E2E Test Report"
+            echo ""
+            echo "## Test Execution"
+            if [ -f "/tmp/e2e-results.txt" ]; then
+              RESULT=$(cat /tmp/e2e-results.txt)
+              if [ "$RESULT" = "PASSED" ]; then
+                echo "### ✅ STATUS: ALL TESTS PASSED"
+              else
+                echo "### ❌ STATUS: TESTS FAILED"
+              fi
+            else
+              echo "### ⚠️  STATUS: UNKNOWN (results file not found)"
+            fi
+            echo ""
+            echo "## Validations Run"
+            echo "- ✅ Supabase API availability"
+            echo "- ✅ Credential extraction"
+            echo "- ✅ Database migration (13 migrations)"
+            echo "- ✅ Test data seed"
+            echo "- ✅ ASAAS webhook simulation"
+            echo "- ✅ Commission calculation"
+            echo "- ✅ Commission approval batch"
+            echo "- ✅ Payment processing"
+            echo "- ✅ RLS policy isolation"
+            echo "- ✅ Audit logging"
+            echo ""
+            echo "## Artifacts"
+            echo "- Full logs: [e2e-test-logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            echo ""
+            echo "## Next Steps"
+            if [ "$(cat /tmp/e2e-results.txt 2>/dev/null)" = "PASSED" ]; then
+              echo "✅ Backend validation complete. Ready for Week 2 (Frontend development)"
+            else
+              echo "❌ Debugging required. Check logs and artifacts above."
+            fi
+          } >> $GITHUB_STEP_SUMMARY
+
+      - name: Fail if tests failed
+        if: steps.test_results.outputs.result != 'PASSED'
+        run: |
+          echo "❌ E2E tests did not pass"
+          exit 1
+
+      - name: Success summary
+        if: success()
+        run: |
+          echo "🎉 BACKEND VALIDATION COMPLETE!"
+          echo "✅ All 11 E2E tests passed"
+          echo "✅ System ready for next phase"

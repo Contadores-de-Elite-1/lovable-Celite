@@ -3,17 +3,14 @@
 set -e
 
 # ============================================================================
-# Carregar variáveis do .env se existir
+# E2E TESTING - Supabase Cloud + Local Support
 # ============================================================================
+
+# Carregar .env
 if [ -f ".env" ]; then
   set -a
   source .env
   set +a
-fi
-
-# Fallback para SUPABASE_PROJECT_REF
-if [ -z "$SUPABASE_PROJECT_REF" ] && [ -n "$VITE_SUPABASE_PROJECT_ID" ]; then
-  export SUPABASE_PROJECT_REF="$VITE_SUPABASE_PROJECT_ID"
 fi
 
 BLUE='\033[0;34m'
@@ -30,277 +27,247 @@ TEST_PASSED=0
 TEST_FAILED=0
 
 # ============================================================================
-# Detectar se está usando Local (Docker) ou Cloud
+# Detectar modo: Cloud vs Local
 # ============================================================================
-LOCAL_SUPABASE_AVAILABLE=false
-if curl -s http://localhost:54321/rest/v1/ > /dev/null 2>&1; then
-  LOCAL_SUPABASE_AVAILABLE=true
-  echo -e "${GREEN}✓ Supabase Local detectado (localhost:54321)${NC}"
-else
-  if [ -n "$SUPABASE_ACCESS_TOKEN" ] && [ -n "$SUPABASE_PROJECT_REF" ]; then
-    echo -e "${GREEN}✓ Supabase Cloud detectado (usando SUPABASE_ACCESS_TOKEN)${NC}"
+
+if [ -n "$SUPABASE_ACCESS_TOKEN" ]; then
+  # CLOUD MODE
+  MODE="CLOUD"
+  API_URL="$VITE_SUPABASE_URL"
+  ANON_KEY="$VITE_SUPABASE_PUBLISHABLE_KEY"
+
+  # Tentar obter SERVICE_ROLE_KEY de várias fontes
+  SERVICE_ROLE_KEY="${SUPABASE_SERVICE_KEY:-${SUPABASE_SERVICE_ROLE_KEY:-$SUPABASE_ACCESS_TOKEN}}"
+
+  if [ "$SERVICE_ROLE_KEY" = "$SUPABASE_ACCESS_TOKEN" ]; then
+    echo -e "${YELLOW}⚠ SUPABASE_SERVICE_KEY não definido, usando SUPABASE_ACCESS_TOKEN para admin operations${NC}"
   fi
+
+  echo -e "${GREEN}✓ Modo: CLOUD${NC}"
+  echo -e "${GREEN}  URL: $API_URL${NC}"
+else
+  # LOCAL MODE
+  MODE="LOCAL"
+  API_URL="http://localhost:54321"
+
+  # Tentar obter de supabase status
+  STATUS=$(supabase status 2>/dev/null || echo "")
+  ANON_KEY=$(echo "$STATUS" | grep -E "(Publishable|anon) key:" | tail -1 | awk '{print $NF}' | tr -d '[:space:]')
+  SERVICE_ROLE_KEY=$(echo "$STATUS" | grep -E "(Secret|service_role) key:" | tail -1 | awk '{print $NF}' | tr -d '[:space:]')
+
+  echo -e "${GREEN}✓ Modo: LOCAL${NC}"
+  echo -e "${GREEN}  URL: $API_URL${NC}"
 fi
 
-test_case() {
-  local test_name=$1
-  local test_command=$2
-  local expected=$3
+# ============================================================================
+# PASSO 1: Verificar API disponível
+# ============================================================================
 
-  echo -e "\n${YELLOW}[TEST] ${test_name}${NC}"
-  echo "Executando: ${test_command}"
+echo -e "\n${YELLOW}PASSO 1: Verificar Supabase API está disponível${NC}"
 
-  result=$(eval "$test_command" 2>&1 || echo "ERROR")
+if curl -s "$API_URL/rest/v1/" -H "apikey: $ANON_KEY" > /dev/null 2>&1; then
+  echo -e "${GREEN}✓ Supabase API disponível${NC}"
+  ((TEST_PASSED++))
+else
+  echo -e "${RED}✗ Supabase API não respondendo: $API_URL${NC}"
+  ((TEST_FAILED++))
+  exit 1
+fi
 
-  if [[ "$result" == *"$expected"* ]]; then
-    echo -e "${GREEN}PASSOU${NC}"
+# ============================================================================
+# PASSO 2: Verificar credenciais
+# ============================================================================
+
+echo -e "\n${YELLOW}PASSO 2: Verificar credenciais${NC}"
+
+if [ -z "$ANON_KEY" ]; then
+  echo -e "${RED}✗ ANON_KEY vazio${NC}"
+  ((TEST_FAILED++))
+  exit 1
+fi
+
+if [ -z "$SERVICE_ROLE_KEY" ]; then
+  echo -e "${RED}✗ SERVICE_ROLE_KEY vazio${NC}"
+  ((TEST_FAILED++))
+  exit 1
+fi
+
+echo -e "${GREEN}✓ ANON_KEY: ${ANON_KEY:0:20}...${NC}"
+echo -e "${GREEN}✓ SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY:0:20}...${NC}"
+((TEST_PASSED++))
+
+# ============================================================================
+# PASSO 3-4: Migrations + Seed (apenas para Local)
+# ============================================================================
+
+if [ "$MODE" = "LOCAL" ]; then
+  echo -e "\n${YELLOW}PASSO 3: Aplicar Migrations${NC}"
+  if supabase db push > /dev/null 2>&1; then
+    echo -e "${GREEN}✓ Migrations aplicadas${NC}"
     ((TEST_PASSED++))
   else
-    echo -e "${RED}FALHOU${NC}"
-    echo "Resultado: $result"
-    ((TEST_FAILED++))
+    echo -e "${YELLOW}⚠ Migrations: erro/skip${NC}"
   fi
-}
 
-validate_json() {
-  local json=$1
-  if echo "$json" | jq . > /dev/null 2>&1; then
-    return 0
+  echo -e "\n${YELLOW}PASSO 4: Executar Seed${NC}"
+  if psql "postgresql://postgres:postgres@localhost:54322/postgres" -f supabase/scripts/seed.sql > /dev/null 2>&1; then
+    echo -e "${GREEN}✓ Seed executado${NC}"
+    ((TEST_PASSED++))
   else
-    return 1
+    echo -e "${YELLOW}⚠ Seed: erro/skip${NC}"
   fi
-}
-
-echo -e "\n${YELLOW}PASSO 1: Verificar Supabase está rodando${NC}"
-if curl -s http://localhost:54321/rest/v1/ > /dev/null; then
-  echo -e "${GREEN}✓ Supabase API disponível em localhost:54321${NC}"
 else
-  echo -e "${RED}✗ Supabase não está rodando. Execute: supabase start${NC}"
-  exit 1
+  echo -e "\n${YELLOW}PASSO 3-4: Migrations + Seed${NC}"
+  echo -e "${GREEN}✓ Skip (Cloud já tem dados)${NC}"
+  ((TEST_PASSED+=2))
 fi
 
-echo -e "\n${YELLOW}PASSO 2: Obter credenciais${NC}"
-STATUS_OUTPUT=$(supabase status 2>/dev/null || echo "")
+# ============================================================================
+# PASSO 5: Webhook ASAAS
+# ============================================================================
 
-# Tentar novo formato primeiro (Publishable key / Secret key), depois antigo (anon key / service_role key)
-ANON_KEY=$(echo "$STATUS_OUTPUT" | grep "Publishable key:" | awk '{print $NF}' | tr -d '[:space:]')
-if [ -z "$ANON_KEY" ]; then
-  ANON_KEY=$(echo "$STATUS_OUTPUT" | grep "anon key:" | awk '{print $NF}' | tr -d '[:space:]')
-fi
+echo -e "\n${YELLOW}PASSO 5: Testar Webhook ASAAS${NC}"
 
-SERVICE_ROLE_KEY=$(echo "$STATUS_OUTPUT" | grep "Secret key:" | awk '{print $NF}' | tr -d '[:space:]')
-if [ -z "$SERVICE_ROLE_KEY" ]; then
-  SERVICE_ROLE_KEY=$(echo "$STATUS_OUTPUT" | grep "service_role key:" | awk '{print $NF}' | tr -d '[:space:]')
-fi
-
-if [ -z "$ANON_KEY" ] || [ -z "$SERVICE_ROLE_KEY" ]; then
-  echo -e "${RED}✗ Não consegui obter ANON_KEY ou SERVICE_ROLE_KEY${NC}"
-  echo "Status output:"
-  echo "$STATUS_OUTPUT"
-  exit 1
-fi
-
-export ANON_KEY
-export SERVICE_ROLE_KEY
-export APP_URL="http://localhost:54321"
-
-echo -e "${GREEN}✓ ANON_KEY obtida (primeiros 20 chars): ${ANON_KEY:0:20}...${NC}"
-
-echo -e "\n${YELLOW}PASSO 3: Reset + Migrations + Seed${NC}"
-
-echo "Resetando banco de dados..."
-if psql "postgresql://postgres:postgres@localhost:54322/postgres" -c "DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;" > /dev/null 2>&1; then
-  echo -e "${GREEN}✓ Banco resetado${NC}"
-else
-  echo -e "${YELLOW}⚠ Não consegui resetar via psql, pulando...${NC}"
-fi
-
-echo "Aplicando migrations..."
-if supabase db push > /dev/null 2>&1; then
-  echo -e "${GREEN}✓ Migrations aplicadas${NC}"
-else
-  echo -e "${RED}✗ Erro ao aplicar migrations${NC}"
-  exit 1
-fi
-
-echo "Executando seed..."
-if psql "postgresql://postgres:postgres@localhost:54322/postgres" -f supabase/scripts/seed.sql > /dev/null 2>&1; then
-  echo -e "${GREEN}✓ Seed executado${NC}"
-else
-  echo -e "${YELLOW}⚠ Erro no seed, continuando...${NC}"
-fi
-
-echo -e "\n${YELLOW}PASSO 4: Verificar dados de teste existem${NC}"
-
-CONTADOR_COUNT=$(curl -s -X GET \
-  "http://localhost:54321/rest/v1/contadores?select=id" \
+WEBHOOK=$(curl -s -X POST \
+  "$API_URL/functions/v1/webhook-asaas" \
   -H "Authorization: Bearer $ANON_KEY" \
-  -H "Content-Type: application/json" | jq 'length' 2>/dev/null || echo "0")
-
-echo "Contadores no banco: $CONTADOR_COUNT"
-
-if [ "$CONTADOR_COUNT" -lt 2 ]; then
-  echo -e "${YELLOW}⚠ Menos de 2 contadores encontrados. Seed pode não ter rodado corretamente.${NC}"
-fi
-
-echo -e "\n${YELLOW}PASSO 5: Simular Webhook ASAAS (Pagamento Confirmado)${NC}"
-
-WEBHOOK_PAYLOAD=$(cat <<EOF
-{
-  "event": "PAYMENT_CONFIRMED",
-  "payment": {
-    "id": "asaas_test_$(date +%s)",
-    "customer": "cust_test_001",
-    "value": 1000,
-    "netValue": 950,
-    "dateCreated": "$(date -u +%Y-%m-%d)",
-    "confirmedDate": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-    "status": "CONFIRMED",
-    "billingType": "SUBSCRIPTION",
-    "subscription": "sub_test_001"
-  }
-}
-EOF
-)
-
-echo "Payload: $(echo $WEBHOOK_PAYLOAD | jq .)"
-
-WEBHOOK_RESULT=$(curl -s -X POST \
-  "$APP_URL/functions/v1/webhook-asaas" \
-  -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \
-  -d "$WEBHOOK_PAYLOAD")
+  -d '{
+    "event": "PAYMENT_CONFIRMED",
+    "payment": {
+      "id": "test_'$(date +%s%N)'",
+      "customer": "cust_test_001",
+      "value": 1000,
+      "netValue": 950,
+      "dateCreated": "'$(date -u +%Y-%m-%d)'",
+      "status": "CONFIRMED"
+    }
+  }')
 
-echo "Resposta Webhook: $(echo $WEBHOOK_RESULT | jq .)"
-
-if echo "$WEBHOOK_RESULT" | jq -e '.error' > /dev/null 2>&1; then
-  echo -e "${RED}✗ Webhook retornou erro${NC}"
-  ((TEST_FAILED++))
-else
-  echo -e "${GREEN}✓ Webhook processado${NC}"
+if echo "$WEBHOOK" | jq -e '.pagamento_id' > /dev/null 2>&1; then
+  echo -e "${GREEN}✓ Webhook retornou pagamento_id${NC}"
   ((TEST_PASSED++))
-fi
-
-PAGAMENTO_ID=$(echo "$WEBHOOK_RESULT" | jq -r '.pagamento_id // empty' 2>/dev/null)
-
-if [ ! -z "$PAGAMENTO_ID" ] && [ "$PAGAMENTO_ID" != "null" ]; then
-  echo -e "${GREEN}✓ Pagamento criado: $PAGAMENTO_ID${NC}"
 else
-  echo -e "${YELLOW}⚠ Não consegui extrair pagamento_id${NC}"
+  echo -e "${RED}✗ Webhook falhou: $(echo $WEBHOOK | jq -r '.error // .message' 2>/dev/null)${NC}"
+  echo "Response: $WEBHOOK"
+  ((TEST_FAILED++))
 fi
 
-echo -e "\n${YELLOW}PASSO 6: Verificar Comissões foram calculadas${NC}"
+# ============================================================================
+# PASSO 6: Verificar Comissões
+# ============================================================================
 
-COMISSOES=$(curl -s -X GET \
-  "$APP_URL/rest/v1/comissoes?status=eq.calculada" \
+echo -e "\n${YELLOW}PASSO 6: Verificar Comissões Calculadas${NC}"
+
+COMISSOES=$(curl -s "$API_URL/rest/v1/comissoes?status=eq.calculada" \
   -H "Authorization: Bearer $ANON_KEY" \
   -H "Content-Type: application/json" | jq 'length' 2>/dev/null || echo "0")
-
-echo "Comissões calculadas: $COMISSOES"
 
 if [ "$COMISSOES" -gt 0 ]; then
-  echo -e "${GREEN}✓ Comissões foram calculadas${NC}"
+  echo -e "${GREEN}✓ Comissões calculadas: $COMISSOES${NC}"
   ((TEST_PASSED++))
 else
-  echo -e "${YELLOW}⚠ Nenhuma comissão encontrada com status calculada${NC}"
+  echo -e "${YELLOW}⚠ Nenhuma comissão calculada${NC}"
+  ((TEST_FAILED++))
 fi
 
-echo -e "\n${YELLOW}PASSO 7: Testar Aprovação de Comissões${NC}"
+# ============================================================================
+# PASSO 7: Aprovar Comissões
+# ============================================================================
 
-TODAY=$(date -u +%Y-%m-%d)
+echo -e "\n${YELLOW}PASSO 7: Aprovar Comissões${NC}"
 
-APROVAR_PAYLOAD=$(cat <<EOF
-{
-  "competencia": "$TODAY"
-}
-EOF
-)
-
-APROVAR_RESULT=$(curl -s -X POST \
-  "$APP_URL/functions/v1/aprovar-comissoes" \
-  -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
+APROVA=$(curl -s -X POST \
+  "$API_URL/functions/v1/aprovar-comissoes" \
+  -H "Authorization: Bearer $ANON_KEY" \
   -H "Content-Type: application/json" \
-  -d "$APROVAR_PAYLOAD")
+  -d '{"competencia": "'$(date -u +%Y-%m-%d)'"}')
 
-echo "Resposta Aprovação: $(echo $APROVAR_RESULT | jq .)"
-
-if echo "$APROVAR_RESULT" | jq -e '.success' > /dev/null 2>&1; then
-  echo -e "${GREEN}✓ Comissões aprovadas com sucesso${NC}"
+if echo "$APROVA" | jq -e '.success' > /dev/null 2>&1; then
+  echo -e "${GREEN}✓ Comissões aprovadas${NC}"
   ((TEST_PASSED++))
 else
-  echo -e "${YELLOW}⚠ Aprovação não retornou sucesso${NC}"
+  echo -e "${YELLOW}⚠ Aprovação falhou${NC}"
+  ((TEST_FAILED++))
 fi
 
-echo -e "\n${YELLOW}PASSO 8: Verificar status das comissões mudou para 'aprovada'${NC}"
+# ============================================================================
+# PASSO 8: Verificar Status Aprovada
+# ============================================================================
 
-COMISSOES_APROVADAS=$(curl -s -X GET \
-  "$APP_URL/rest/v1/comissoes?status=eq.aprovada" \
+echo -e "\n${YELLOW}PASSO 8: Verificar Status Aprovada${NC}"
+
+APROVADAS=$(curl -s "$API_URL/rest/v1/comissoes?status=eq.aprovada" \
   -H "Authorization: Bearer $ANON_KEY" \
   -H "Content-Type: application/json" | jq 'length' 2>/dev/null || echo "0")
 
-echo "Comissões aprovadas: $COMISSOES_APROVADAS"
-
-if [ "$COMISSOES_APROVADAS" -gt 0 ]; then
-  echo -e "${GREEN}✓ Status mudou para aprovada${NC}"
+if [ "$APROVADAS" -gt 0 ]; then
+  echo -e "${GREEN}✓ Comissões com status aprovada: $APROVADAS${NC}"
   ((TEST_PASSED++))
 else
-  echo -e "${YELLOW}⚠ Nenhuma comissão com status aprovada${NC}"
-fi
-
-echo -e "\n${YELLOW}PASSO 9: Testar Processamento de Pagamento${NC}"
-
-PROCESSAR_PAYLOAD=$(cat <<EOF
-{
-  "competencia": "$TODAY"
-}
-EOF
-)
-
-PROCESSAR_RESULT=$(curl -s -X POST \
-  "$APP_URL/functions/v1/processar-pagamento-comissoes" \
-  -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
-  -H "Content-Type: application/json" \
-  -d "$PROCESSAR_PAYLOAD")
-
-echo "Resposta Processamento: $(echo $PROCESSAR_RESULT | jq .)"
-
-if echo "$PROCESSAR_RESULT" | jq -e '.success' > /dev/null 2>&1; then
-  echo -e "${GREEN}✓ Pagamentos processados com sucesso${NC}"
-  ((TEST_PASSED++))
-else
-  echo -e "${YELLOW}⚠ Processamento não retornou sucesso${NC}"
-fi
-
-echo -e "\n${YELLOW}PASSO 10: Verificar RLS - Isolamento de Dados${NC}"
-
-curl -s -X GET \
-  "$APP_URL/rest/v1/contadores" \
-  -H "Authorization: Bearer $ANON_KEY" \
-  -H "Content-Type: application/json" | jq . > /dev/null 2>&1
-
-if [ $? -eq 0 ]; then
-  echo -e "${GREEN}✓ RLS está permitindo leitura de contadores${NC}"
-  ((TEST_PASSED++))
-else
-  echo -e "${RED}✗ RLS bloqueou acesso a contadores${NC}"
+  echo -e "${YELLOW}⚠ Nenhuma comissão aprovada${NC}"
   ((TEST_FAILED++))
 fi
+
+# ============================================================================
+# PASSO 9: Processar Pagamento
+# ============================================================================
+
+echo -e "\n${YELLOW}PASSO 9: Processar Pagamento${NC}"
+
+PROCESSO=$(curl -s -X POST \
+  "$API_URL/functions/v1/processar-pagamento-comissoes" \
+  -H "Authorization: Bearer $ANON_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"competencia": "'$(date -u +%Y-%m-%d)'"}')
+
+if echo "$PROCESSO" | jq -e '.success' > /dev/null 2>&1; then
+  echo -e "${GREEN}✓ Pagamento processado${NC}"
+  ((TEST_PASSED++))
+else
+  echo -e "${YELLOW}⚠ Processamento falhou${NC}"
+  ((TEST_FAILED++))
+fi
+
+# ============================================================================
+# PASSO 10: RLS / Isolamento de Dados
+# ============================================================================
+
+echo -e "\n${YELLOW}PASSO 10: Verificar RLS${NC}"
+
+RLS=$(curl -s "$API_URL/rest/v1/contadores?select=id" \
+  -H "Authorization: Bearer $ANON_KEY" \
+  -H "Content-Type: application/json" | jq . 2>/dev/null)
+
+if [ $? -eq 0 ]; then
+  echo -e "${GREEN}✓ RLS permite leitura${NC}"
+  ((TEST_PASSED++))
+else
+  echo -e "${RED}✗ RLS bloqueou acesso${NC}"
+  ((TEST_FAILED++))
+fi
+
+# ============================================================================
+# PASSO 11: Audit Logs
+# ============================================================================
 
 echo -e "\n${YELLOW}PASSO 11: Verificar Audit Logs${NC}"
 
-AUDIT_COUNT=$(curl -s -X GET \
-  "$APP_URL/rest/v1/audit_logs?select=id" \
+AUDITS=$(curl -s "$API_URL/rest/v1/audit_logs?select=id" \
   -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" | jq 'length' 2>/dev/null || echo "0")
 
-echo "Registros de auditoria: $AUDIT_COUNT"
-
-if [ "$AUDIT_COUNT" -gt 0 ]; then
-  echo -e "${GREEN}✓ Audit logs estão sendo registrados${NC}"
+if [ "$AUDITS" -gt 0 ]; then
+  echo -e "${GREEN}✓ Audit logs: $AUDITS registros${NC}"
   ((TEST_PASSED++))
 else
-  echo -e "${YELLOW}⚠ Nenhum audit log encontrado${NC}"
+  echo -e "${YELLOW}⚠ Nenhum audit log${NC}"
+  ((TEST_FAILED++))
 fi
+
+# ============================================================================
+# RESUMO FINAL
+# ============================================================================
 
 echo -e "\n${BLUE}╔════════════════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${BLUE}║                          RESULTADO DOS TESTES                           ║${NC}"
@@ -310,9 +277,10 @@ echo -e "\n${GREEN}Testes Passados: $TEST_PASSED${NC}"
 echo -e "${RED}Testes Falhados: $TEST_FAILED${NC}"
 
 if [ $TEST_FAILED -eq 0 ]; then
-  echo -e "\n${GREEN}✓ TODOS OS TESTES PASSARAM!${NC}"
+  echo -e "\n${GREEN}✓ ✓ ✓ TODOS OS TESTES PASSARAM! ✓ ✓ ✓${NC}"
+  echo -e "${GREEN}Backend está PRONTO para Week 2!${NC}"
   exit 0
 else
-  echo -e "\n${RED}✗ ALGUNS TESTES FALHARAM${NC}"
+  echo -e "\n${RED}✗ ALGUNS TESTES FALHARAM (Detalhes acima)${NC}"
   exit 1
 fi

@@ -130,7 +130,7 @@ echo -e "\n${YELLOW}PASSO 5: Testar Webhook ASAAS${NC}"
 
 WEBHOOK=$(curl -s -X POST \
   "$API_URL/functions/v1/webhook-asaas" \
-  -H "Authorization: Bearer $ANON_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "event": "PAYMENT_CONFIRMED",
@@ -179,7 +179,7 @@ echo -e "\n${YELLOW}PASSO 7: Aprovar Comissões${NC}"
 
 APROVA=$(curl -s -X POST \
   "$API_URL/functions/v1/aprovar-comissoes" \
-  -H "Authorization: Bearer $ANON_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \
   -d '{"competencia": "'$(date -u +%Y-%m-%d)'"}')
 
@@ -217,7 +217,7 @@ echo -e "\n${YELLOW}PASSO 9: Processar Pagamento${NC}"
 
 PROCESSO=$(curl -s -X POST \
   "$API_URL/functions/v1/processar-pagamento-comissoes" \
-  -H "Authorization: Bearer $ANON_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \
   -d '{"competencia": "'$(date -u +%Y-%m-%d)'"}')
 
@@ -236,7 +236,7 @@ fi
 echo -e "\n${YELLOW}PASSO 10: Verificar RLS${NC}"
 
 RLS=$(curl -s "$API_URL/rest/v1/contadores?select=id" \
-  -H "Authorization: Bearer $ANON_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" | jq . 2>/dev/null)
 
 if [ $? -eq 0 ]; then

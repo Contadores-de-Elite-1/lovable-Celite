@@ -19,6 +19,30 @@ echo -e "${BLUE}║          Celite - Post-Start Setup (Every Session)          
 echo -e "${BLUE}╚════════════════════════════════════════════════════════════════════════╝${NC}"
 
 # ============================================================================
+# 0. Ensure Supabase CLI is installed
+# ============================================================================
+
+echo -e "\n${YELLOW}Checking Supabase CLI...${NC}"
+if ! command -v supabase &> /dev/null; then
+  echo -e "${YELLOW}Installing Supabase CLI...${NC}"
+  curl -fsSL https://raw.githubusercontent.com/supabase/cli/main/install.sh | bash > /dev/null 2>&1 || (
+    apt-get update > /dev/null 2>&1 && apt-get install -y supabase > /dev/null 2>&1
+  ) || (
+    echo -e "${RED}✗ Failed to install Supabase CLI${NC}"
+    exit 1
+  )
+
+  if command -v supabase &> /dev/null; then
+    echo -e "${GREEN}✓ Supabase CLI installed${NC}"
+  else
+    echo -e "${RED}✗ Supabase CLI not available after installation${NC}"
+    exit 1
+  fi
+else
+  echo -e "${GREEN}✓ Supabase CLI is available${NC}"
+fi
+
+# ============================================================================
 # 1. Start Supabase
 # ============================================================================
 

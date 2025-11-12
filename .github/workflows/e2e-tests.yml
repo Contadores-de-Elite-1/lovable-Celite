@@ -1,9 +1,6 @@
-name: Celite E2E Tests - Automated Pipeline
+name: Celite E2E Tests - Automated Pipeline (DISABLED - Use e2e-cloud-tests.yml)
 
 on:
-  push:
-    branches:
-      - claude/fix-database-types-and-rpc-*
   pull_request:
     branches:
       - main

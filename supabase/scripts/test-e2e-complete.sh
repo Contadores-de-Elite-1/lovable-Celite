@@ -2,6 +2,24 @@
 
 set -e
 
+# ============================================================================
+# Carregar variáveis do .env se existir
+# ============================================================================
+if [ -f ".env" ]; then
+  while IFS='=' read -r key value; do
+    [[ "$key" =~ ^[[:space:]]*# ]] && continue
+    [[ -z "$key" ]] && continue
+    key=$(echo "$key" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    value=$(echo "$value" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    export "$key"="$value"
+  done < .env
+fi
+
+# Fallback para SUPABASE_PROJECT_REF
+if [ -z "$SUPABASE_PROJECT_REF" ] && [ -n "$VITE_SUPABASE_PROJECT_ID" ]; then
+  export SUPABASE_PROJECT_REF="$VITE_SUPABASE_PROJECT_ID"
+fi
+
 BLUE='\033[0;34m'
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -14,6 +32,19 @@ echo -e "${BLUE}╚════════════════════�
 
 TEST_PASSED=0
 TEST_FAILED=0
+
+# ============================================================================
+# Detectar se está usando Local (Docker) ou Cloud
+# ============================================================================
+LOCAL_SUPABASE_AVAILABLE=false
+if curl -s http://localhost:54321/rest/v1/ > /dev/null 2>&1; then
+  LOCAL_SUPABASE_AVAILABLE=true
+  echo -e "${GREEN}✓ Supabase Local detectado (localhost:54321)${NC}"
+else
+  if [ -n "$SUPABASE_ACCESS_TOKEN" ] && [ -n "$SUPABASE_PROJECT_REF" ]; then
+    echo -e "${GREEN}✓ Supabase Cloud detectado (usando SUPABASE_ACCESS_TOKEN)${NC}"
+  fi
+fi
 
 test_case() {
   local test_name=$1

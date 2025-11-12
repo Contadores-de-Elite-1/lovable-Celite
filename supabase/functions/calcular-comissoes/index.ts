@@ -275,27 +275,107 @@ Deno.serve(async (req) => {
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
   try {
-    const input: CalculationInput = await req.json();
+    // 1. VALIDAÇÃO DE PAYLOAD (400 se inválido)
+    let input: CalculationInput;
+    try {
+      input = await req.json();
+    } catch (e) {
+      console.warn("Payload JSON inválido:", e instanceof Error ? e.message : String(e));
+      return new Response(
+        JSON.stringify({
+          error: "Payload inválido: esperado JSON válido",
+          details: "O corpo da requisição não é JSON válido"
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        },
+      );
+    }
 
-    // Verificação de idempotência: se já existem comissões para este pagamento
+    // 2. VALIDAÇÃO DE CAMPOS OBRIGATÓRIOS (400 se faltarem)
+    const requiredFields = ["pagamento_id", "cliente_id", "contador_id", "competencia", "valor_liquido"];
+    const missingFields = requiredFields.filter(
+      (field) => !input[field as keyof CalculationInput]
+    );
+
+    if (missingFields.length > 0) {
+      console.warn("Campos obrigatórios faltando:", missingFields);
+      return new Response(
+        JSON.stringify({
+          error: "Campos obrigatórios faltando",
+          missing_fields: missingFields,
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        },
+      );
+    }
+
+    // 3. VALIDAÇÃO DE TIPOS (400 se tipos inválidos)
+    if (typeof input.valor_liquido !== "number" || input.valor_liquido <= 0) {
+      console.warn("valor_liquido inválido:", input.valor_liquido);
+      return new Response(
+        JSON.stringify({
+          error: "Validação falhou",
+          details: "valor_liquido deve ser um número positivo",
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        },
+      );
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(input.competencia)) {
+      console.warn("competencia em formato inválido:", input.competencia);
+      return new Response(
+        JSON.stringify({
+          error: "Validação falhou",
+          details: 'competencia deve estar em formato YYYY-MM-DD',
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        },
+      );
+    }
+
+    // 4. VERIFICAÇÃO DE IDEMPOTÊNCIA
     const { data: existingCommissions, error: checkError } = await supabase
       .from("comissoes")
-      .select("id")
+      .select("id, pagamento_id, contador_id, tipo")
       .eq("pagamento_id", input.pagamento_id)
-      .limit(1);
+      .limit(3);
 
     if (checkError) {
-      console.error("Erro ao verificar comissões existentes:", checkError);
-      throw new Error("Falha ao verificar comissões existentes");
+      console.error("Erro ao verificar comissões existentes (erro BD):", checkError);
+      // Erro de BD é 500
+      return new Response(
+        JSON.stringify({
+          error: "Falha ao verificar comissões existentes",
+          code: checkError.code,
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 500,
+        },
+      );
     }
 
     if (existingCommissions && existingCommissions.length > 0) {
-      // Já calculado antes, devolve sucesso idempotente
+      // Já calculado antes, devolve sucesso idempotente (200, não 201)
+      console.info(`Comissões já existem para pagamento ${input.pagamento_id}:`, {
+        count: existingCommissions.length,
+        records: existingCommissions,
+      });
       return new Response(
         JSON.stringify({
           success: true,
           message: "Comissões já calculadas para este pagamento",
           idempotent: true,
+          existing_records: existingCommissions.length,
         }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -399,8 +479,17 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Chamada ao RPC transacional (RETURNS void)
-    const { error: rpcError } = await supabase.rpc(
+    // 5. CHAMADA AO RPC TRANSACIONAL
+    console.info("Chamando RPC executar_calculo_comissoes com payload:", {
+      pagamento_id: input.pagamento_id,
+      contador_id: input.contador_id,
+      cliente_id: input.cliente_id,
+      num_comissoes: commissions.length,
+      num_bonus: bonuses.length,
+      num_logs: logs.length,
+    });
+
+    const { data: rpcResult, error: rpcError } = await supabase.rpc(
       "executar_calculo_comissoes",
       {
         p_pagamento_id: input.pagamento_id,
@@ -414,27 +503,60 @@ Deno.serve(async (req) => {
     );
 
     if (rpcError) {
-      console.error("Erro na transação RPC executar_calculo_comissoes:", rpcError);
-      throw new Error("Falha ao salvar comissões e bônus no banco");
+      console.error("Erro na transação RPC executar_calculo_comissoes:", {
+        code: rpcError.code,
+        message: rpcError.message,
+        details: rpcError.details,
+      });
+
+      // Retorna 500 para erro de BD/RPC
+      return new Response(
+        JSON.stringify({
+          error: "Falha ao salvar comissões e bônus",
+          code: rpcError.code,
+          // Não expor detalhes internos em produção
+          ...(Deno.env.get("ENVIRONMENT") === "development" && {
+            details: rpcError.message,
+          }),
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 500,
+        },
+      );
     }
+
+    console.info("RPC executada com sucesso:", rpcResult);
 
     return new Response(
       JSON.stringify({
         success: true,
-        comissoes_criadas: commissions.length,
-        bonus_criados: bonuses.length,
+        message: "Comissões e bônus calculados com sucesso",
+        result: rpcResult,
+        summary: {
+          comissoes_criadas: commissions.length,
+          bonus_criados: bonuses.length,
+          logs_criados: logs.length,
+        },
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
+        status: 201,
       },
     );
   } catch (error) {
-    console.error("Erro ao calcular comissões:", error);
+    // Erro genérico não previsto (500)
+    console.error("Erro inesperado ao calcular comissões:", error);
     const message = error instanceof Error ? error.message : "Erro desconhecido";
 
     return new Response(
-      JSON.stringify({ error: message }),
+      JSON.stringify({
+        error: "Erro interno do servidor",
+        // Não expor mensagem em produção
+        ...(Deno.env.get("ENVIRONMENT") === "development" && {
+          details: message,
+        }),
+      }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,

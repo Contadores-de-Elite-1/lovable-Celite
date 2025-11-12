@@ -63,10 +63,10 @@ INSERT INTO public.contadores (
   NOW()
 ) ON CONFLICT (id) DO NOTHING;
 
--- 3. Criar clientes (AJUSTADO: usar colunas reais)
--- Colunas: id, contador_id, nome_empresa, cnpj, contato_nome, contato_email, plano, valor_mensal, status
+-- 3. Criar clientes (AJUSTADO: usar colunas reais + asaas_customer_id para webhooks)
+-- Colunas: id, contador_id, nome_empresa, cnpj, contato_nome, contato_email, plano, valor_mensal, status, asaas_customer_id
 INSERT INTO public.clientes (
-  id, contador_id, nome_empresa, cnpj, contato_nome, contato_email, plano, valor_mensal, status, created_at, updated_at
+  id, contador_id, nome_empresa, cnpj, contato_nome, contato_email, plano, valor_mensal, status, asaas_customer_id, data_ativacao, created_at, updated_at
 ) VALUES (
   :cliente_id_1,
   :contador_id_1,
@@ -77,12 +77,14 @@ INSERT INTO public.clientes (
   'profissional'::tipo_plano,
   1000.00,
   'ativo'::status_cliente,
+  'cust_test_001',
+  '2025-10-01',
   NOW(),
   NOW()
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.clientes (
-  id, contador_id, nome_empresa, cnpj, contato_nome, contato_email, plano, valor_mensal, status, created_at, updated_at
+  id, contador_id, nome_empresa, cnpj, contato_nome, contato_email, plano, valor_mensal, status, asaas_customer_id, data_ativacao, created_at, updated_at
 ) VALUES (
   :cliente_id_2,
   :contador_id_2,
@@ -93,6 +95,8 @@ INSERT INTO public.clientes (
   'profissional'::tipo_plano,
   1000.00,
   'ativo'::status_cliente,
+  'cust_test_002',
+  '2025-10-01',
   NOW(),
   NOW()
 ) ON CONFLICT (id) DO NOTHING;

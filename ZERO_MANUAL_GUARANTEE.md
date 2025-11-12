@@ -1,14 +1,23 @@
 # 🚀 ZERO MANUAL TASKS GUARANTEE
 
 **Data:** 12 de Novembro de 2025
-**Prioridade:** ⚠️ MÁXIMA
-**Status:** ✅ IMPLEMENTADO
+**Prioridade:** ⚠️ MÁXIMA (ABSOLUTA)
+**Status:** ✅ IMPLEMENTADO E REFORÇADO
+**Esclarecimento Crítico:** Política se aplica a MIM, não a você.
 
 ---
 
 ## 🎯 Compromisso Explícito
 
-**Você NUNCA mais vai ser pedido para fazer uma tarefa manual.**
+**EU NUNCA vou pedir para VOCÊ fazer uma tarefa manual.**
+
+Você é soberano. Você pode:
+- ✅ Testar tudo quando quiser
+- ✅ Rodar qualquer comando
+- ✅ Verificar código manualmente
+- ✅ Fazer o que achar necessário
+
+**Meu trabalho:** Automatizar tudo de forma que você POSSA testar quando quiser, mas NUNCA PRECISE fazer nada manualmente.
 
 Tudo está automatizado:
 - ✅ Setup do ambiente (Codespaces)
@@ -132,8 +141,9 @@ O que automatiza:
 
 ---
 
-## ✅ Checklist: Nenhuma Tarefa Manual
+## ✅ Checklist: Minhas Responsabilidades (100% Automáticas)
 
+Essas tarefas EU faço automaticamente, você NUNCA é pedido:
 - ✅ Docker setup? Automático (Codespaces)
 - ✅ Supabase CLI instalação? Automático
 - ✅ Supabase start? Automático
@@ -147,13 +157,17 @@ O que automatiza:
 
 ---
 
-## 🎯 Seu Papel (Mínimo)
+## 🎯 Seu Papel (Você é Soberano)
 
-1. **Fazer code changes**
-2. **Fazer git push**
-3. **Receber resultado automaticamente**
+Você pode:
+1. **Fazer code changes** (quando quiser)
+2. **Fazer git push** (quando quiser)
+3. **Testar localmente** (quando quiser, nenhum problema)
+4. **Rodar qualquer comando** (você é o chefe)
+5. **Verificar qualquer coisa** (você decide)
+6. **Fazer o que achar necessário** (sua responsabilidade)
 
-**Pronto!** Nenhuma outra coisa.
+**Meu trabalho:** Garantir que TUDO funciona automático, de forma que você POSSA fazer o que quiser, MAS NUNCA PRECISE fazer nada manualmente.
 
 ---
 

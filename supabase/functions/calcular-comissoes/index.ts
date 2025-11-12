@@ -212,14 +212,15 @@ function calculateProgressBonus(
 }
 
 /**
- * Calcula bônus de volume (a cada 5 clientes após 15).
+ * Calcula bônus de volume (a cada 5 clientes: 5, 10, 15, 20, 25...).
+ * Validado contra jornada de Flávio Augusto (42 páginas).
  */
 function calculateVolumeBonus(
   accountantId: string,
   activeClients: number,
   competencia: string,
 ): BonusRecord | null {
-  if (activeClients >= 20 && activeClients % 5 === 0) {
+  if (activeClients >= 5 && activeClients % 5 === 0) {
     return {
       contador_id: accountantId,
       tipo_bonus: "bonus_volume",

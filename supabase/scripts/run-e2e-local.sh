@@ -81,10 +81,21 @@ fi
 # Verificar credenciais
 echo -e "\n${YELLOW}Verificando credenciais...${NC}"
 STATUS=$(supabase status)
-ANON_KEY=$(echo "$STATUS" | grep "anon key:" | awk '{print $NF}' | tr -d '[:space:]')
 
+# Tentar novo formato primeiro (Publishable key), depois antigo (anon key)
+ANON_KEY=$(echo "$STATUS" | grep "Publishable key:" | awk '{print $NF}' | tr -d '[:space:]')
 if [ -z "$ANON_KEY" ]; then
-  echo -e "${RED}✗ Não consegui obter ANON_KEY${NC}"
+  ANON_KEY=$(echo "$STATUS" | grep "anon key:" | awk '{print $NF}' | tr -d '[:space:]')
+fi
+
+# Tentar novo formato para Secret key, depois antigo (service_role key)
+SERVICE_ROLE_KEY=$(echo "$STATUS" | grep "Secret key:" | awk '{print $NF}' | tr -d '[:space:]')
+if [ -z "$SERVICE_ROLE_KEY" ]; then
+  SERVICE_ROLE_KEY=$(echo "$STATUS" | grep "service_role key:" | awk '{print $NF}' | tr -d '[:space:]')
+fi
+
+if [ -z "$ANON_KEY" ] || [ -z "$SERVICE_ROLE_KEY" ]; then
+  echo -e "${RED}✗ Não consegui obter ANON_KEY ou SERVICE_ROLE_KEY${NC}"
   echo "Status output:"
   echo "$STATUS"
   exit 1

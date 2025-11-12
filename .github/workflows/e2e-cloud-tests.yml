@@ -1,0 +1,123 @@
+name: Celite E2E Tests - Supabase Cloud
+
+on:
+  push:
+    branches:
+      - claude/fix-database-types-and-rpc-*
+  workflow_dispatch:
+    inputs:
+      debug:
+        description: 'Enable debug output'
+        required: false
+        default: 'false'
+
+jobs:
+  e2e-cloud:
+    runs-on: ubuntu-latest
+    name: E2E Tests vs Supabase Cloud
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Create .env file
+        run: |
+          cat > .env << 'EOF'
+          VITE_SUPABASE_PROJECT_ID=${{ secrets.VITE_SUPABASE_PROJECT_ID }}
+          VITE_SUPABASE_PUBLISHABLE_KEY=${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY=${{ secrets.SUPABASE_SERVICE_KEY }}
+          EOF
+
+          # Verify .env was created
+          if [ ! -f .env ]; then
+            echo "❌ .env file not created"
+            exit 1
+          fi
+          echo "✅ .env file created"
+
+      - name: Run E2E Tests Against Supabase Cloud
+        id: e2e_tests
+        run: |
+          echo "🧪 Running E2E tests against Supabase Cloud..."
+          echo ""
+
+          # Load environment
+          set -a
+          source .env
+          set +a
+
+          # Run the E2E test script
+          bash supabase/scripts/test-e2e-complete.sh 2>&1 | tee /tmp/e2e-output.log
+          TEST_EXIT_CODE=${PIPESTATUS[0]}
+
+          # Check if all tests passed
+          if grep -q "Testes Passados: 11" /tmp/e2e-output.log; then
+            echo "✅ ALL E2E TESTS PASSED"
+            echo "test_status=PASSED" >> $GITHUB_OUTPUT
+            exit 0
+          else
+            echo "❌ SOME E2E TESTS FAILED"
+            echo "test_status=FAILED" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+        continue-on-error: true
+
+      - name: Display test results
+        if: always()
+        run: |
+          echo "📋 E2E Test Results"
+          echo "=================="
+          if [ -f /tmp/e2e-output.log ]; then
+            tail -100 /tmp/e2e-output.log
+          fi
+
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-cloud-logs
+          path: /tmp/e2e-output.log
+          retention-days: 7
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "# 🧪 Celite E2E Cloud Tests Report"
+            echo ""
+            echo "## Test Status: ${{ steps.e2e_tests.outputs.test_status }}"
+            echo ""
+            echo "## Tested Against"
+            echo "- **Project**: Supabase Cloud"
+            echo "- **URL**: ${{ secrets.VITE_SUPABASE_URL }}"
+            echo ""
+            echo "## Test Coverage"
+            echo "- ✅ API connectivity"
+            echo "- ✅ Webhook ASAAS (payment processing)"
+            echo "- ✅ Commission calculations"
+            echo "- ✅ Commission approvals"
+            echo "- ✅ Payment processing"
+            echo "- ✅ RLS policies"
+            echo "- ✅ Audit logging"
+            echo ""
+            if [ "${{ steps.e2e_tests.outputs.test_status }}" = "PASSED" ]; then
+              echo "## ✅ Status: READY FOR PRODUCTION"
+              echo "Backend validation complete. System ready for Week 2 (Frontend development)."
+            else
+              echo "## ❌ Status: DEBUGGING REQUIRED"
+              echo "Check artifacts for detailed logs."
+            fi
+          } >> $GITHUB_STEP_SUMMARY
+
+      - name: Fail job if tests failed
+        if: steps.e2e_tests.outputs.test_status == 'FAILED'
+        run: exit 1

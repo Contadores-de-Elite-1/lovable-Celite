@@ -15,23 +15,16 @@ set -e
 # ============================================================================
 if [ -f ".env" ]; then
   echo "Carregando variáveis de .env..."
-  # Exportar todas as variáveis do .env (ignorar comentários e linhas vazias)
-  while IFS='=' read -r key value; do
-    # Ignorar comentários e linhas vazias
-    [[ "$key" =~ ^[[:space:]]*# ]] && continue
-    [[ -z "$key" ]] && continue
-    # Remover espaços em branco
-    key=$(echo "$key" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-    value=$(echo "$value" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-    # Exportar variável
-    export "$key"="$value"
-  done < .env
+  # Usar grep para extrair e exportar variáveis (simples e robusto)
+  export $(grep -v '^#' .env | grep -v '^$' | xargs)
 fi
 
 # Verificar se SUPABASE_PROJECT_REF está definido, senão usar VITE_SUPABASE_PROJECT_ID
-if [ -z "$SUPABASE_PROJECT_REF" ] && [ -n "$VITE_SUPABASE_PROJECT_ID" ]; then
-  export SUPABASE_PROJECT_REF="$VITE_SUPABASE_PROJECT_ID"
-  echo "SUPABASE_PROJECT_REF definido a partir de VITE_SUPABASE_PROJECT_ID"
+if [ -z "$SUPABASE_PROJECT_REF" ]; then
+  if [ -n "$VITE_SUPABASE_PROJECT_ID" ]; then
+    export SUPABASE_PROJECT_REF="$VITE_SUPABASE_PROJECT_ID"
+    echo "✓ SUPABASE_PROJECT_REF='$SUPABASE_PROJECT_REF' (from VITE_SUPABASE_PROJECT_ID)"
+  fi
 fi
 
 BLUE='\033[0;34m'

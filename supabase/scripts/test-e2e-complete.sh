@@ -6,13 +6,7 @@ set -e
 # Carregar variáveis do .env se existir
 # ============================================================================
 if [ -f ".env" ]; then
-  while IFS='=' read -r key value; do
-    [[ "$key" =~ ^[[:space:]]*# ]] && continue
-    [[ -z "$key" ]] && continue
-    key=$(echo "$key" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-    value=$(echo "$value" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-    export "$key"="$value"
-  done < .env
+  export $(grep -v '^#' .env | grep -v '^$' | xargs)
 fi
 
 # Fallback para SUPABASE_PROJECT_REF

@@ -64,6 +64,3 @@ BEGIN
     (SELECT COUNT(*)::int FROM bonus_historico WHERE contador_id = '550e8400-e29b-41d4-a716-446655440011') as bonus_total;
 END;
 $$ LANGUAGE plpgsql;
-
--- Executar a função
-SELECT * FROM insert_flavio_test_data();

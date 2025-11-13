@@ -59,9 +59,9 @@ BEGIN
 
   RETURN QUERY
   SELECT
-    (SELECT COUNT(*)::int FROM contadores WHERE id IN ('550e8400-e29b-41d4-a716-446655440011', '550e8400-e29b-41d4-a716-446655440012', '550e8400-e29b-41d4-a716-446655440013', '550e8400-e29b-41d4-a716-446655440014')),
-    (SELECT COUNT(*)::int FROM clientes WHERE contador_id = '550e8400-e29b-41d4-a716-446655440011'),
-    (SELECT COUNT(*)::int FROM bonus_historico WHERE contador_id = '550e8400-e29b-41d4-a716-446655440011');
+    (SELECT COUNT(*)::int FROM contadores WHERE id IN ('550e8400-e29b-41d4-a716-446655440011', '550e8400-e29b-41d4-a716-446655440012', '550e8400-e29b-41d4-a716-446655440013', '550e8400-e29b-41d4-a716-446655440014')) as contadores_total,
+    (SELECT COUNT(*)::int FROM clientes WHERE contador_id = '550e8400-e29b-41d4-a716-446655440011') as clientes_total,
+    (SELECT COUNT(*)::int FROM bonus_historico WHERE contador_id = '550e8400-e29b-41d4-a716-446655440011') as bonus_total;
 END;
 $$ LANGUAGE plpgsql;
 

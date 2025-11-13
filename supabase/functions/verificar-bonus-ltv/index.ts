@@ -148,9 +148,12 @@ Deno.serve(async (req) => {
       console.log(`🎯 [LTV] Faixa de bônus: ${descricaoNivel} (Bonificação #${bonificacaoNumero})`);
 
       // 7. CALCULAR SOMA DAS MENSALIDADES DO GRUPO ATIVO
-      const somaValores = clientesAtivos.reduce((sum, c) => sum + (c.valor_mensal || 0), 0);
+      // REGRA: Para 15+ clientes, apenas os 15 PRIMEIROS contam no cálculo
+      const clientesParaCalculo = totalAtivos >= 15 ? clientesAtivos.slice(0, 15) : clientesAtivos;
+      const somaValores = clientesParaCalculo.reduce((sum, c) => sum + (c.valor_mensal || 0), 0);
       const valorBonus = somaValores * percentualLTV;
 
+      console.log(`💰 [LTV] Clientes para cálculo: ${clientesParaCalculo.length} (máximo 15)`);
       console.log(`💰 [LTV] Soma mensalidades grupo ativo: R$ ${somaValores.toFixed(2)}`);
       console.log(`🎁 [LTV] Bônus LTV calculado (${bonificacaoNumero}): ${(percentualLTV * 100)}% = R$ ${valorBonus.toFixed(2)}`);
 

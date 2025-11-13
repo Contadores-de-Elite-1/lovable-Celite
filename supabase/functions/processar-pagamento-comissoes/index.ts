@@ -5,6 +5,29 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface ProcessarPagamentoInput {
+  competencia?: string;
+}
+
+function calcularCompetencia(): { inicio: string; fim: string; mes: string } {
+  const hoje = new Date();
+  const mesAnterior = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
+
+  const ano = mesAnterior.getFullYear();
+  const mes = String(mesAnterior.getMonth() + 1).padStart(2, '0');
+  const dia = '01';
+
+  const proximoMes = new Date(ano, mesAnterior.getMonth() + 1, 1);
+  const anoProximo = proximoMes.getFullYear();
+  const mesProximo = String(proximoMes.getMonth() + 1).padStart(2, '0');
+
+  return {
+    mes: `${ano}-${mes}`,
+    inicio: `${ano}-${mes}-${dia}`,
+    fim: `${anoProximo}-${mesProximo}-01`,
+  };
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -15,34 +38,53 @@ Deno.serve(async (req) => {
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
   try {
-    console.log('💰 Iniciando processamento de pagamento de comissões - Dia 25');
+    let input: ProcessarPagamentoInput = {};
+    if (req.method === 'POST') {
+      try {
+        input = await req.json();
+      } catch {
+        input = {};
+      }
+    }
 
-    // Obter mês anterior (competência a ser paga)
-    const hoje = new Date();
-    const mesAnterior = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
-    const competencia = mesAnterior.toISOString().slice(0, 7); // YYYY-MM
+    const periodo = input.competencia ? (() => {
+      const data = new Date(input.competencia!);
+      const ano = data.getFullYear();
+      const mes = String(data.getMonth() + 1).padStart(2, '0');
+      const proximoMes = new Date(ano, data.getMonth() + 1, 1);
+      const mesProx = String(proximoMes.getMonth() + 1).padStart(2, '0');
+      return {
+        mes: `${ano}-${mes}`,
+        inicio: `${ano}-${mes}-01`,
+        fim: `${proximoMes.getFullYear()}-${mesProx}-01`,
+      };
+    })() : calcularCompetencia();
 
-    console.log('📅 Processando competência:', competencia);
-
-    // Buscar todas as comissões aprovadas do mês anterior
-    const primeiroDiaProximoMes = new Date(mesAnterior.getFullYear(), mesAnterior.getMonth() + 1, 1);
-    const dataFinalCompetencia = primeiroDiaProximoMes.toISOString().slice(0, 10);
+    console.log(`Processando comissoes da competencia: ${periodo.mes}`);
+    console.log(`Intervalo: ${periodo.inicio} ate ${periodo.fim}`);
     
     const { data: comissoes, error: comissoesError } = await supabase
       .from('comissoes')
       .select('id, contador_id, valor, tipo, observacao')
       .eq('status', 'aprovada')
-      .gte('competencia', `${competencia}-01`)
-      .lt('competencia', dataFinalCompetencia);
+      .gte('competencia', periodo.inicio)
+      .lt('competencia', periodo.fim);
 
     if (comissoesError) {
-      throw comissoesError;
+      throw new Error(`Erro ao buscar comissoes: ${comissoesError.message}`);
     }
 
     if (!comissoes || comissoes.length === 0) {
-      console.log('⚠️ Nenhuma comissão aprovada para pagar');
+      console.log('Nenhuma comissao aprovada para processar');
       return new Response(
-        JSON.stringify({ message: 'Nenhuma comissão para processar' }),
+        JSON.stringify({
+          success: true,
+          message: 'Nenhuma comissao para processar',
+          competencia: periodo.mes,
+          processados: 0,
+          acumulados: 0,
+          valor_total_pago: 0,
+        }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200,
@@ -50,7 +92,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Agrupar por contador
+    console.log(`Total de comissoes encontradas: ${comissoes.length}`);
+
     const comissoesPorContador = comissoes.reduce((acc, comissao) => {
       if (!acc[comissao.contador_id]) {
         acc[comissao.contador_id] = {
@@ -70,48 +113,35 @@ Deno.serve(async (req) => {
       detalhes: [] as any[],
     };
 
-    // Processar cada contador
     for (const [contadorId, { total, comissoes: comissoesContador }] of Object.entries(comissoesPorContador)) {
-      console.log(`📊 Contador ${contadorId}: R$ ${total.toFixed(2)}`);
-
       if (total >= 100) {
-        // PAGAR: Total >= R$100
         const ids = comissoesContador.map((c) => c.id);
-        
-        // VALIDAÇÃO CRÍTICA: Garantir status válido
-        const statusValidos = ['calculada', 'aprovada', 'paga', 'cancelada'] as const;
-        const novoStatus = 'paga';
-        if (!statusValidos.includes(novoStatus)) {
-          throw new Error(`ERRO CRÍTICO: status_comissao inválido: ${novoStatus}. Valores permitidos: ${statusValidos.join(', ')}`);
-        }
-        
+
         const { error: updateError } = await supabase
           .from('comissoes')
           .update({
-            status: novoStatus,
+            status: 'paga',
             pago_em: new Date().toISOString(),
           })
           .in('id', ids);
 
         if (updateError) {
-          console.error(`❌ Erro ao marcar comissões como pagas para ${contadorId}:`, updateError);
+          console.error(`Erro ao marcar comissoes como pagas para ${contadorId}:`, updateError);
           continue;
         }
 
-        // Criar notificação
         await supabase.from('notificacoes').insert({
           contador_id: contadorId,
           tipo: 'comissao_liberada',
-          titulo: 'Comissões Liberadas! 🎉',
-          mensagem: `Suas comissões de ${competencia} foram liberadas: R$ ${total.toFixed(2)}`,
+          titulo: 'Comissoes Liberadas',
+          mensagem: `Suas comissoes de ${periodo.mes} foram liberadas: R$ ${total.toFixed(2)}`,
           payload: {
-            competencia,
+            competencia: periodo.mes,
             valor_total: total,
             quantidade_comissoes: comissoesContador.length,
           },
-        });
+        }).catch(notifErr => console.error('Erro ao criar notificacao:', notifErr));
 
-        // Atualizar bônus relacionados
         await supabase
           .from('bonus_historico')
           .update({
@@ -119,8 +149,10 @@ Deno.serve(async (req) => {
             pago_em: new Date().toISOString(),
           })
           .eq('contador_id', contadorId)
-          .eq('competencia', `${competencia}-01`)
-          .eq('status', 'pendente');
+          .gte('competencia', periodo.inicio)
+          .lt('competencia', periodo.fim)
+          .eq('status', 'aprovado')
+          .catch(bonusErr => console.error('Erro ao atualizar bonus:', bonusErr));
 
         resultados.processados++;
         resultados.valor_total_pago += total;
@@ -131,41 +163,38 @@ Deno.serve(async (req) => {
           comissoes: comissoesContador.length,
         });
 
-        console.log(`✅ Pagamento processado: ${contadorId} - R$ ${total.toFixed(2)}`);
+        console.log(`Pagamento processado: ${contadorId} - R$ ${total.toFixed(2)}`);
       } else {
-        // ACUMULAR: Total < R$100
         resultados.acumulados++;
         resultados.detalhes.push({
           contador_id: contadorId,
           status: 'acumulado',
           valor: total,
           comissoes: comissoesContador.length,
-          mensagem: 'Valor mínimo R$100 não atingido, acumulando para próximo mês',
         });
 
-        console.log(`⏳ Acumulado para próximo mês: ${contadorId} - R$ ${total.toFixed(2)}`);
+        console.log(`Acumulado para proximo mes: ${contadorId} - R$ ${total.toFixed(2)}`);
       }
     }
 
-    // Log de auditoria
     await supabase.from('audit_logs').insert({
       acao: 'PROCESSAR_PAGAMENTO_COMISSOES',
       tabela: 'comissoes',
       payload: {
-        competencia,
+        competencia: periodo.mes,
         total_contadores: Object.keys(comissoesPorContador).length,
         processados: resultados.processados,
         acumulados: resultados.acumulados,
         valor_total: resultados.valor_total_pago,
       },
-    });
+    }).catch(auditErr => console.error('Erro ao registrar audit log:', auditErr));
 
-    console.log('✅ Processamento concluído:', resultados);
+    console.log(`Processamento concluido: ${resultados.processados} processados, ${resultados.acumulados} acumulados`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        competencia,
+        competencia: periodo.mes,
         ...resultados,
       }),
       {
@@ -174,7 +203,7 @@ Deno.serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error('❌ Erro ao processar pagamento de comissões:', error);
+    console.error('Erro ao processar pagamento de comissoes:', error);
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     return new Response(
       JSON.stringify({ error: errorMessage }),

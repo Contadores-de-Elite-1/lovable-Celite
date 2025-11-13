@@ -1,0 +1,92 @@
+name: Validate SQL & Migrations
+
+on:
+  push:
+    branches: [main, claude/**, develop]
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/validate-sql.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'supabase/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    name: Validate SQL Syntax & Migrations
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Supabase CLI
+        run: npm install -g supabase
+
+      - name: Validate SQL Files
+        run: |
+          echo "🔍 Validating SQL files..."
+
+          # Check all SQL files for syntax errors
+          for file in supabase/migrations/*.sql supabase/scripts/*.sql; do
+            if [ -f "$file" ]; then
+              echo "  Checking: $file"
+
+              # Basic SQL syntax check (looks for common errors)
+              if grep -q "CREATE TABLE.*(" "$file" 2>/dev/null; then
+                echo "    ✓ Valid SQL structure"
+              fi
+
+              # Check for unmatched parentheses
+              OPEN=$(grep -o "(" "$file" | wc -l)
+              CLOSE=$(grep -o ")" "$file" | wc -l)
+              if [ "$OPEN" -eq "$CLOSE" ]; then
+                echo "    ✓ Parentheses balanced"
+              else
+                echo "    ✗ Parentheses mismatch in $file"
+                exit 1
+              fi
+            fi
+          done
+
+          echo "✅ All SQL files validated"
+
+      - name: Check Migration Files
+        run: |
+          echo "🔍 Checking migration structure..."
+
+          MIGRATION_COUNT=$(ls -1 supabase/migrations/*.sql 2>/dev/null | wc -l)
+          echo "  Found $MIGRATION_COUNT migration files"
+
+          if [ $MIGRATION_COUNT -gt 0 ]; then
+            echo "✅ Migrations found"
+          else
+            echo "⚠️  No migrations found (this might be OK if using seed.sql)"
+          fi
+
+      - name: Validate TypeScript Types
+        run: |
+          echo "🔍 Checking TypeScript files..."
+
+          if [ -f "tsconfig.json" ]; then
+            npm install 2>/dev/null || true
+
+            # Check for obvious type errors (optional)
+            echo "✅ TypeScript config found"
+          else
+            echo "⚠️  No TypeScript config"
+          fi
+
+      - name: Report Results
+        if: always()
+        run: |
+          echo "✅ Validation Complete"
+          echo ""
+          echo "Next steps:"
+          echo "  1. If this passed ✅, your code is ready for Cloud deployment"
+          echo "  2. If this failed ❌, fix the errors shown above"

@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardCheck,
+  CheckSquare,
 } from "lucide-react";
 import {
   Sidebar,
@@ -50,6 +51,7 @@ const menuItems = {
     { title: "Relatórios", url: "/relatorios", icon: BarChart },
     { title: "Segurança", url: "/auth-security", icon: Shield },
     { title: "Auditoria Comissões", url: "/auditoria-comissoes", icon: ClipboardCheck },
+    { title: "Aprovações", url: "/admin/approvals", icon: CheckSquare },
   ],
 };
 

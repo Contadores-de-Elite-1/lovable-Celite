@@ -20,6 +20,7 @@ import Materiais from "./pages/Materiais";
 import Assistente from "./pages/Assistente";
 import AuthSecurityDashboard from "./pages/AuthSecurityDashboard";
 import AuditoriaComissoes from "./pages/AuditoriaComissoes";
+import AdminApprovalsPage from "./pages/AdminApprovalsPage";
 import Perfil from "./pages/Perfil";
 import Rede from "./pages/Rede";
 import Relatorios from "./pages/Relatorios";
@@ -62,6 +63,7 @@ const App = () => (
                           <Route path="/relatorios" element={<Relatorios />} />
                           <Route path="/auth-security" element={<AuthSecurityDashboard />} />
                           <Route path="/auditoria-comissoes" element={<AuditoriaComissoes />} />
+                          <Route path="/admin/approvals" element={<AdminApprovalsPage />} />
                           <Route path="*" element={<NotFound />} />
                         </Routes>
                         </main>

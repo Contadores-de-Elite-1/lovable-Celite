@@ -45,16 +45,16 @@ BEGIN
     ('c0000000-0000-0000-0000-000000000020', '550e8400-e29b-41d4-a716-446655440011', 'Cliente 20', '00000000000020', 'Contato 20', 'c20@ex.com', 'premium', 195, 'ativo', '2025-02-03', 'asaas_020')
   ON CONFLICT DO NOTHING;
 
-  -- Bônus
-  INSERT INTO bonus_historico (contador_id, tipo_bonus, valor, competencia, status, descricao)
+  -- Bônus (CORRECT COLUMN: observacao, NOT descricao; status: pendente for new records)
+  INSERT INTO bonus_historico (contador_id, tipo_bonus, valor, competencia, status, observacao, marco_atingido)
   VALUES
-    ('550e8400-e29b-41d4-a716-446655440011', 'bonus_progressao', 100, '2025-03-15', 'calculada', 'Prata'),
-    ('550e8400-e29b-41d4-a716-446655440011', 'bonus_progressao', 100, '2025-04-15', 'calculada', 'Ouro'),
-    ('550e8400-e29b-41d4-a716-446655440011', 'bonus_volume', 100, '2025-03-15', 'calculada', 'Volume 5'),
-    ('550e8400-e29b-41d4-a716-446655440011', 'bonus_volume', 100, '2025-04-15', 'calculada', 'Volume 10'),
-    ('550e8400-e29b-41d4-a716-446655440011', 'bonus_volume', 100, '2025-06-10', 'calculada', 'Volume 15'),
-    ('550e8400-e29b-41d4-a716-446655440011', 'bonus_volume', 100, '2025-09-15', 'calculada', 'Volume 20'),
-    ('550e8400-e29b-41d4-a716-446655440011', 'bonus_ltv', 1038.75, '2025-10-15', 'calculada', 'LTV 15+')
+    ('550e8400-e29b-41d4-a716-446655440011', 'bonus_progressao', 100, '2025-03-15', 'pendente', 'Prata', 5),
+    ('550e8400-e29b-41d4-a716-446655440011', 'bonus_progressao', 100, '2025-04-15', 'pendente', 'Ouro', 10),
+    ('550e8400-e29b-41d4-a716-446655440011', 'bonus_volume', 100, '2025-03-15', 'pendente', 'Volume 5', 5),
+    ('550e8400-e29b-41d4-a716-446655440011', 'bonus_volume', 100, '2025-04-15', 'pendente', 'Volume 10', 10),
+    ('550e8400-e29b-41d4-a716-446655440011', 'bonus_volume', 100, '2025-06-10', 'pendente', 'Volume 15', 15),
+    ('550e8400-e29b-41d4-a716-446655440011', 'bonus_volume', 100, '2025-09-15', 'pendente', 'Volume 20', 20),
+    ('550e8400-e29b-41d4-a716-446655440011', 'bonus_ltv', 1038.75, '2025-10-15', 'pendente', 'LTV 15+', 15)
   ON CONFLICT DO NOTHING;
 
   RETURN QUERY

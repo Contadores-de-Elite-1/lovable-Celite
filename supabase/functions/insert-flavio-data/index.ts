@@ -55,15 +55,15 @@ serve(async (req) => {
 
     await supabase.from("clientes").upsert(clientes);
 
-    // 4. Bônus (7)
+    // 4. Bônus (7) - CORRECT COLUMNS: observacao, marco_atingido
     const bonus = [
-      { contador_id: "550e8400-e29b-41d4-a716-446655440011", tipo_bonus: "bonus_progressao", valor: 100, competencia: "2025-03-15", status: "calculada", descricao: "Prata" },
-      { contador_id: "550e8400-e29b-41d4-a716-446655440011", tipo_bonus: "bonus_progressao", valor: 100, competencia: "2025-04-15", status: "calculada", descricao: "Ouro" },
-      { contador_id: "550e8400-e29b-41d4-a716-446655440011", tipo_bonus: "bonus_volume", valor: 100, competencia: "2025-03-15", status: "calculada", descricao: "Volume 5" },
-      { contador_id: "550e8400-e29b-41d4-a716-446655440011", tipo_bonus: "bonus_volume", valor: 100, competencia: "2025-04-15", status: "calculada", descricao: "Volume 10" },
-      { contador_id: "550e8400-e29b-41d4-a716-446655440011", tipo_bonus: "bonus_volume", valor: 100, competencia: "2025-06-10", status: "calculada", descricao: "Volume 15" },
-      { contador_id: "550e8400-e29b-41d4-a716-446655440011", tipo_bonus: "bonus_volume", valor: 100, competencia: "2025-09-15", status: "calculada", descricao: "Volume 20" },
-      { contador_id: "550e8400-e29b-41d4-a716-446655440011", tipo_bonus: "bonus_ltv", valor: 1038.75, competencia: "2025-10-15", status: "calculada", descricao: "LTV 15+" }
+      { contador_id: "550e8400-e29b-41d4-a716-446655440011", tipo_bonus: "bonus_progressao", valor: 100, competencia: "2025-03-15", status: "pendente", observacao: "Prata", marco_atingido: 5 },
+      { contador_id: "550e8400-e29b-41d4-a716-446655440011", tipo_bonus: "bonus_progressao", valor: 100, competencia: "2025-04-15", status: "pendente", observacao: "Ouro", marco_atingido: 10 },
+      { contador_id: "550e8400-e29b-41d4-a716-446655440011", tipo_bonus: "bonus_volume", valor: 100, competencia: "2025-03-15", status: "pendente", observacao: "Volume 5", marco_atingido: 5 },
+      { contador_id: "550e8400-e29b-41d4-a716-446655440011", tipo_bonus: "bonus_volume", valor: 100, competencia: "2025-04-15", status: "pendente", observacao: "Volume 10", marco_atingido: 10 },
+      { contador_id: "550e8400-e29b-41d4-a716-446655440011", tipo_bonus: "bonus_volume", valor: 100, competencia: "2025-06-10", status: "pendente", observacao: "Volume 15", marco_atingido: 15 },
+      { contador_id: "550e8400-e29b-41d4-a716-446655440011", tipo_bonus: "bonus_volume", valor: 100, competencia: "2025-09-15", status: "pendente", observacao: "Volume 20", marco_atingido: 20 },
+      { contador_id: "550e8400-e29b-41d4-a716-446655440011", tipo_bonus: "bonus_ltv", valor: 1038.75, competencia: "2025-10-15", status: "pendente", observacao: "LTV 15+", marco_atingido: 15 }
     ];
 
     await supabase.from("bonus_historico").upsert(bonus);

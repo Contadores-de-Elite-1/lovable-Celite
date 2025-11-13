@@ -52,12 +52,3 @@ VALUES
   ('550e8400-e29b-41d4-a716-446655440011', 'bonus_volume', 100, '2025-09-15', 'calculada', 'Volume 20'),
   ('550e8400-e29b-41d4-a716-446655440011', 'bonus_ltv', 1038.75, '2025-10-15', 'calculada', 'LTV 15+')
 ON CONFLICT DO NOTHING;
-
--- VALIDAÇÃO
-SELECT 
-  'Contadores' as tipo,
-  (SELECT COUNT(*) FROM contadores WHERE id IN ('550e8400-e29b-41d4-a716-446655440011', '550e8400-e29b-41d4-a716-446655440012', '550e8400-e29b-41d4-a716-446655440013', '550e8400-e29b-41d4-a716-446655440014')) as total
-UNION ALL
-SELECT 'Clientes', COUNT(*) FROM clientes WHERE contador_id = '550e8400-e29b-41d4-a716-446655440011'
-UNION ALL
-SELECT 'Bônus', COUNT(*) FROM bonus_historico WHERE contador_id = '550e8400-e29b-41d4-a716-446655440011';

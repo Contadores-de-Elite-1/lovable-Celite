@@ -150,21 +150,30 @@ Deno.serve(async (req) => {
       // });
     }
 
-    console.log('✅ Webhook Asaas recebido:', payload.event);
+    console.log('✅ Webhook Asaas recebido:', payload.event || 'SEM EVENTO');
 
     const eventosRelevantes = [
       'PAYMENT_CONFIRMED',
       'PAYMENT_RECEIVED',
       'PAYMENT_RECEIVED_IN_CASH',
       'SUBSCRIPTION_CREATED',
+      'PAYMENT_AWAITING_RISK_ANALYSIS',  // Asaas pode enviar isso
     ];
 
-    if (!eventosRelevantes.includes(payload.event)) {
-      console.log('Evento ignorado:', payload.event);
-      return new Response(JSON.stringify({ message: 'Evento ignorado' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      });
+    // Se não tem event, assume que é um pagamento confirmado
+    const evento = payload.event || 'PAYMENT_CONFIRMED';
+
+    if (!eventosRelevantes.includes(evento) && payload.event) {
+      console.log('⚠️ Evento não reconhecido:', payload.event);
+      // Se tem evento mas não reconhecemos, ignora
+      // Mas se é payment, tenta processar de qualquer forma
+      if (!payload.payment) {
+        return new Response(JSON.stringify({ message: 'Evento ignorado' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
+      }
+      console.log('   Mas tem dados de pagamento, tentando processar...');
     }
 
     const payment = payload.payment;

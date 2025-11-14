@@ -65,7 +65,17 @@ const Rede = () => {
         .eq('sponsor_id', currentContador.id)
         .order('created_at', { ascending: false });
 
-      return (data || []).map((item: any) => ({
+      return (data || []).map((item: {
+        contadores: {
+          id: string;
+          nivel: string;
+          status: string;
+          clientes_ativos: number;
+          xp: number;
+          profiles?: { nome: string };
+        };
+        nivel_rede: number;
+      }) => ({
         id: item.contadores.id,
         nome: item.contadores.profiles?.nome || 'Sem nome',
         nivel: item.contadores.nivel || 'bronze',

@@ -84,7 +84,11 @@ const Relatorios = () => {
       { total: number; recorrente: number; ativacao: number; bonus: number }
     >();
 
-    comissoes.forEach((c: any) => {
+    comissoes.forEach((c: {
+      competencia: string;
+      valor: number;
+      tipo_comissao: string;
+    }) => {
       const date = new Date(c.competencia);
       const monthKey = date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
 
@@ -120,9 +124,11 @@ const Relatorios = () => {
       .sort((a, b) => a.month.localeCompare(b.month))
       .slice(-12);
 
-    // Dados por tipo de comissão
     const typeData = new Map<string, number>();
-    comissoes.forEach((c: any) => {
+    comissoes.forEach((c: {
+      tipo_comissao: string;
+      valor: number;
+    }) => {
       const type = c.tipo_comissao || 'desconhecido';
       typeData.set(type, (typeData.get(type) || 0) + Number(c.valor));
     });
@@ -134,9 +140,11 @@ const Relatorios = () => {
       }))
       .sort((a, b) => b.value - a.value);
 
-    // Dados por status
     const statusData = new Map<string, number>();
-    comissoes.forEach((c: any) => {
+    comissoes.forEach((c: {
+      status_comissao: string;
+      valor: number;
+    }) => {
       const status = c.status_comissao || 'desconhecido';
       statusData.set(status, (statusData.get(status) || 0) + Number(c.valor));
     });
@@ -164,10 +172,16 @@ const Relatorios = () => {
     if (!relatorioData?.comissoes) return null;
 
     const comissoes = relatorioData.comissoes;
-    const totalAcumulado = comissoes.reduce((sum, c: any) => sum + Number(c.valor), 0);
+    const totalAcumulado = comissoes.reduce((sum, c: {
+      valor: number;
+    }) => sum + Number(c.valor), 0);
     const totalPago = comissoes
-      .filter((c: any) => c.status_comissao === 'paga')
-      .reduce((sum, c: any) => sum + Number(c.valor), 0);
+      .filter((c: {
+        status_comissao: string;
+      }) => c.status_comissao === 'paga')
+      .reduce((sum, c: {
+        valor: number;
+      }) => sum + Number(c.valor), 0);
     const totalPendente = totalAcumulado - totalPago;
     const mediaMonthly = comissoes.length > 0 ? totalAcumulado / 12 : 0;
 
@@ -189,7 +203,13 @@ const Relatorios = () => {
     }
 
     const headers = ['Data', 'Tipo', 'Valor (R$)', 'Status', 'Cliente'];
-    const rows = relatorioData.comissoes.map((c: any) => [
+    const rows = relatorioData.comissoes.map((c: {
+      competencia: string;
+      tipo_comissao: string;
+      valor: number;
+      status_comissao: string;
+      clientes?: { nome: string };
+    }) => [
       new Date(c.competencia).toLocaleDateString('pt-BR'),
       c.tipo_comissao,
       Number(c.valor).toFixed(2),

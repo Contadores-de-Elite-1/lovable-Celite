@@ -32,11 +32,11 @@ ALTER TABLE public.solicitacoes_saque ENABLE ROW LEVEL SECURITY;
 -- Contadores can view/create their own requests
 CREATE POLICY "contadores_can_create_request" ON public.solicitacoes_saque
   FOR INSERT
-  WITH CHECK (contador_id = auth.uid());
+  WITH CHECK (contador_id = get_contador_id(auth.uid()));
 
 CREATE POLICY "contadores_can_view_own_requests" ON public.solicitacoes_saque
   FOR SELECT
-  USING (contador_id = auth.uid());
+  USING (contador_id = get_contador_id(auth.uid()));
 
 -- Admins can view all and update status
 CREATE POLICY "admins_can_manage_requests" ON public.solicitacoes_saque

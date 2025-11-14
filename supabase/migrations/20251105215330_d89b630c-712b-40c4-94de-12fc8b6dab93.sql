@@ -15,6 +15,20 @@ BEGIN
     COALESCE(NEW.raw_user_meta_data->>'nome', 'Usuário'),
     NEW.email
   );
+
+  -- Create contadores record for new user (required for commission system)
+  INSERT INTO public.contadores (id, user_id, nome, email, nivel, status, clientes_ativos, xp)
+  VALUES (
+    gen_random_uuid(),
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'nome', 'Usuário'),
+    NEW.email,
+    'bronze',
+    'ativo',
+    0,
+    0
+  );
+
   RETURN NEW;
 END;
 $function$;

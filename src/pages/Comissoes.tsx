@@ -259,53 +259,97 @@ const Comissoes = () => {
     }
   };
 
-  const ComissoesTable = ({ data }: { data: typeof comissoes }) => (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Cliente</TableHead>
-            <TableHead>Competência</TableHead>
-            <TableHead>Tipo</TableHead>
-            <TableHead>Valor</TableHead>
-            <TableHead>Status</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+  const ComissoesTable = ({ data }: { data: typeof comissoes }) => {
+    // Mobile-first: show cards on mobile, table on desktop
+    return (
+      <>
+        {/* Mobile view: Cards */}
+        <div className="md:hidden space-y-3">
           {data.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={5} className="text-center text-gray-500 py-8">
-                Nenhuma comissão encontrada
-              </TableCell>
-            </TableRow>
+            <div className="text-center text-gray-500 py-8">Nenhuma comissão encontrada</div>
           ) : (
             data.map((comissao) => {
               const statusInfo = getStatusBadge(comissao.status_comissao);
               return (
-                <TableRow key={comissao.id} className="hover:bg-gray-50">
-                  <TableCell className="font-medium text-gray-900">
-                    {comissao.clientes?.nome || 'N/A'}
-                  </TableCell>
-                  <TableCell className="text-gray-700">
-                    {new Date(comissao.competencia).toLocaleDateString('pt-BR')}
-                  </TableCell>
-                  <TableCell className="capitalize text-gray-700">
-                    {getTipoLabel(comissao.tipo_comissao)}
-                  </TableCell>
-                  <TableCell className="font-semibold text-blue-900">
-                    R$ {Number(comissao.valor).toFixed(2)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={statusInfo.color}>{statusInfo.label}</Badge>
-                  </TableCell>
-                </TableRow>
+                <Card key={comissao.id} className="p-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="text-sm text-gray-600">Cliente</p>
+                        <p className="font-semibold text-gray-900">{comissao.clientes?.nome || 'N/A'}</p>
+                      </div>
+                      <Badge className={statusInfo.color}>{statusInfo.label}</Badge>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <p className="text-xs text-gray-600">Competência</p>
+                        <p className="text-sm font-medium">{new Date(comissao.competencia).toLocaleDateString('pt-BR')}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-600">Tipo</p>
+                        <p className="text-sm font-medium capitalize">{getTipoLabel(comissao.tipo_comissao)}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-600">Valor</p>
+                      <p className="text-lg font-bold text-blue-900">R$ {Number(comissao.valor).toFixed(2)}</p>
+                    </div>
+                  </div>
+                </Card>
               );
             })
           )}
-        </TableBody>
-      </Table>
-    </div>
-  );
+        </div>
+
+        {/* Desktop view: Table */}
+        <div className="hidden md:block overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Cliente</TableHead>
+                <TableHead>Competência</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Valor</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-gray-500 py-8">
+                    Nenhuma comissão encontrada
+                  </TableCell>
+                </TableRow>
+              ) : (
+                data.map((comissao) => {
+                  const statusInfo = getStatusBadge(comissao.status_comissao);
+                  return (
+                    <TableRow key={comissao.id} className="hover:bg-gray-50">
+                      <TableCell className="font-medium text-gray-900">
+                        {comissao.clientes?.nome || 'N/A'}
+                      </TableCell>
+                      <TableCell className="text-gray-700">
+                        {new Date(comissao.competencia).toLocaleDateString('pt-BR')}
+                      </TableCell>
+                      <TableCell className="capitalize text-gray-700">
+                        {getTipoLabel(comissao.tipo_comissao)}
+                      </TableCell>
+                      <TableCell className="font-semibold text-blue-900">
+                        R$ {Number(comissao.valor).toFixed(2)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={statusInfo.color}>{statusInfo.label}</Badge>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </>
+    );
+  };
 
   if (isLoading) {
     return (

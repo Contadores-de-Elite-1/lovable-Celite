@@ -9,7 +9,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = 'https://zytxwdgzjqrcmbnpgofj.supabase.co';
 const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp5dHh3ZGd6anFyY21ibnBnb2ZqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MDk4NjY0MiwiZXhwIjoyMDc2NTYyNjQyfQ.uC4X8zC-XtPNfQC0m7aKEoYO8DtCtbT4kZ67QGI-1A4';
-const ASAAS_CUSTOMER_ID = 'cus_000007222335'; // ID que você está usando nos testes
+const ASAAS_CUSTOMER_ID = 'cus_000007222099'; // ID real do ASAAS que está enviando webhooks
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 

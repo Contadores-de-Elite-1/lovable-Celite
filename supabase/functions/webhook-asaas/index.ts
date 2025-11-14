@@ -68,7 +68,9 @@ async function validateAsaasSignature(
 }
 
 interface AsaasWebhookPayload {
-  event: string;
+  id: string;          // ID único do evento (para idempotência)
+  event: string;       // Tipo do evento (ex: PAYMENT_CONFIRMED)
+  dateCreated?: string; // Data de criação do evento
   payment?: {
     id: string;
     customer: string;
@@ -154,29 +156,60 @@ Deno.serve(async (req) => {
     }
 
     console.log('✅ Webhook Asaas recebido:', payload.event || 'SEM EVENTO');
+    console.log('   Event ID:', payload.id || 'SEM ID');
 
-    const eventosRelevantes = [
-      'PAYMENT_CONFIRMED',
-      'PAYMENT_RECEIVED',
-      'PAYMENT_RECEIVED_IN_CASH',
-      'SUBSCRIPTION_CREATED',
-      'PAYMENT_AWAITING_RISK_ANALYSIS',  // Asaas pode enviar isso
+    // Eventos principais para cálculo de comissões
+    // Baseado em: https://docs.asaas.com/docs/webhook-para-cobrancas
+    const eventosParaProcessar = [
+      'PAYMENT_CONFIRMED',             // ⭐ Principal: Pagamento confirmado
+      'PAYMENT_RECEIVED',              // ⭐ Principal: Pagamento recebido
+      'PAYMENT_CREATED',               // Cobrança criada
+      'PAYMENT_UPDATED',               // Alteração em valor/vencimento
+      'PAYMENT_RECEIVED_IN_CASH',      // Recebido em dinheiro
+      'PAYMENT_ANTICIPATED',           // Pagamento antecipado
+      'SUBSCRIPTION_CREATED',          // Assinatura criada
     ];
 
-    // Se não tem event, assume que é um pagamento confirmado
+    // Eventos que devemos ignorar (retorna 200 mas não processa)
+    const eventosParaIgnorar = [
+      'PAYMENT_OVERDUE',              // Vencido (não gera comissão)
+      'PAYMENT_DELETED',              // Deletado
+      'PAYMENT_BANK_SLIP_VIEWED',     // Boleto visualizado (informativo)
+      'PAYMENT_CHECKOUT_VIEWED',      // Checkout visualizado (informativo)
+      'PAYMENT_AWAITING_RISK_ANALYSIS', // Aguardando análise (não confirmado ainda)
+    ];
+
     const evento = payload.event || 'PAYMENT_CONFIRMED';
 
-    if (!eventosRelevantes.includes(evento) && payload.event) {
-      console.log('⚠️ Evento não reconhecido:', payload.event);
-      // Se tem evento mas não reconhecemos, ignora
-      // Mas se é payment, tenta processar de qualquer forma
+    // Ignorar eventos que não geram comissão
+    if (eventosParaIgnorar.includes(evento)) {
+      console.log('ℹ️  Evento ignorado (não gera comissão):', evento);
+      return new Response(JSON.stringify({
+        success: true,
+        message: 'Evento recebido mas ignorado (não gera comissão)'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
+    // Processar apenas eventos relevantes que têm dados de pagamento
+    if (!eventosParaProcessar.includes(evento)) {
+      console.log('⚠️ Evento não reconhecido para processamento:', evento);
+
+      // Se tem dados de pagamento, tenta processar mesmo assim
       if (!payload.payment) {
-        return new Response(JSON.stringify({ message: 'Evento ignorado' }), {
+        console.log('   Sem dados de pagamento. Ignorando.');
+        return new Response(JSON.stringify({
+          success: true,
+          message: 'Evento recebido mas sem dados de pagamento'
+        }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200,
         });
       }
-      console.log('   Mas tem dados de pagamento, tentando processar...');
+
+      console.log('   Mas tem dados de pagamento. Tentando processar...');
     }
 
     const payment = payload.payment;
@@ -308,7 +341,7 @@ Deno.serve(async (req) => {
         status: 'pago',
         pago_em: dataConfirmacao,
         asaas_payment_id: payment.id,
-        asaas_event_id: payload.event,
+        asaas_event_id: payload.id,  // ID único do evento (para idempotência)
       })
       .select()
       .single();

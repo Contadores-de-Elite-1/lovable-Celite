@@ -21,6 +21,11 @@ import {
 import { CheckCircle, XCircle, Clock, AlertTriangle, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
+import {
+  StatusTrendChart,
+  CommissionTypeChart,
+  TopContadoresChart,
+} from '@/components/charts/ApprovalCharts';
 
 interface Commission {
   id: string;
@@ -75,6 +80,23 @@ const AdminApprovalsPage = () => {
       const rejected = commissions?.filter((c) => c.status_comissao === 'cancelada').length || 0;
 
       return { pending, approved, rejected };
+    },
+    enabled: isAdmin === true,
+  });
+
+  // All commissions for charts
+  const { data: allCommissions = [], isLoading: isLoadingCharts } = useQuery({
+    queryKey: ['approvals-all-for-charts'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('comissoes')
+        .select(`
+          *,
+          contadores (user_id, profiles (nome))
+        `)
+        .order('created_at', { ascending: false });
+
+      return data || [];
     },
     enabled: isAdmin === true,
   });
@@ -260,6 +282,21 @@ const AdminApprovalsPage = () => {
               </Select>
             </CardContent>
           </Card>
+
+          {/* Analytics Section */}
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <h2 className="text-lg font-serif font-bold text-blue-900 mb-4">Analytics</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Status Trend Chart */}
+              <StatusTrendChart data={allCommissions} isLoading={isLoadingCharts} />
+
+              {/* Commission Type Chart */}
+              <CommissionTypeChart data={allCommissions} isLoading={isLoadingCharts} />
+
+              {/* Top Contadores Chart */}
+              <TopContadoresChart data={allCommissions} isLoading={isLoadingCharts} />
+            </div>
+          </div>
 
           {/* List */}
           <Card className="bg-white border-0 shadow-sm">

@@ -114,6 +114,16 @@ const Perfil = () => {
       toast.error("CPF/CNPJ é obrigatório");
       return;
     }
+
+    // Validate that at least one payment method is provided (required for withdrawals)
+    const hasPixKey = formData.chave_pix && formData.chave_pix.trim();
+    const hasBankAccount = formData.banco && formData.conta && formData.titular_conta;
+
+    if (!hasPixKey && !hasBankAccount) {
+      toast.error("Você deve fornecer PIX ou dados bancários para poder solicitar saques");
+      return;
+    }
+
     updateMutation.mutate(formData);
   };
 

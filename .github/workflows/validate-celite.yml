@@ -105,11 +105,7 @@ jobs:
           CONTADORES=$(psql -h localhost -U postgres -d postgres -t -A -c "SELECT COUNT(*) FROM contadores;" 2>/dev/null || echo "0")
           CLIENTES=$(psql -h localhost -U postgres -d postgres -t -A -c "SELECT COUNT(*) FROM clientes;" 2>/dev/null || echo "0")
           PAGAMENTOS=$(psql -h localhost -U postgres -d postgres -t -A -c "SELECT COUNT(*) FROM pagamentos;" 2>/dev/null || echo "0")
-<<<<<<< HEAD
-          
-=======
 
->>>>>>> claude/fix-database-types-and-rpc-011CV3XrXYKkYhhLFsYXfAZ1
           echo "  Contadores: $CONTADORES"
           echo "  Clientes: $CLIENTES"
           echo "  Pagamentos: $PAGAMENTOS"
@@ -169,13 +165,3 @@ jobs:
               repo: context.repo.repo,
               body: '✅ **Celite Validation Workflow Completed**\n\nAll automated validations passed:\n- Schema extraction\n- Seed idempotency (3x)\n- Data validation\n- Commission tests\n\nSee full results in Actions → Artifacts'
             })
-<<<<<<< HEAD
-
-
-
-
-
-
-
-=======
->>>>>>> claude/fix-database-types-and-rpc-011CV3XrXYKkYhhLFsYXfAZ1

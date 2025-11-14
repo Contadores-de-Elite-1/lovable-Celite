@@ -6,15 +6,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { DollarSign, TrendingUp, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { DollarSign, TrendingUp, Clock, Download } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Comissoes = () => {
   const { user } = useAuth();
   const [periodo, setPeriodo] = useState('mes-atual');
+  const [dateStart, setDateStart] = useState('');
+  const [dateEnd, setDateEnd] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const { data: comissoes, isLoading } = useQuery({
-    queryKey: ['comissoes', user?.id, periodo],
+    queryKey: ['comissoes', user?.id, periodo, dateStart, dateEnd, statusFilter],
     queryFn: async () => {
       const { data: contador } = await supabase
         .from('contadores')
@@ -24,180 +30,325 @@ const Comissoes = () => {
 
       if (!contador) return [];
 
-      const { data } = await supabase
+      let query = supabase
         .from('comissoes')
-        .select(`
+        .select(
+          `
           *,
           clientes (nome, cnpj),
           pagamentos (valor_bruto, pago_em)
-        `)
-        .eq('contador_id', contador.id)
-        .order('created_at', { ascending: false });
+        `
+        )
+        .eq('contador_id', contador.id);
 
+      // Apply date filters
+      if (dateStart) {
+        query = query.gte('competencia', dateStart);
+      }
+      if (dateEnd) {
+        query = query.lte('competencia', dateEnd);
+      }
+
+      // Apply status filter
+      if (statusFilter !== 'all') {
+        query = query.eq('status_comissao', statusFilter);
+      }
+
+      const { data } = await query.order('created_at', { ascending: false });
       return data || [];
     },
-    enabled: !!user
+    enabled: !!user,
   });
 
-  const diretas = comissoes?.filter(c => c.tipo === 'ativacao' || c.tipo === 'recorrente') || [];
-  const overrides = comissoes?.filter(c => c.tipo === 'override') || [];
-  const bonus = comissoes?.filter(c => 
-    c.tipo === 'bonus_progressao' || 
-    c.tipo === 'bonus_volume' || 
-    c.tipo === 'bonus_ltv' || 
-    c.tipo === 'bonus_contador'
-  ) || [];
+  const diretas =
+    comissoes?.filter((c) => c.tipo_comissao === 'ativacao' || c.tipo_comissao === 'recorrente') ||
+    [];
+  const overrides = comissoes?.filter((c) => c.tipo_comissao === 'override') || [];
+  const bonus =
+    comissoes?.filter(
+      (c) =>
+        c.tipo_comissao === 'bonus_progressao' ||
+        c.tipo_comissao === 'bonus_volume' ||
+        c.tipo_comissao === 'bonus_ltv' ||
+        c.tipo_comissao === 'bonus_contador'
+    ) || [];
 
-  const totalProvisionadas = comissoes?.filter(c => c.status === 'calculada').reduce((acc, c) => acc + Number(c.valor), 0) || 0;
-  const totalLiberadas = comissoes?.filter(c => c.status === 'paga').reduce((acc, c) => acc + Number(c.valor), 0) || 0;
+  const totalProvisionadas =
+    comissoes?.filter((c) => c.status_comissao === 'calculada').reduce((acc, c) => acc + Number(c.valor), 0) || 0;
+  const totalLiberadas =
+    comissoes?.filter((c) => c.status_comissao === 'paga').reduce((acc, c) => acc + Number(c.valor), 0) || 0;
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, { variant: any; label: string }> = {
-      calculada: { variant: 'secondary', label: 'Calculada' },
-      aprovada: { variant: 'default', label: 'Aprovada' },
-      paga: { variant: 'default', label: 'Paga' },
-      cancelada: { variant: 'destructive', label: 'Cancelada' }
+    const variants: Record<string, { variant: any; label: string; color: string }> = {
+      calculada: { variant: 'secondary', label: 'Calculada', color: 'bg-blue-100 text-blue-800' },
+      aprovada: { variant: 'default', label: 'Aprovada', color: 'bg-yellow-100 text-yellow-800' },
+      paga: { variant: 'default', label: 'Paga', color: 'bg-green-100 text-green-800' },
+      cancelada: { variant: 'destructive', label: 'Cancelada', color: 'bg-red-100 text-red-800' },
     };
     return variants[status] || variants.calculada;
   };
 
   const getTipoLabel = (tipo: string): string => {
     const labels: Record<string, string> = {
-      'ativacao': 'Ativação',
-      'recorrente': 'Recorrente',
-      'override': 'Override',
-      'bonus_progressao': 'Bônus Progressão',
-      'bonus_volume': 'Bônus Volume',
-      'bonus_ltv': 'Bônus LTV',
-      'bonus_contador': 'Bônus Contador'
+      ativacao: 'Ativação',
+      recorrente: 'Recorrente',
+      override: 'Override',
+      bonus_progressao: 'Bônus Progressão',
+      bonus_volume: 'Bônus Volume',
+      bonus_ltv: 'Bônus LTV',
+      bonus_contador: 'Bônus Contador',
     };
     return labels[tipo] || tipo.replace('_', ' ');
   };
 
+  const downloadCSV = () => {
+    if (!comissoes || comissoes.length === 0) {
+      alert('Nenhuma comissão para exportar');
+      return;
+    }
+
+    // Prepare CSV content
+    const headers = ['Cliente', 'Competência', 'Tipo', 'Valor (R$)', 'Status'];
+    const rows = comissoes.map((c) => [
+      c.clientes?.nome || 'N/A',
+      new Date(c.competencia).toLocaleDateString('pt-BR'),
+      getTipoLabel(c.tipo_comissao),
+      Number(c.valor).toFixed(2),
+      getStatusBadge(c.status_comissao).label,
+    ]);
+
+    const csv = [headers, ...rows].map((row) => row.join(',')).join('\n');
+
+    // Create blob and download
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `comissoes_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const ComissoesTable = ({ data }: { data: any[] }) => (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Cliente</TableHead>
-          <TableHead>Competência</TableHead>
-          <TableHead>Tipo</TableHead>
-          <TableHead>Valor</TableHead>
-          <TableHead>Status</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {data.length === 0 ? (
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
           <TableRow>
-            <TableCell colSpan={5} className="text-center text-muted-foreground">
-              Nenhuma comissão encontrada
-            </TableCell>
+            <TableHead>Cliente</TableHead>
+            <TableHead>Competência</TableHead>
+            <TableHead>Tipo</TableHead>
+            <TableHead>Valor</TableHead>
+            <TableHead>Status</TableHead>
           </TableRow>
-        ) : (
-          data.map((comissao) => {
-            const statusInfo = getStatusBadge(comissao.status);
-            return (
-              <TableRow key={comissao.id}>
-                <TableCell className="font-medium">{comissao.clientes?.nome}</TableCell>
-                <TableCell>{new Date(comissao.competencia).toLocaleDateString('pt-BR')}</TableCell>
-                <TableCell className="capitalize">{getTipoLabel(comissao.tipo)}</TableCell>
-                <TableCell className="font-semibold text-foreground">
-                  R$ {Number(comissao.valor).toFixed(2)}
-                </TableCell>
-                <TableCell>
-                  <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
-                </TableCell>
-              </TableRow>
-            );
-          })
-        )}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {data.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={5} className="text-center text-gray-500 py-8">
+                Nenhuma comissão encontrada
+              </TableCell>
+            </TableRow>
+          ) : (
+            data.map((comissao) => {
+              const statusInfo = getStatusBadge(comissao.status_comissao);
+              return (
+                <TableRow key={comissao.id} className="hover:bg-gray-50">
+                  <TableCell className="font-medium text-gray-900">
+                    {comissao.clientes?.nome || 'N/A'}
+                  </TableCell>
+                  <TableCell className="text-gray-700">
+                    {new Date(comissao.competencia).toLocaleDateString('pt-BR')}
+                  </TableCell>
+                  <TableCell className="capitalize text-gray-700">
+                    {getTipoLabel(comissao.tipo_comissao)}
+                  </TableCell>
+                  <TableCell className="font-semibold text-blue-900">
+                    R$ {Number(comissao.valor).toFixed(2)}
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={statusInfo.color}>{statusInfo.label}</Badge>
+                  </TableCell>
+                </TableRow>
+              );
+            })
+          )}
+        </TableBody>
+      </Table>
+    </div>
   );
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Carregando...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Carregando comissões...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="bg-primary text-primary-foreground p-6">
-        <div className="container mx-auto">
-          <h1 className="text-3xl font-serif font-bold">Comissões</h1>
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-gradient-to-r from-blue-900 to-blue-800 text-white p-6">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-2xl md:text-3xl font-serif font-bold text-yellow-400">Comissões</h1>
+          <p className="text-blue-100 text-sm mt-1">Acompanhe suas comissões e exporte dados</p>
         </div>
       </header>
 
-      <main className="container mx-auto p-6">
+      <main className="max-w-7xl mx-auto p-4 pb-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           className="space-y-6"
         >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="bg-card border-border">
+          {/* KPI Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Card className="bg-white border-0 shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Provisionadas</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium text-gray-700">Provisionadas</CardTitle>
+                <Clock className="h-5 w-5 text-yellow-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-serif font-bold text-foreground">
-                  R$ {totalProvisionadas.toFixed(2)}
+                <div className="text-3xl font-serif font-bold text-blue-900">
+                  R$ {totalProvisionadas.toFixed(0)}
                 </div>
+                <p className="text-xs text-gray-500 mt-1">Aguardando aprovação</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-card border-border">
+            <Card className="bg-white border-0 shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Liberadas</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium text-gray-700">Liberadas</CardTitle>
+                <DollarSign className="h-5 w-5 text-green-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-serif font-bold text-foreground">
-                  R$ {totalLiberadas.toFixed(2)}
+                <div className="text-3xl font-serif font-bold text-green-600">
+                  R$ {totalLiberadas.toFixed(0)}
                 </div>
+                <p className="text-xs text-gray-500 mt-1">Já pagas</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-card border-border">
+            <Card className="bg-white border-0 shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Total</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium text-gray-700">Total</CardTitle>
+                <TrendingUp className="h-5 w-5 text-blue-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-serif font-bold text-foreground">
-                  R$ {(totalProvisionadas + totalLiberadas).toFixed(2)}
+                <div className="text-3xl font-serif font-bold text-blue-900">
+                  R$ {(totalProvisionadas + totalLiberadas).toFixed(0)}
                 </div>
+                <p className="text-xs text-gray-500 mt-1">Provisionadas + Pagas</p>
               </CardContent>
             </Card>
           </div>
 
-          <Card className="bg-card border-border">
+          {/* Filters */}
+          <Card className="bg-white border-0 shadow-sm">
             <CardHeader>
-              <CardTitle className="font-serif">Detalhamento de Comissões</CardTitle>
+              <CardTitle className="text-base font-serif text-blue-900">Filtros</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 block mb-2">
+                    Data Inicial
+                  </Label>
+                  <Input
+                    type="date"
+                    value={dateStart}
+                    onChange={(e) => setDateStart(e.target.value)}
+                    className="border-gray-300"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 block mb-2">Data Final</Label>
+                  <Input
+                    type="date"
+                    value={dateEnd}
+                    onChange={(e) => setDateEnd(e.target.value)}
+                    className="border-gray-300"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 block mb-2">Status</Label>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  >
+                    <option value="all">Todos</option>
+                    <option value="calculada">Calculada</option>
+                    <option value="aprovada">Aprovada</option>
+                    <option value="paga">Paga</option>
+                    <option value="cancelada">Cancelada</option>
+                  </select>
+                </div>
+
+                <div className="flex items-end">
+                  <Button
+                    onClick={() => {
+                      setDateStart('');
+                      setDateEnd('');
+                      setStatusFilter('all');
+                    }}
+                    variant="outline"
+                    className="w-full border-gray-300 text-gray-700 hover:bg-gray-100"
+                  >
+                    Limpar Filtros
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Export Button */}
+          <div className="flex justify-end">
+            <Button
+              onClick={downloadCSV}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg py-2 px-4 flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Exportar CSV
+            </Button>
+          </div>
+
+          {/* Commissions Table */}
+          <Card className="bg-white border-0 shadow-sm">
+            <CardHeader>
+              <CardTitle className="font-serif text-blue-900">
+                Detalhamento de Comissões ({comissoes?.length || 0})
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="diretas">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="diretas">Comissões Diretas ({diretas.length})</TabsTrigger>
-            <TabsTrigger value="overrides">Overrides ({overrides.length})</TabsTrigger>
-            <TabsTrigger value="bonus">Bônus ({bonus.length})</TabsTrigger>
-          </TabsList>
-          <TabsContent value="diretas" className="mt-6">
-            <ComissoesTable data={diretas} />
-          </TabsContent>
-          <TabsContent value="overrides" className="mt-6">
-            <ComissoesTable data={overrides} />
-          </TabsContent>
-          <TabsContent value="bonus" className="mt-6">
-            <ComissoesTable data={bonus} />
-          </TabsContent>
+                <TabsList className="grid w-full grid-cols-3 mb-6">
+                  <TabsTrigger value="diretas" className="text-sm">
+                    Diretas ({diretas.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="overrides" className="text-sm">
+                    Overrides ({overrides.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="bonus" className="text-sm">
+                    Bônus ({bonus.length})
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="diretas" className="mt-6">
+                  <ComissoesTable data={diretas} />
+                </TabsContent>
+                <TabsContent value="overrides" className="mt-6">
+                  <ComissoesTable data={overrides} />
+                </TabsContent>
+                <TabsContent value="bonus" className="mt-6">
+                  <ComissoesTable data={bonus} />
+                </TabsContent>
               </Tabs>
             </CardContent>
           </Card>

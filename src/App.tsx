@@ -27,6 +27,7 @@ import Perfil from "./pages/Perfil";
 import Rede from "./pages/Rede";
 import Relatorios from "./pages/Relatorios";
 import NotFound from "./pages/NotFound";
+import TesteVibeDesign from "./pages/TesteVibeDesign";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/auth/reset-password" element={<ResetPassword />} />
+            <Route path="/teste-vibe" element={<TesteVibeDesign />} />
             <Route
               path="/*"
               element={

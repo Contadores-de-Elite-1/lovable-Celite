@@ -177,8 +177,24 @@ Deno.serve(async (req) => {
     }
 
     const payment = payload.payment;
+
+    console.log('[PAYLOAD ANALYSIS]');
+    console.log('  event:', payload.event);
+    console.log('  payment exists:', !!payment);
+    if (payment) {
+      console.log('  payment.id:', payment.id);
+      console.log('  payment.customer:', payment.customer);
+      console.log('  payment.value:', payment.value);
+      console.log('  payment.netValue:', payment.netValue);
+      console.log('  payment fields:', Object.keys(payment).join(', '));
+    }
+
     if (!payment || !payment.id || !payment.customer) {
-      throw new Error('Dados de pagamento incompletos no payload');
+      const missingFields = [];
+      if (!payment) missingFields.push('payment object');
+      if (payment && !payment.id) missingFields.push('id');
+      if (payment && !payment.customer) missingFields.push('customer');
+      throw new Error(`Dados incompletos: ${missingFields.join(', ')}`);
     }
 
     const valoresValidados = {
@@ -254,7 +270,7 @@ Deno.serve(async (req) => {
         valor_bruto: valoresValidados.valor_bruto,
         valor_liquido: valoresValidados.valor_liquido,
         competencia,
-        status: 'confirmed',
+        status: 'pago',
         pago_em: dataConfirmacao,
         asaas_payment_id: payment.id,
         asaas_event_id: payload.event,
@@ -335,8 +351,12 @@ Deno.serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error('Erro no webhook Asaas:', error);
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+    const errorStack = error instanceof Error ? error.stack : '';
+
+    console.error('❌ ERRO NO WEBHOOK ASAAS');
+    console.error('   Mensagem:', errorMessage);
+    console.error('   Stack:', errorStack);
 
     try {
       await supabase.from('audit_logs').insert({
@@ -344,7 +364,9 @@ Deno.serve(async (req) => {
         tabela: 'pagamentos',
         payload: {
           error: errorMessage,
+          stack: errorStack.substring(0, 500),
           event: (error as { event?: string })?.event || 'unknown',
+          timestamp: new Date().toISOString(),
         },
       });
     } catch (logErr) {

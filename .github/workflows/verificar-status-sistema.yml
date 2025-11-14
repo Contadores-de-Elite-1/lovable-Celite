@@ -1,0 +1,32 @@
+name: 🔍 Verificar Status Sistema
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/5 * * * *'  # A cada 5 minutos (apenas para debug, remover depois)
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install @supabase/supabase-js
+
+      - name: 🔍 Verificar Sistema Completo
+        run: |
+          echo "🤖 MODO ROBÔ - VERIFICAÇÃO AUTOMÁTICA"
+          echo "════════════════════════════════════════"
+          echo ""
+          node verificar-sistema-completo.mjs
+          echo ""
+          echo "════════════════════════════════════════"
+          echo "Verificação concluída!"

@@ -108,7 +108,7 @@ const Rede = () => {
 
       const totalIndicacoes = allReferrals?.length || 0;
       const activeCount = activeReferrals?.filter(
-        (r: any) => r.contadores?.status === 'ativo'
+        (r: { contadores?: { status: string } }) => r.contadores?.status === 'ativo'
       ).length || 0;
 
       // Calculate network depth (max nivel_rede)

@@ -42,6 +42,12 @@ jobs:
           # Deploy migrations
           supabase db push --project-id $SUPABASE_PROJECT_ID || true
 
+          # Deploy functions
+          echo "📦 Deploying Edge Functions..."
+          supabase functions deploy webhook-asaas --project-ref $SUPABASE_PROJECT_ID
+          supabase functions deploy calcular-comissoes --project-ref $SUPABASE_PROJECT_ID || true
+          supabase functions deploy asaas-client --project-ref $SUPABASE_PROJECT_ID || true
+
           echo "✅ Deployment complete"
 
       - name: Summary

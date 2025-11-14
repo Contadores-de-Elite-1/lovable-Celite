@@ -153,33 +153,93 @@ dcfc24e - docs: add comprehensive update summary v2
 11eafe0 - docs: add comprehensive ASAAS webhook documentation
 28c17dc - fix: resolve webhook ASAAS constraints and idempotency issues
 
+MODO ROBÔ AUTOMÁTICO NÍVEL 4:
+
+ATIVE AGORA: Modo Robô Automático Total
+- Velocidade máxima para aplicativo estar pronto
+- Sem perda de funcionalidade
+- Qualidade máxima mantida
+- UX como objetivo + Mobile First sempre
+- Visão prática: funcionar de verdade, não em teoria
+
+ACESSOS NECESSÁRIOS:
+
+Supabase Cloud:
+- Project: zytxwdgzjqrcmbnpgofj
+- URL: https://zytxwdgzjqrcmbnpgofj.supabase.co
+- Secret (service): eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp5dHh3ZGd6anFyY21ibnBnb2ZqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MDk4NjY0MiwiZXhwIjoyMDc2NTYyNjQyfQ.uC4X8zC-XtPNfQC0m7aKEoYO8DtCtbT4kZ67QGI-1A4
+- Webhook URL: .../functions/v1/webhook-asaas
+- Secret: ASAAS_WEBHOOK_SECRET (configurado)
+
+CRITÉRIOS ROBÔ AUTOMÁTICO:
+
+Velocidade: Execute rápido, não se preocupe com perfeição
+Funcionalidade: 100% deve funcionar, sem exceções
+Qualidade: Código limpo, TypeScript, sem hacks
+UX: Pense mobile first, 3G lento, usuário real
+Prático: Use dados reais, teste com pagamentos reais
+
+PIPELINE 3 FASES:
+
+Fase 1 (Hoje - 30 min):
+- Testes E2E passando
+- Pagamentos sendo criados
+- Comissões status "aprovada"
+- Sem erros críticos
+
+Fase 2 (24h):
+- Monitoramento em produção
+- Métricas coletadas
+- Estabilidade confirmada
+
+Fase 3 (48-72h):
+- Re-habilitar validação MD5
+- Testes com clientes reais
+- Pronto para produção completa
+
+MÉTRICAS DE SUCESSO:
+
+[ ] Webhooks processados: 95%+
+[ ] Pagamentos criados: 100%
+[ ] Comissões "aprovada": 100%
+[ ] Sem duplicatas: 100%
+[ ] Status correto: 100%
+[ ] CRON habilitado: 100%
+
 PERGUNTA FINAL:
 
-Você está pronto para continuar? Responda com:
+Você está pronto para Modo Robô Automático Nível 4? Responda com:
 
-"SIM - Pronto para [próxima ação]"
+"SIM - MODO ROBÔ ATIVADO - Pronto para [próxima ação]"
 
 Exemplo:
-"SIM - Pronto para executar os testes E2E e confirmar se pagamentos estão sendo criados"
+"SIM - MODO ROBÔ ATIVADO - Pronto para executar testes E2E e confirmar pagamentos"
 
 OU
 
-"Preciso de esclarecimento sobre [algo específico]"
-
-Exemplo:
-"Preciso de esclarecimento sobre quando exatamente re-habilitar validação MD5"
+"Preciso de acesso a [algo específico]"
 
 IMPORTANTE:
 
 - Você tem TODA documentação pronta
+- Você tem TODOS os acessos listados acima
 - Código já está em produção
 - Testes estão prontos
-- Você só precisa executar e confirmar
+- Você trabalha autonomamente
+- Você faz decisões de negócio
+- Você pensa como usuário real
+- Você usa dados reais para testes
 
-Não reinvente a roda. Use exatamente o que foi entregue. Se quebrar algo, sempre tem:
-supabase db reset
+Se tiver dúvida: Leia MODO_ROBO_AUTOMATICO_NIVEL_4.md
+Se quebrar algo: supabase db reset
+Se for lento: Verifique supabase functions logs
 
-Boa sorte! 🚀
+VELOCIDADE > PERFECCIONISMO
+FUNÇÃO > FORMA
+REAL > TEÓRICO
+USUÁRIO > DEVELOPER
+
+Boa sorte! 🤖🚀
 ```
 
 ## ◀️ END PROMPT

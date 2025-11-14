@@ -59,11 +59,18 @@ const Comissoes = () => {
   const comissoes = useMemo(() => {
     if (!allComissoes) return [];
 
-    return filterByMultipleCriteria(allComissoes as any, {
+    const filterData = allComissoes.map(c => ({
+      competencia: c.competencia,
+      status_comissao: c.status_comissao,
+    }));
+
+    return filterByMultipleCriteria(filterData, {
       startDate: dateStart || undefined,
       endDate: dateEnd || undefined,
       status: statusFilter !== 'all' ? statusFilter : undefined,
-    });
+    }).map(filtered => {
+      return allComissoes.find(c => c.competencia === filtered.competencia);
+    }).filter(Boolean) as typeof allComissoes;
   }, [allComissoes, dateStart, dateEnd, statusFilter]);
 
   const diretas =
@@ -82,7 +89,13 @@ const Comissoes = () => {
   // Use tested utility to calculate commission stats
   const stats = useMemo(() => {
     if (!comissoes) return null;
-    return calculateCommissionStats(comissoes as any);
+    const commissionData = comissoes.map(c => ({
+      valor: Number(c.valor),
+      tipo_comissao: c.tipo_comissao,
+      status_comissao: c.status_comissao,
+      competencia: c.competencia,
+    }));
+    return calculateCommissionStats(commissionData);
   }, [comissoes]);
 
   // Calculate totals using utility results
@@ -101,7 +114,7 @@ const Comissoes = () => {
   }, [comissoes]);
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, { variant: any; label: string; color: string }> = {
+    const variants: Record<string, { variant: 'secondary' | 'default' | 'destructive'; label: string; color: string }> = {
       calculada: { variant: 'secondary', label: 'Calculada', color: 'bg-blue-100 text-blue-800' },
       aprovada: { variant: 'default', label: 'Aprovada', color: 'bg-yellow-100 text-yellow-800' },
       paga: { variant: 'default', label: 'Paga', color: 'bg-green-100 text-green-800' },
@@ -151,7 +164,7 @@ const Comissoes = () => {
     }
   };
 
-  const ComissoesTable = ({ data }: { data: any[] }) => (
+  const ComissoesTable = ({ data }: { data: typeof comissoes }) => (
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>

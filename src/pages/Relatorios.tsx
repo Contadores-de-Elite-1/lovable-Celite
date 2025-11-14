@@ -183,7 +183,18 @@ const Relatorios = () => {
     if (!relatorioData?.comissoes) return null;
 
     // Use tested utility to calculate all stats
-    const calculatedStats = calculateCommissionStats(relatorioData.comissoes as any);
+    const commissionData = relatorioData.comissoes.map((c: {
+      valor: number;
+      tipo_comissao: string;
+      status_comissao: string;
+      competencia: string;
+    }) => ({
+      valor: Number(c.valor),
+      tipo_comissao: c.tipo_comissao,
+      status_comissao: c.status_comissao,
+      competencia: c.competencia,
+    }));
+    const calculatedStats = calculateCommissionStats(commissionData);
 
     return calculatedStats;
   }, [relatorioData]);

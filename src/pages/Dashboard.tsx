@@ -25,7 +25,14 @@ import {
 const Dashboard = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [contador, setContador] = useState<any>(null);
+  const [contador, setContador] = useState<{
+    id: string;
+    nome?: string;
+    nivel?: string;
+    clientes_ativos?: number;
+    xp?: number;
+    profiles?: { nome: string };
+  } | null>(null);
   const [stats, setStats] = useState({
     clientes: 0,
     comissoes: 0,
@@ -33,7 +40,7 @@ const Dashboard = () => {
     nivel: 'bronze',
     crescimento: 0,
   });
-  const [chartData, setChartData] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<Array<{ mes: string; total: number }>>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {

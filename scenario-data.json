@@ -1,0 +1,30 @@
+{
+  "contadores": {
+    "carlos": {
+      "user_id": "564a43c6-f2c6-47da-b140-34c78b9cb5a9",
+      "contador_id": "9c97c75d-0c61-4aac-a12c-cd918d5c0048"
+    },
+    "maria": {
+      "user_id": "4eb81cf5-8fd2-4ebd-8107-66e3c8c2efa2",
+      "contador_id": "c99d5da7-709e-4c50-805c-10f0924e14fe"
+    },
+    "joao": {
+      "user_id": "a7db1b59-086f-4f88-8b53-46e9212d4fb7",
+      "contador_id": "440f8aed-0cae-405d-80ac-3b73f4da207f"
+    }
+  },
+  "cliente": {
+    "id": "f74cf3ad-c1b9-4d65-9712-5d8abccf6975",
+    "asaas_customer_id": "cus_000007222099",
+    "nome": "Padaria do Bairro Ltda",
+    "valor": 299.9
+  },
+  "payment": {
+    "id": "pay_7m9pplz0t8sqy4gu",
+    "value": 299.9,
+    "status": "PENDING",
+    "dueDate": "2025-11-17",
+    "bankSlipUrl": "https://sandbox.asaas.com/b/pdf/7m9pplz0t8sqy4gu",
+    "invoiceUrl": "https://sandbox.asaas.com/i/7m9pplz0t8sqy4gu"
+  }
+}

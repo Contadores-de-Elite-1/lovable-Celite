@@ -122,8 +122,11 @@ Deno.serve(async (req) => {
     let payloadRaw: string;
     try {
       payloadRaw = await req.text();
+      console.log('[WEBHOOK] Raw payload received (first 500 chars):', payloadRaw.substring(0, 500));
       payload = JSON.parse(payloadRaw);
-    } catch {
+      console.log('[WEBHOOK] Parsed payload:', JSON.stringify(payload, null, 2));
+    } catch (parseError) {
+      console.error('[WEBHOOK] Failed to parse JSON:', parseError);
       throw new Error('JSON inválido no payload');
     }
 
@@ -197,9 +200,18 @@ Deno.serve(async (req) => {
       throw new Error(`Dados incompletos: ${missingFields.join(', ')}`);
     }
 
+    // FIX: netValue pode ser null/undefined no ASAAS
+    // Usar fallback para value se netValue não existir
+    const netValue = payment.netValue ?? payment.value;
+
+    console.log('[VALIDATION] Values received:');
+    console.log('  payment.value:', payment.value);
+    console.log('  payment.netValue:', payment.netValue);
+    console.log('  netValue (final):', netValue);
+
     const valoresValidados = {
       valor_bruto: validarValorMonetario(payment.value, 'valor_bruto'),
-      valor_liquido: validarValorMonetario(payment.netValue, 'valor_liquido'),
+      valor_liquido: validarValorMonetario(netValue, 'valor_liquido'),
     };
 
     if (valoresValidados.valor_liquido > valoresValidados.valor_bruto) {
@@ -208,6 +220,8 @@ Deno.serve(async (req) => {
 
     const competencia = parseCompetencia(payment.dateCreated);
 
+    console.log('[CLIENT LOOKUP] Searching for customer:', payment.customer);
+
     const { data: cliente, error: clienteError } = await supabase
       .from('clientes')
       .select('id, contador_id, data_ativacao')
@@ -215,16 +229,37 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (clienteError) {
+      console.error('[CLIENT LOOKUP] Database error:', clienteError);
       throw new Error(`Erro ao buscar cliente: ${clienteError.message}`);
     }
 
     if (!cliente) {
-      console.error('Cliente não encontrado:', payment.customer);
-      return new Response(JSON.stringify({ error: 'Cliente não encontrado' }), {
+      console.error('[CLIENT LOOKUP] Cliente NÃO encontrado!');
+      console.error('   asaas_customer_id buscado:', payment.customer);
+      console.error('   Verifique se cliente existe no banco com este asaas_customer_id');
+
+      // Log para audit para debugging
+      await supabase.from('audit_logs').insert({
+        acao: 'WEBHOOK_CLIENTE_NAO_ENCONTRADO',
+        tabela: 'clientes',
+        payload: {
+          asaas_customer_id: payment.customer,
+          payment_id: payment.id,
+          timestamp: new Date().toISOString(),
+        },
+      }).catch(e => console.error('Erro ao registrar audit log:', e));
+
+      return new Response(JSON.stringify({
+        error: 'Cliente não encontrado',
+        asaas_customer_id: payment.customer,
+        help: 'Crie o cliente no banco ANTES de processar pagamentos'
+      }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 404,
       });
     }
+
+    console.log('[CLIENT LOOKUP] ✅ Cliente encontrado:', cliente.id.substring(0, 13) + '...');
 
     if (!cliente.contador_id) {
       throw new Error('Cliente sem contador_id vinculado');
@@ -353,19 +388,23 @@ Deno.serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     const errorStack = error instanceof Error ? error.stack : '';
+    const errorName = error instanceof Error ? error.name : 'Unknown';
 
     console.error('❌ ERRO NO WEBHOOK ASAAS');
+    console.error('   Nome:', errorName);
     console.error('   Mensagem:', errorMessage);
     console.error('   Stack:', errorStack);
+    console.error('   Error object:', JSON.stringify(error, null, 2));
 
     try {
       await supabase.from('audit_logs').insert({
         acao: 'WEBHOOK_ASAAS_ERROR',
         tabela: 'pagamentos',
         payload: {
-          error: errorMessage,
-          stack: errorStack.substring(0, 500),
-          event: (error as { event?: string })?.event || 'unknown',
+          error_name: errorName,
+          error_message: errorMessage,
+          error_stack: errorStack.substring(0, 1000),
+          error_full: String(error),
           timestamp: new Date().toISOString(),
         },
       });
@@ -374,7 +413,11 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({
+        error: errorMessage,
+        error_type: errorName,
+        details: 'Check audit_logs for full error details'
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,

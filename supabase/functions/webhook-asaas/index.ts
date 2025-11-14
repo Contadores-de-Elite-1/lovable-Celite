@@ -11,10 +11,15 @@ function validateAsaasSignature(
   signature: string | null,
   secret: string | null
 ): boolean {
-  // In development/testing, allow unsigned webhooks if secret not configured
-  if (!secret || !signature) {
-    console.warn('Webhook signature validation skipped: secret or signature not configured');
-    return true;
+  // CRITICAL: Webhook signature MUST be validated in production
+  if (!secret) {
+    console.error('SECURITY ERROR: ASAAS_WEBHOOK_SECRET not configured. Refusing unsigned webhooks.');
+    throw new Error('ASAAS_WEBHOOK_SECRET environment variable is required');
+  }
+
+  if (!signature) {
+    console.error('SECURITY ERROR: No webhook signature provided. Rejecting request.');
+    return false;
   }
 
   // Asaas signs with MD5(payload + secret)
@@ -25,7 +30,7 @@ function validateAsaasSignature(
 
     const isValid = expectedSignature === signature.toLowerCase();
     if (!isValid) {
-      console.error('Invalid webhook signature');
+      console.error('Invalid webhook signature - possible tampering or wrong secret');
     }
     return isValid;
   } catch (error) {

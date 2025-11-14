@@ -56,7 +56,7 @@ const AuditoriaComissoes = () => {
     queryKey: ['payouts-summary', filters.competencia],
     queryFn: async () => {
       const { data, error } = await supabase
-        .rpc('expected_payouts_summary' as any, { 
+        .rpc('expected_payouts_summary' as const, { 
           p_month: filters.competencia 
         })
         .single();
@@ -76,7 +76,7 @@ const AuditoriaComissoes = () => {
       filters.contadorId,
     ],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('list_expected_payouts' as any, {
+      const { data, error } = await supabase.rpc('list_expected_payouts' as const, {
         p_month: filters.competencia,
         p_status: filters.status === 'all' ? null : filters.status,
         p_contador: filters.contadorId,
@@ -94,7 +94,7 @@ const AuditoriaComissoes = () => {
   const { data: diffs, isLoading: diffsLoading } = useQuery({
     queryKey: ['commission-diffs', filters.competencia],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('diff_commissions' as any, {
+      const { data, error } = await supabase.rpc('diff_commissions' as const, {
         p_month: filters.competencia,
       });
 
@@ -108,7 +108,7 @@ const AuditoriaComissoes = () => {
   const { data: contadores } = useQuery({
     queryKey: ['admin-contadores-list'],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('list_admin_contadores' as any, {
+      const { data, error } = await supabase.rpc('list_admin_contadores' as const, {
         p_q: null,
         p_limit: 50,
         p_offset: 0,

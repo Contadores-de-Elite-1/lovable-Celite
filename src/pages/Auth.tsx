@@ -43,10 +43,10 @@ const Auth = () => {
       if (!isSignUp) {
         navigate('/dashboard');
       }
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: 'Erro',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
         variant: 'destructive',
       });
     } finally {
@@ -83,10 +83,10 @@ const Auth = () => {
         title: 'Email enviado!',
         description: 'Verifique sua caixa de entrada e spam.',
       });
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: 'Erro',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
         variant: 'destructive',
       });
     } finally {
@@ -149,7 +149,7 @@ const Auth = () => {
                   <Button
                     onClick={() => {
                       setResetEmailSent(false);
-                      handlePasswordReset(new Event('submit') as any);
+                      handlePasswordReset({ preventDefault: () => {} } as React.FormEvent);
                     }}
                     variant="outline"
                     className="w-full"

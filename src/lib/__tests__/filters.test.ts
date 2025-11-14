@@ -29,8 +29,8 @@ describe('Filter Utilities', () => {
     });
 
     it('deve rejeitar null ou undefined', () => {
-      expect(isValidDate(null as any)).toBe(false);
-      expect(isValidDate(undefined as any)).toBe(false);
+      expect(isValidDate(null as unknown as string)).toBe(false);
+      expect(isValidDate(undefined as unknown as string)).toBe(false);
     });
   });
 
@@ -109,8 +109,8 @@ describe('Filter Utilities', () => {
     });
 
     it('deve lidar com null ou undefined', () => {
-      expect(filterByDateRange(null as any)).toHaveLength(0);
-      expect(filterByDateRange(undefined as any)).toHaveLength(0);
+      expect(filterByDateRange(null as unknown as FilterInput[])).toHaveLength(0);
+      expect(filterByDateRange(undefined as unknown as FilterInput[])).toHaveLength(0);
     });
   });
 
@@ -230,8 +230,8 @@ describe('Filter Utilities', () => {
     });
 
     it('deve rejeitar null ou undefined', () => {
-      expect(validateDateFormat(null as any)).toBe(false);
-      expect(validateDateFormat(undefined as any)).toBe(false);
+      expect(validateDateFormat(null as unknown as string)).toBe(false);
+      expect(validateDateFormat(undefined as unknown as string)).toBe(false);
     });
   });
 
@@ -267,8 +267,8 @@ describe('Filter Utilities', () => {
     });
 
     it('deve retornar null para null ou undefined', () => {
-      expect(getDateRange(null as any)).toBeNull();
-      expect(getDateRange(undefined as any)).toBeNull();
+      expect(getDateRange(null as unknown as FilterInput[])).toBeNull();
+      expect(getDateRange(undefined as unknown as FilterInput[])).toBeNull();
     });
 
     it('deve ignorar datas inválidas', () => {

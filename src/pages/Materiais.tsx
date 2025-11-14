@@ -33,7 +33,7 @@ const Materiais = () => {
     return matchSearch && matchCategoria;
   });
 
-  const handleDownload = async (material: any) => {
+  const handleDownload = async (material: { id: string; downloads: number }) => {
     await supabase
       .from('materiais')
       .update({ downloads: material.downloads + 1 })

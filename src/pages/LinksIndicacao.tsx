@@ -115,7 +115,7 @@ const LinksIndicacao = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Tipo de Link</Label>
-                  <Select value={tipo} onValueChange={(v: any) => setTipo(v)}>
+                  <Select value={tipo} onValueChange={(v: string) => setTipo(v)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -128,7 +128,7 @@ const LinksIndicacao = () => {
 
                 <div className="space-y-2">
                   <Label>Canal</Label>
-                  <Select value={canal} onValueChange={(v: any) => setCanal(v)}>
+                  <Select value={canal} onValueChange={(v: string) => setCanal(v)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>

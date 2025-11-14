@@ -56,19 +56,19 @@ describe('Integration Tests - Utilities in Page Context', () => {
     ];
 
     it('deve filtrar por data range corretamente', () => {
-      const filtered = filterByDateRange(comissoesMock as any, '2024-02-01', '2024-03-31');
+      const filtered = filterByDateRange(comissoesMock as CommissionInput[], '2024-02-01', '2024-03-31');
       expect(filtered.length).toBe(2);
-      expect(filtered.every((c: any) => c.competencia >= '2024-02-01')).toBe(true);
+      expect(filtered.every((c: CommissionInput & { competencia: string }) => c.competencia >= '2024-02-01')).toBe(true);
     });
 
     it('deve filtrar por status corretamente', () => {
-      const filtered = filterByStatus(comissoesMock as any, 'paga');
+      const filtered = filterByStatus(comissoesMock as CommissionInput[], 'paga');
       expect(filtered.length).toBe(2);
-      expect(filtered.every((c: any) => c.status_comissao === 'paga')).toBe(true);
+      expect(filtered.every((c: CommissionInput & { competencia: string }) => c.status_comissao === 'paga')).toBe(true);
     });
 
     it('deve aplicar múltiplos filtros combinados', () => {
-      const filtered = filterByMultipleCriteria(comissoesMock as any, {
+      const filtered = filterByMultipleCriteria(comissoesMock as CommissionInput[], {
         startDate: '2024-02-01',
         endDate: '2024-03-31',
         status: 'paga',
@@ -78,7 +78,7 @@ describe('Integration Tests - Utilities in Page Context', () => {
     });
 
     it('deve retornar todas as comissões se filtro estiver vazio', () => {
-      const filtered = filterByMultipleCriteria(comissoesMock as any, {});
+      const filtered = filterByMultipleCriteria(comissoesMock as CommissionInput[], {});
       expect(filtered.length).toBe(3);
     });
   });
@@ -111,7 +111,7 @@ describe('Integration Tests - Utilities in Page Context', () => {
     });
 
     it('deve converter dados para CSV com headers', () => {
-      const rows = comissoesMock.map((c: any) => ({
+      const rows = comissoesMock.map((c: CommissionInput & { competencia: string }) => ({
         Data: formatDateForCSV(c.competencia),
         Cliente: c.clientes.nome,
         Valor: formatCurrencyForCSV(c.valor),
@@ -157,7 +157,7 @@ describe('Integration Tests - Utilities in Page Context', () => {
     ];
 
     it('deve calcular stats completas corretamente', () => {
-      const stats = calculateCommissionStats(comissoesMock as any);
+      const stats = calculateCommissionStats(comissoesMock as CommissionInput[]);
 
       expect(stats.totalAcumulado).toBe(1860);
       expect(stats.totalPago).toBe(1240); // 410 + 330 + 500
@@ -166,12 +166,12 @@ describe('Integration Tests - Utilities in Page Context', () => {
     });
 
     it('deve calcular média mensal corretamente', () => {
-      const stats = calculateCommissionStats(comissoesMock as any);
+      const stats = calculateCommissionStats(comissoesMock as CommissionInput[]);
       expect(stats.mediaMonthly).toBeCloseTo(155, 0);
     });
 
     it('deve formatar moeda para dashboard', () => {
-      const stats = calculateCommissionStats(comissoesMock as any);
+      const stats = calculateCommissionStats(comissoesMock as CommissionInput[]);
       const formatted = formatCurrency(stats.totalAcumulado);
 
       expect(formatted).toContain('R$');
@@ -189,19 +189,19 @@ describe('Integration Tests - Utilities in Page Context', () => {
     ];
 
     it('deve filtrar relatório por período', () => {
-      const filtered = filterByDateRange(relatorioDados as any, '2024-02-01', '2024-02-28');
+      const filtered = filterByDateRange(relatorioDados as CommissionInput[], '2024-02-01', '2024-02-28');
       expect(filtered.length).toBe(2);
     });
 
     it('deve calcular stats de relatório filtrado', () => {
-      const filtered = filterByDateRange(relatorioDados as any, '2024-02-01', '2024-02-28');
-      const stats = calculateCommissionStats(filtered as any);
+      const filtered = filterByDateRange(relatorioDados as CommissionInput[], '2024-02-01', '2024-02-28');
+      const stats = calculateCommissionStats(filtered as CommissionInput[]);
 
       expect(stats.totalAcumulado).toBeCloseTo(459.50, 2);
     });
 
     it('deve gerar CSV com dados formatados para relatório', () => {
-      const rows = relatorioDados.map((r: any) => [
+      const rows = relatorioDados.map((r: Record<string, number>) => [
         formatDateForCSV(r.competencia),
         r.tipo_comissao,
         formatCurrencyForCSV(r.valor),
@@ -223,29 +223,29 @@ describe('Integration Tests - Utilities in Page Context', () => {
 
     it('totais em Dashboard devem corresponder a Comissões', () => {
       // Dashboard calcula total
-      const dashboardTotal = calculateTotalCommissions(comissoesMock as any);
+      const dashboardTotal = calculateTotalCommissions(comissoesMock as CommissionInput[]);
 
       // Comissões calcula total
-      const comissoesTotal = calculateTotalCommissions(comissoesMock as any);
+      const comissoesTotal = calculateTotalCommissions(comissoesMock as CommissionInput[]);
 
       expect(dashboardTotal).toBe(comissoesTotal);
     });
 
     it('comissões pagas em Dashboard devem corresponder a Relatórios', () => {
       // Dashboard: apenas pagas
-      const paidInDashboard = comissoesMock.filter((c: any) => c.status_comissao === 'paga');
-      const dashboardPaidTotal = calculateTotalCommissions(paidInDashboard as any);
+      const paidInDashboard = comissoesMock.filter((c: CommissionInput & { competencia: string }) => c.status_comissao === 'paga');
+      const dashboardPaidTotal = calculateTotalCommissions(paidInDashboard as CommissionInput[]);
 
       // Relatórios: apenas pagas
-      const paidInRelatorios = comissoesMock.filter((c: any) => c.status_comissao === 'paga');
-      const relatoriosPaidTotal = calculateTotalCommissions(paidInRelatorios as any);
+      const paidInRelatorios = comissoesMock.filter((c: CommissionInput & { competencia: string }) => c.status_comissao === 'paga');
+      const relatoriosPaidTotal = calculateTotalCommissions(paidInRelatorios as CommissionInput[]);
 
       expect(dashboardPaidTotal).toBe(relatoriosPaidTotal);
     });
 
     it('exports de todas as páginas devem ter formato consistente', () => {
       const csvComissoes = convertToCSV(
-        comissoesMock.map((c: any) => [
+        comissoesMock.map((c: CommissionInput & { competencia: string }) => [
           formatDateForCSV(c.competencia),
           c.clientes.nome,
           formatCurrencyForCSV(c.valor),
@@ -254,7 +254,7 @@ describe('Integration Tests - Utilities in Page Context', () => {
       );
 
       const csvRelatorios = convertToCSV(
-        comissoesMock.map((c: any) => [
+        comissoesMock.map((c: CommissionInput & { competencia: string }) => [
           formatDateForCSV(c.competencia),
           c.clientes.nome,
           formatCurrencyForCSV(c.valor),
@@ -269,7 +269,7 @@ describe('Integration Tests - Utilities in Page Context', () => {
 
   describe('Edge Cases in Integration', () => {
     it('deve lidar com dados vazios nos filtros', () => {
-      const empty: any[] = [];
+      const empty: Record<string, number>[] = [];
       const filtered = filterByMultipleCriteria(empty, {
         startDate: '2024-01-01',
         endDate: '2024-12-31',
@@ -284,7 +284,7 @@ describe('Integration Tests - Utilities in Page Context', () => {
         { valor: 200, tipo_comissao: 'recorrente', competencia: '2024-02-01' },
       ];
 
-      const stats = calculateCommissionStats(comissoes as any);
+      const stats = calculateCommissionStats(comissoes as CommissionInput[]);
       expect(stats.totalAcumulado).toBe(300);
     });
 
@@ -307,11 +307,11 @@ describe('Integration Tests - Utilities in Page Context', () => {
       ];
 
       // Primeiro filtro: data
-      let filtered = filterByDateRange(comissoes as any, '2024-02-01', '2024-03-31');
+      let filtered = filterByDateRange(comissoes as CommissionInput[], '2024-02-01', '2024-03-31');
       expect(filtered.length).toBe(2);
 
       // Segundo filtro: status
-      filtered = filterByStatus(filtered as any, 'paga');
+      filtered = filterByStatus(filtered as CommissionInput[], 'paga');
       expect(filtered.length).toBe(1);
       expect(filtered[0].valor).toBe(300);
     });

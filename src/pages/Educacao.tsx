@@ -51,7 +51,7 @@ const Educacao = () => {
   });
 
   const getNivelBadge = (nivel: string) => {
-    const variants: Record<string, { variant: any; label: string }> = {
+    const variants: Record<string, { variant: 'default' | 'secondary' | 'outline' | 'destructive'; label: string }> = {
       'básico': { variant: 'secondary', label: 'Básico' },
       'intermediário': { variant: 'default', label: 'Intermediário' },
       'avançado': { variant: 'outline', label: 'Avançado' }

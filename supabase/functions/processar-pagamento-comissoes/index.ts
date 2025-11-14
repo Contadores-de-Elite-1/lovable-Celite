@@ -104,13 +104,13 @@ Deno.serve(async (req) => {
       acc[comissao.contador_id].total += Number(comissao.valor);
       acc[comissao.contador_id].comissoes.push(comissao);
       return acc;
-    }, {} as Record<string, { total: number; comissoes: any[] }>);
+    }, {} as Record<string, { total: number; comissoes: Array<{ id: string; valor: number; contador_id: string }> }>);
 
     const resultados = {
       processados: 0,
       acumulados: 0,
       valor_total_pago: 0,
-      detalhes: [] as any[],
+      detalhes: [] as Array<{ contador_id: string; valor_pago: number; num_comissoes: number }>,
     };
 
     for (const [contadorId, { total, comissoes: comissoesContador }] of Object.entries(comissoesPorContador)) {

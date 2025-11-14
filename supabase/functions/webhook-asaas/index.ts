@@ -1,9 +1,38 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.47.10';
+import { create } from 'https://deno.land/std@0.168.0/hash/md5.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+function validateAsaasSignature(
+  payload: string,
+  signature: string | null,
+  secret: string | null
+): boolean {
+  // In development/testing, allow unsigned webhooks if secret not configured
+  if (!secret || !signature) {
+    console.warn('Webhook signature validation skipped: secret or signature not configured');
+    return true;
+  }
+
+  // Asaas signs with MD5(payload + secret)
+  try {
+    const hash = create('md5');
+    hash.update(payload + secret);
+    const expectedSignature = hash.toString();
+
+    const isValid = expectedSignature === signature.toLowerCase();
+    if (!isValid) {
+      console.error('Invalid webhook signature');
+    }
+    return isValid;
+  } catch (error) {
+    console.error('Error validating signature:', error);
+    return false;
+  }
+}
 
 interface AsaasWebhookPayload {
   event: string;
@@ -52,14 +81,33 @@ Deno.serve(async (req) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const asaasWebhookSecret = Deno.env.get('ASAAS_WEBHOOK_SECRET');
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
   try {
     let payload: AsaasWebhookPayload;
+    let payloadRaw: string;
     try {
-      payload = await req.json();
+      payloadRaw = await req.text();
+      payload = JSON.parse(payloadRaw);
     } catch {
       throw new Error('JSON inválido no payload');
+    }
+
+    // Validate webhook signature
+    const asaasSignature = req.headers.get('x-asaas-webhook-signature');
+    const isValidSignature = validateAsaasSignature(
+      payloadRaw,
+      asaasSignature,
+      asaasWebhookSecret
+    );
+
+    if (!isValidSignature) {
+      console.error('Webhook signature validation failed');
+      return new Response(JSON.stringify({ error: 'Assinatura inválida' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
     }
 
     console.log('Webhook Asaas recebido:', payload.event);
@@ -247,7 +295,7 @@ Deno.serve(async (req) => {
         tabela: 'pagamentos',
         payload: {
           error: errorMessage,
-          event: (error as any)?.event || 'unknown',
+          event: (error as { event?: string })?.event || 'unknown',
         },
       });
     } catch (logErr) {

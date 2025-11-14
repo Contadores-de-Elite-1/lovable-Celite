@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const bonusCriados: any[] = [];
+    const bonusCriados: Array<{ contador_id: string; valor: number; competencia: string }> = [];
 
     // 2. PROCESSAR CADA CONTADOR
     for (const contadorId of contadoresUnicos) {

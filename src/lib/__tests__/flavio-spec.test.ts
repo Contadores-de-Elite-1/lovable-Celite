@@ -27,7 +27,7 @@ describe('Flávio Augusto - Spec Validation', () => {
   it('deve somar R$ 11.205,75 no total do ano 1 (2750+5448+648+721+1.638,75)', () => {
     // Nota: Documento tem discrepância (mostra 10.405,75 no resumo, mas soma dá 11.205,75)
     // Usando valor correto da soma das categorias
-    const total = calculateTotalCommissions(flavio12Months as any);
+    const total = calculateTotalCommissions(flavio12Months as CommissionInput[]);
     expect(roundToTwoDecimals(total)).toBeCloseTo(11205.75, 2);
   });
 
@@ -35,13 +35,13 @@ describe('Flávio Augusto - Spec Validation', () => {
     const comissoes = flavio12Months.filter(
       c => c.tipo_comissao === 'ativacao' || c.tipo_comissao === 'recorrente' || c.tipo_comissao === 'override'
     );
-    const total = calculateTotalCommissions(comissoes as any);
+    const total = calculateTotalCommissions(comissoes as CommissionInput[]);
     expect(roundToTwoDecimals(total)).toBeCloseTo(9567, 2);
   });
 
   it('deve ter R$ 1.638,75 em bônus totais', () => {
     const bonus = flavio12Months.filter(c => c.tipo_comissao.includes('bonus'));
-    const total = calculateTotalCommissions(bonus as any);
+    const total = calculateTotalCommissions(bonus as CommissionInput[]);
     expect(roundToTwoDecimals(total)).toBeCloseTo(1638.75, 2);
   });
 
@@ -64,13 +64,13 @@ describe('Flávio Augusto - Spec Validation', () => {
   });
 
   it('deve usar calculateCommissionStats corretamente para todos os dados', () => {
-    const stats = calculateCommissionStats(flavio12Months as any);
+    const stats = calculateCommissionStats(flavio12Months as CommissionInput[]);
     expect(roundToTwoDecimals(stats.totalAcumulado)).toBeCloseTo(11205.75, 2);
     expect(stats.totalPago).toBeCloseTo(11205.75, 2);
   });
 
   it('✅ Flávio atingiu todos os objetivos: 20 clientes + 100% retenção + R$ 11.205,75', () => {
-    const total = calculateTotalCommissions(flavio12Months as any);
+    const total = calculateTotalCommissions(flavio12Months as CommissionInput[]);
     expect(roundToTwoDecimals(total)).toBeCloseTo(11205.75, 2);
   });
 });

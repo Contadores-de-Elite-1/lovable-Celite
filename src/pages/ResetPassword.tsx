@@ -79,10 +79,10 @@ const ResetPassword = () => {
       setTimeout(() => {
         navigate('/auth');
       }, 2000);
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: 'Erro',
-        description: error.message || 'Não foi possível atualizar a senha.',
+        description: error instanceof Error ? error.message : 'Não foi possível atualizar a senha.',
         variant: 'destructive',
       });
     } finally {

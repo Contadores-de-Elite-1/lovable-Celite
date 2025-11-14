@@ -19,8 +19,8 @@ describe('Commission Calculations', () => {
     });
 
     it('deve retornar 0 para null ou undefined', () => {
-      expect(calculateTotalCommissions(null as any)).toBe(0);
-      expect(calculateTotalCommissions(undefined as any)).toBe(0);
+      expect(calculateTotalCommissions(null as unknown as CommissionInput[])).toBe(0);
+      expect(calculateTotalCommissions(undefined as unknown as CommissionInput[])).toBe(0);
     });
 
     it('deve somar corretamente valores de comissões', () => {

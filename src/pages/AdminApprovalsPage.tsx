@@ -120,44 +120,45 @@ const AdminApprovalsPage = () => {
     enabled: isAdmin === true,
   });
 
-  // Approve
+  // Approve using RLS function
   const approveMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('comissoes')
-        .update({ status_comissao: 'aprovada' })
-        .eq('id', id);
+      const { data, error } = await supabase.rpc('fn_aprovar_comissao', {
+        p_comissao_id: id,
+        p_user_id: user?.id,
+        p_observacao: null,
+      });
       if (error) throw error;
+      return data;
     },
     onSuccess: () => {
-      toast.success('✓ Comissão aprovada!');
+      toast.success('✓ Comissão aprovada com auditoria!');
       refetch();
       setShowModal(false);
       setSelectedItem(null);
     },
-    onError: () => toast.error('Erro ao aprovar'),
+    onError: () => toast.error('Erro ao aprovar comissão'),
   });
 
-  // Reject
+  // Reject using RLS function
   const rejectMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('comissoes')
-        .update({
-          status_comissao: 'cancelada',
-          observacao: rejectionReason || 'Rejeitado',
-        })
-        .eq('id', id);
+      const { data, error } = await supabase.rpc('fn_rejeitar_comissao', {
+        p_comissao_id: id,
+        p_user_id: user?.id,
+        p_motivo: rejectionReason || 'Rejeitado pelo admin',
+      });
       if (error) throw error;
+      return data;
     },
     onSuccess: () => {
-      toast.success('✓ Comissão rejeitada');
+      toast.success('✓ Comissão rejeitada com notificação');
       refetch();
       setShowModal(false);
       setSelectedItem(null);
       setRejectionReason('');
     },
-    onError: () => toast.error('Erro ao rejeitar'),
+    onError: () => toast.error('Erro ao rejeitar comissão'),
   });
 
   if (isAdminLoading) {

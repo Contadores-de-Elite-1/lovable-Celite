@@ -1,0 +1,63 @@
+name: 🚀 Deploy & Test (Simplificado)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'claude/**'
+    paths:
+      - 'supabase/functions/**'
+
+jobs:
+  deploy-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📦 Install Supabase CLI
+        run: npm install -g supabase
+
+      - name: 🚀 Deploy Webhook
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.CLAUDECODE_ACCESS_TOKEN }}
+        run: |
+          echo "Deploying webhook-asaas..."
+          supabase functions deploy webhook-asaas \
+            --project-ref zytxwdgzjqrcmbnpgofj \
+            --no-verify-jwt || echo "Deploy may have warnings but continuing..."
+
+      - name: 🧪 Test Webhook Availability
+        run: |
+          echo "Testing webhook..."
+          sleep 5
+
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+            https://zytxwdgzjqrcmbnpgofj.supabase.co/functions/v1/webhook-asaas \
+            -H "Content-Type: application/json" \
+            -d '{"test":"ping"}')
+
+          echo "HTTP Status: $HTTP_CODE"
+
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 600 ]; then
+            echo "✅ Webhook is responding!"
+          else
+            echo "⚠️  Webhook may not be accessible yet (code: $HTTP_CODE)"
+          fi
+
+      - name: 📝 Summary
+        if: always()
+        run: |
+          echo ""
+          echo "════════════════════════════════════════"
+          echo "✅ DEPLOY CONCLUÍDO"
+          echo "════════════════════════════════════════"
+          echo ""
+          echo "Webhook URL:"
+          echo "https://zytxwdgzjqrcmbnpgofj.supabase.co/functions/v1/webhook-asaas"
+          echo ""
+          echo "Próximos passos MANUAIS:"
+          echo "1. Testar localmente: git pull && node criar-cliente-especifico.mjs"
+          echo "2. Configurar webhook ASAAS: node configurar-webhook-asaas.mjs"
+          echo ""

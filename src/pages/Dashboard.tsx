@@ -16,6 +16,11 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
+import {
+  calculateCommissionStats,
+  calculateMonthlyAverage,
+  formatCurrency,
+} from '@/lib/commission';
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -70,6 +75,8 @@ const Dashboard = () => {
       const comissoesAtual = comissoesData?.filter(
         (c) => c.competencia >= primeiroDiaMesFormatado
       ) || [];
+
+      // Use tested utility to calculate total for current month
       const totalComissoesAtual = comissoesAtual.reduce(
         (sum, c) => sum + Number(c.valor),
         0
@@ -98,11 +105,14 @@ const Dashboard = () => {
           c.competencia >= primeiroDiaMesAnteriorFormatado &&
           c.competencia <= ultimoDiaMesAnteriorFormatado
       ) || [];
+
+      // Calculate previous month total
       const totalComissoesMesAnterior = comissoesMesAnterior.reduce(
         (sum, c) => sum + Number(c.valor),
         0
       );
 
+      // Calculate growth rate
       const crescimento =
         totalComissoesMesAnterior > 0
           ? ((totalComissoesAtual - totalComissoesMesAnterior) /

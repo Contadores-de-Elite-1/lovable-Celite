@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Users, TrendingUp, Award, Network, ExternalLink, DollarSign } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { formatCurrency } from '@/lib/commission';
 
 interface NetworkMember {
   id: string;

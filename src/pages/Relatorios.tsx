@@ -22,6 +22,17 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import {
+  calculateCommissionStats,
+  formatCurrency,
+} from '@/lib/commission';
+import {
+  convertToCSV,
+  downloadCSV,
+  generateCSVFilename,
+  formatDateForCSV,
+  formatCurrencyForCSV,
+} from '@/lib/csv';
 
 const Relatorios = () => {
   const { user } = useAuth();
@@ -171,65 +182,46 @@ const Relatorios = () => {
   const stats = useMemo(() => {
     if (!relatorioData?.comissoes) return null;
 
-    const comissoes = relatorioData.comissoes;
-    const totalAcumulado = comissoes.reduce((sum, c: {
-      valor: number;
-    }) => sum + Number(c.valor), 0);
-    const totalPago = comissoes
-      .filter((c: {
-        status_comissao: string;
-      }) => c.status_comissao === 'paga')
-      .reduce((sum, c: {
-        valor: number;
-      }) => sum + Number(c.valor), 0);
-    const totalPendente = totalAcumulado - totalPago;
-    const mediaMonthly = comissoes.length > 0 ? totalAcumulado / 12 : 0;
+    // Use tested utility to calculate all stats
+    const calculatedStats = calculateCommissionStats(relatorioData.comissoes as any);
 
-    return {
-      totalAcumulado,
-      totalPago,
-      totalPendente,
-      mediaMonthly,
-      totalComissoes: comissoes.length,
-    };
+    return calculatedStats;
   }, [relatorioData]);
 
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
 
-  const downloadCSV = () => {
+  const handleDownloadCSV = () => {
     if (!relatorioData?.comissoes || relatorioData.comissoes.length === 0) {
       alert('Nenhuma comissão para exportar');
       return;
     }
 
-    const headers = ['Data', 'Tipo', 'Valor (R$)', 'Status', 'Cliente'];
-    const rows = relatorioData.comissoes.map((c: {
-      competencia: string;
-      tipo_comissao: string;
-      valor: number;
-      status_comissao: string;
-      clientes?: { nome: string };
-    }) => [
-      new Date(c.competencia).toLocaleDateString('pt-BR'),
-      c.tipo_comissao,
-      Number(c.valor).toFixed(2),
-      c.status_comissao,
-      c.clientes?.nome || 'N/A',
-    ]);
+    try {
+      // Prepare data for CSV export with proper formatting
+      const rows = relatorioData.comissoes.map((c: {
+        competencia: string;
+        tipo_comissao: string;
+        valor: number;
+        status_comissao: string;
+        clientes?: { nome: string };
+      }) => [
+        formatDateForCSV(c.competencia),
+        c.tipo_comissao,
+        formatCurrencyForCSV(Number(c.valor)),
+        c.status_comissao,
+        c.clientes?.nome || 'N/A',
+      ]);
 
-    const csv = [headers, ...rows].map((row) => row.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute(
-      'download',
-      `relatorio_comissoes_${new Date().toISOString().split('T')[0]}.csv`
-    );
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      // Use tested CSV utility to generate CSV with proper escaping
+      const csv = convertToCSV(rows, ['Data', 'Tipo', 'Valor (R$)', 'Status', 'Cliente']);
+
+      // Use tested CSV utility to download
+      const filename = generateCSVFilename('relatorio_comissoes');
+      downloadCSV(csv, filename);
+    } catch (error) {
+      console.error('Erro ao exportar CSV:', error);
+      alert('Erro ao exportar dados. Por favor, tente novamente.');
+    }
   };
 
   if (isLoading) {
@@ -257,7 +249,7 @@ const Relatorios = () => {
             </p>
           </div>
           <Button
-            onClick={downloadCSV}
+            onClick={handleDownloadCSV}
             className="bg-yellow-500 hover:bg-yellow-600 text-blue-900 font-medium rounded-lg py-2 px-4 flex items-center gap-2"
           >
             <Download className="h-4 w-4" />

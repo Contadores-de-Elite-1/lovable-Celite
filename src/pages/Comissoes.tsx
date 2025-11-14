@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
@@ -11,6 +11,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DollarSign, TrendingUp, Clock, Download } from 'lucide-react';
 import { motion } from 'framer-motion';
+import {
+  calculateTotalCommissions,
+  calculatePaidCommissions,
+  calculateCommissionStats,
+  formatCurrency,
+} from '@/lib/commission';
+import { filterByMultipleCriteria } from '@/lib/filters';
+import { convertToCSV, downloadCSV, generateCSVFilename } from '@/lib/csv';
 
 const Comissoes = () => {
   const { user } = useAuth();
@@ -19,8 +27,8 @@ const Comissoes = () => {
   const [dateEnd, setDateEnd] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  const { data: comissoes, isLoading } = useQuery({
-    queryKey: ['comissoes', user?.id, periodo, dateStart, dateEnd, statusFilter],
+  const { data: allComissoes, isLoading } = useQuery({
+    queryKey: ['comissoes', user?.id],
     queryFn: async () => {
       const { data: contador } = await supabase
         .from('contadores')
@@ -30,7 +38,7 @@ const Comissoes = () => {
 
       if (!contador) return [];
 
-      let query = supabase
+      const { data } = await supabase
         .from('comissoes')
         .select(
           `
@@ -39,26 +47,24 @@ const Comissoes = () => {
           pagamentos (valor_bruto, pago_em)
         `
         )
-        .eq('contador_id', contador.id);
+        .eq('contador_id', contador.id)
+        .order('created_at', { ascending: false });
 
-      // Apply date filters
-      if (dateStart) {
-        query = query.gte('competencia', dateStart);
-      }
-      if (dateEnd) {
-        query = query.lte('competencia', dateEnd);
-      }
-
-      // Apply status filter
-      if (statusFilter !== 'all') {
-        query = query.eq('status_comissao', statusFilter);
-      }
-
-      const { data } = await query.order('created_at', { ascending: false });
       return data || [];
     },
     enabled: !!user,
   });
+
+  // Apply filters using tested utility
+  const comissoes = useMemo(() => {
+    if (!allComissoes) return [];
+
+    return filterByMultipleCriteria(allComissoes as any, {
+      startDate: dateStart || undefined,
+      endDate: dateEnd || undefined,
+      status: statusFilter !== 'all' ? statusFilter : undefined,
+    });
+  }, [allComissoes, dateStart, dateEnd, statusFilter]);
 
   const diretas =
     comissoes?.filter((c) => c.tipo_comissao === 'ativacao' || c.tipo_comissao === 'recorrente') ||
@@ -73,10 +79,26 @@ const Comissoes = () => {
         c.tipo_comissao === 'bonus_contador'
     ) || [];
 
-  const totalProvisionadas =
-    comissoes?.filter((c) => c.status_comissao === 'calculada').reduce((acc, c) => acc + Number(c.valor), 0) || 0;
-  const totalLiberadas =
-    comissoes?.filter((c) => c.status_comissao === 'paga').reduce((acc, c) => acc + Number(c.valor), 0) || 0;
+  // Use tested utility to calculate commission stats
+  const stats = useMemo(() => {
+    if (!comissoes) return null;
+    return calculateCommissionStats(comissoes as any);
+  }, [comissoes]);
+
+  // Calculate totals using utility results
+  const totalProvisionadas = useMemo(() => {
+    if (!comissoes) return 0;
+    return comissoes
+      .filter((c) => c.status_comissao === 'calculada')
+      .reduce((acc, c) => acc + Number(c.valor), 0);
+  }, [comissoes]);
+
+  const totalLiberadas = useMemo(() => {
+    if (!comissoes) return 0;
+    return comissoes
+      .filter((c) => c.status_comissao === 'paga')
+      .reduce((acc, c) => acc + Number(c.valor), 0);
+  }, [comissoes]);
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: any; label: string; color: string }> = {
@@ -101,34 +123,32 @@ const Comissoes = () => {
     return labels[tipo] || tipo.replace('_', ' ');
   };
 
-  const downloadCSV = () => {
+  const handleDownloadCSV = () => {
     if (!comissoes || comissoes.length === 0) {
       alert('Nenhuma comissão para exportar');
       return;
     }
 
-    // Prepare CSV content
-    const headers = ['Cliente', 'Competência', 'Tipo', 'Valor (R$)', 'Status'];
-    const rows = comissoes.map((c) => [
-      c.clientes?.nome || 'N/A',
-      new Date(c.competencia).toLocaleDateString('pt-BR'),
-      getTipoLabel(c.tipo_comissao),
-      Number(c.valor).toFixed(2),
-      getStatusBadge(c.status_comissao).label,
-    ]);
+    try {
+      // Prepare data in format expected by convertToCSV
+      const rows = comissoes.map((c) => [
+        c.clientes?.nome || 'N/A',
+        new Date(c.competencia).toLocaleDateString('pt-BR'),
+        getTipoLabel(c.tipo_comissao),
+        Number(c.valor).toFixed(2),
+        getStatusBadge(c.status_comissao).label,
+      ]);
 
-    const csv = [headers, ...rows].map((row) => row.join(',')).join('\n');
+      // Use tested CSV utility to generate CSV with proper escaping
+      const csv = convertToCSV(rows, ['Cliente', 'Competência', 'Tipo', 'Valor (R$)', 'Status']);
 
-    // Create blob and download
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `comissoes_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      // Use tested CSV utility to download
+      const filename = generateCSVFilename('comissoes');
+      downloadCSV(csv, filename);
+    } catch (error) {
+      console.error('Erro ao exportar CSV:', error);
+      alert('Erro ao exportar dados. Por favor, tente novamente.');
+    }
   };
 
   const ComissoesTable = ({ data }: { data: any[] }) => (
@@ -312,7 +332,7 @@ const Comissoes = () => {
           {/* Export Button */}
           <div className="flex justify-end">
             <Button
-              onClick={downloadCSV}
+              onClick={handleDownloadCSV}
               className="bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg py-2 px-4 flex items-center gap-2"
             >
               <Download className="h-4 w-4" />

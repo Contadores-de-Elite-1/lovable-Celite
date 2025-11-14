@@ -1,0 +1,18 @@
+{
+  "asaas_customer": {
+    "name": "Empresa Teste Webhook",
+    "email": "teste-webhook@empresa.com",
+    "cpfCnpj": "12345678000199",
+    "phone": "11999999999",
+    "observation": "Cliente para teste webhook"
+  },
+  "supabase_cliente": {
+    "nome_empresa": "Empresa Teste Webhook",
+    "cnpj": "12345678000199",
+    "contato_email": "teste-webhook@empresa.com",
+    "contato_telefone": "11999999999",
+    "status": "lead",
+    "plano": "profissional",
+    "valor_mensal": 299.90
+  }
+}

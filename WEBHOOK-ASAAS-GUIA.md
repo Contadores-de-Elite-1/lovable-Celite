@@ -10,10 +10,31 @@ Webhooks são eventos enviados pelo ASAAS para uma URL configurada quando algo a
 
 ### Características Importantes
 
-1. **Limite**: Até 10 webhooks por conta
-2. **Idempotência**: Cada evento tem ID único
+1. **Limite**: Até 10 URLs de webhooks por conta
+2. **Idempotência**: Cada evento tem ID único - use para evitar processar duplicatas
 3. **Garantia**: "At least once" - pode receber o mesmo evento mais de uma vez
-4. **Resposta**: Seu endpoint deve retornar 200 o mais rápido possível
+4. **Resposta**: Status HTTP 200-299 para considerar sucesso
+5. **Autenticação**: Token opcional enviado em header `asaas-access-token`
+6. **Falhas**: Após **15 falhas consecutivas**, fila é **interrompida** automaticamente
+7. **Retenção**: ⚠️ **Eventos guardados por apenas 14 dias!** Depois disso são **excluídos permanentemente**
+8. **Notificação**: ASAAS envia email se fila for interrompida
+
+### ⚠️ CRÍTICO - Gestão de Falhas
+
+**O que acontece quando falha:**
+1. Seu endpoint retorna erro (não 200-299)
+2. ASAAS tenta novamente
+3. Após **15 falhas consecutivas**: fila **PARA**
+4. Você recebe **email de aviso**
+5. Eventos continuam sendo gerados mas **NÃO são enviados**
+6. Você tem **14 dias** para resolver
+7. Após 14 dias, eventos antigos são **DELETADOS**
+
+**Como resolver:**
+1. Corrija o problema no seu endpoint
+2. Acesse: Minha Conta → Integração → Webhooks
+3. Reative a fila de sincronização
+4. Eventos pendentes serão processados em ordem cronológica
 
 ---
 
@@ -21,8 +42,14 @@ Webhooks são eventos enviados pelo ASAAS para uma URL configurada quando algo a
 
 ### Endpoint
 
+**Sandbox (Teste)**:
 ```
-POST https://sandbox.asaas.com/api/v3/webhooks
+POST https://api-sandbox.asaas.com/v3/webhooks
+```
+
+**Produção**:
+```
+POST https://api.asaas.com/v3/webhooks
 ```
 
 ### Headers Obrigatórios
@@ -34,6 +61,12 @@ POST https://sandbox.asaas.com/api/v3/webhooks
   "access_token": "SEU_TOKEN_ASAAS"
 }
 ```
+
+### Respostas da API
+
+- **200** - Webhook criado com sucesso
+- **400** - Erro na requisição (Bad Request)
+- **401** - Não autorizado (Unauthorized)
 
 ### Body (Request)
 
@@ -55,19 +88,21 @@ POST https://sandbox.asaas.com/api/v3/webhooks
 }
 ```
 
-### Parâmetros
+### Parâmetros (Body)
 
 | Parâmetro | Tipo | Obrigatório | Descrição |
 |-----------|------|-------------|-----------|
-| `name` | String | Sim | Nome identificador do webhook |
-| `url` | String | Sim | URL que receberá os eventos POST |
-| `email` | String | Sim | Email para notificações de falha |
-| `apiVersion` | Integer | Não | Versão da API (padrão: 3) |
-| `enabled` | Boolean | Não | Ativar/desativar (padrão: true) |
-| `interrupted` | Boolean | Não | Fila interrompida (padrão: false) |
-| `authToken` | String | Não | Token de autenticação enviado no header |
-| `sendType` | String | Não | "SEQUENTIALLY" ou "NON_SEQUENTIALLY" |
-| `events` | Array | Sim | Lista de eventos a receber |
+| `name` | String | Sim | Nome do Webhook |
+| `url` | String | Sim | URL de destino dos eventos |
+| `email` | String | Sim | E-mail que receberá notificações sobre o Webhook |
+| `enabled` | Boolean | Não | Definir se o Webhook está ativo |
+| `interrupted` | Boolean | Não | Definir se a fila de sincronização está interrompida |
+| `apiVersion` | Integer (int32) | Não | Versão da API |
+| `authToken` | String | Não | Token de autenticação do Webhook |
+| `sendType` | String (enum) | Não | Sequencial (`SEQUENTIALLY`) ou não sequencial (`NON_SEQUENTIALLY`) |
+| `events` | Array of Strings (enum) | Sim | Lista de eventos enviados pelo Webhook |
+
+**Nota**: Webhooks agora possuem um **ID**. Você pode utilizar este ID para editar, visualizar dados ou removê-lo. Você também pode listar todos os Webhooks configurados.
 
 ---
 
@@ -93,8 +128,17 @@ POST https://sandbox.asaas.com/api/v3/webhooks
 | `PAYMENT_DUNNING_REQUESTED` | Negativação solicitada |
 | `PAYMENT_BANK_SLIP_VIEWED` | Boleto visualizado |
 | `PAYMENT_CHECKOUT_VIEWED` | Checkout visualizado |
+| `PAYMENT_AUTHORIZED` | Pagamento autorizado |
+| `PAYMENT_AWAITING_RISK_ANALYSIS` | Aguardando análise de risco |
+| `PAYMENT_APPROVED_BY_RISK_ANALYSIS` | Aprovado pela análise de risco |
+| `PAYMENT_REPROVED_BY_RISK_ANALYSIS` | Reprovado pela análise de risco |
+| `PAYMENT_CREDIT_CARD_CAPTURE_REFUSED` | Captura de cartão recusada |
+| `PAYMENT_ANTICIPATED` | Pagamento antecipado |
+| `PAYMENT_REFUND_IN_PROGRESS` | Estorno em andamento |
 
-**Principais para comissões**: `PAYMENT_CONFIRMED` e `PAYMENT_RECEIVED`
+**⭐ Principais para comissões**: `PAYMENT_CONFIRMED` e `PAYMENT_RECEIVED`
+
+**Total**: 23 eventos de pagamento disponíveis
 
 ---
 
@@ -130,98 +174,189 @@ Exemplo de evento recebido:
 
 ---
 
-## ✅ BOAS PRÁTICAS
+## ✅ BOAS PRÁTICAS (Documentação Oficial)
 
-### 1. Retorne 200 Rapidamente
+### 1. Retorne 200 o Mais Rápido Possível ⚡
+
+**Crítico**: Resposta deve ser **200-299**. Após **15 falhas**, fila é **interrompida**.
 
 ```javascript
-// ✅ BOM
+// ✅ BOM - Responde imediatamente
 app.post('/webhook', (req, res) => {
-  res.status(200).send();  // Responde imediatamente
-  processarEvento(req.body); // Processa depois
+  res.status(200).send();  // Retorna sucesso AGORA
+  processarEvento(req.body); // Processa depois de forma assíncrona
 });
 
-// ❌ RUIM
+// ❌ RUIM - Demora para responder
 app.post('/webhook', async (req, res) => {
-  await processarEvento(req.body);  // Demora muito!
-  res.status(200).send();
+  await processarEvento(req.body);  // ASAAS fica esperando!
+  res.status(200).send();           // Pode dar timeout!
 });
 ```
 
-### 2. Implemente Idempotência
+### 2. Gerencie Eventos Duplicados (Idempotência) 🔄
+
+**Garantia**: "At least once" - mesmo evento pode chegar mais de uma vez.
 
 ```javascript
 const { id, event, payment } = req.body;
 
-// Verificar se já processou este evento
+// ✅ Verificar se já processou usando o ID único do evento
 const jaProcessado = await db.query(
   'SELECT 1 FROM webhook_logs WHERE asaas_event_id = ?',
-  [id]
+  [id]  // ID único de cada evento
 );
 
 if (jaProcessado) {
-  return res.status(200).send(); // Já processou, retorna OK
+  console.log(`Evento ${id} já processado. Ignorando duplicata.`);
+  return res.status(200).send(); // Retorna OK sem reprocessar
 }
 
-// Processar evento...
+// Processar evento pela primeira vez...
+await db.query(
+  'INSERT INTO webhook_logs (asaas_event_id, ...) VALUES (?, ...)',
+  [id, ...]
+);
 ```
 
-### 3. Configure Apenas Eventos Necessários
+### 3. Configure APENAS Eventos Necessários ⚙️
 
-Não configure todos os eventos! Sobrecarrega seu servidor.
+**Importante**: Não sobrecarregue seu servidor recebendo eventos desnecessários.
 
 ```json
-// ✅ BOM - Apenas o que precisa
-"events": ["PAYMENT_CONFIRMED", "PAYMENT_RECEIVED"]
+// ✅ BOM - Apenas o que sua aplicação precisa
+"events": [
+  "PAYMENT_CONFIRMED",  // Pagamento confirmado
+  "PAYMENT_RECEIVED"    // Pagamento recebido
+]
 
-// ❌ RUIM - Tudo
-"events": ["PAYMENT_*", "SUBSCRIPTION_*", "TRANSFER_*", ...]
+// ❌ RUIM - Todos os eventos (sobrecarga!)
+"events": [
+  "PAYMENT_CREATED", "PAYMENT_UPDATED", "PAYMENT_CONFIRMED",
+  "PAYMENT_RECEIVED", "PAYMENT_OVERDUE", "PAYMENT_DELETED",
+  ... 17 outros eventos que você não usa ...
+]
 ```
 
-### 4. Use Filas para Processamento
+### 4. Gerencie Eventos de Forma Assíncrona 🚀
+
+**Escalabilidade**: Evite processar eventos de forma síncrona.
 
 ```
-Webhook recebido → Salva em fila → Retorna 200
-                    ↓
-              Worker processa fila
+┌─────────────────────────────────────────────────┐
+│ Webhook recebido                                │
+│  ↓                                              │
+│ Salva em fila (Redis, RabbitMQ, SQS)           │
+│  ↓                                              │
+│ Retorna 200 imediatamente ✅                    │
+│                                                 │
+│        (separado)                               │
+│         ↓                                       │
+│    Worker processa fila de forma assíncrona     │
+│         ↓                                       │
+│    Calcula comissões, atualiza banco, etc.      │
+└─────────────────────────────────────────────────┘
 ```
+
+### 5. Verifique Origem com Token de Autenticação 🔐
+
+**Segurança**: Garanta que requisições vêm do ASAAS.
+
+```javascript
+app.post('/webhook', (req, res) => {
+  const token = req.headers['asaas-access-token'];
+  const expectedToken = process.env.WEBHOOK_AUTH_TOKEN;
+
+  if (token !== expectedToken) {
+    console.error('Token inválido! Possível ataque.');
+    return res.status(401).send('Unauthorized');
+  }
+
+  // Token válido, processar evento...
+  res.status(200).send();
+});
+```
+
+**Configure o token** no webhook:
+```json
+{
+  "authToken": "seu-token-secreto-aqui"
+}
+```
+
+### 6. Monitore a Fila de Sincronização 📊
+
+**Prevenção**: Fique atento a emails do ASAAS sobre fila interrompida.
+
+- Use `GET /v3/webhooks` para verificar campo `interrupted`
+- Se `interrupted: true`, corrija e reative a fila
+- Você tem **14 dias** antes de perder eventos!
 
 ---
 
-## 🚀 COMANDOS PRONTOS
+## 🔧 GERENCIAMENTO DE WEBHOOKS
 
-### Listar Webhooks Existentes
+### Listar Todos os Webhooks
+
+**Endpoint**: `GET /v3/webhooks`
 
 ```bash
-curl https://sandbox.asaas.com/api/v3/webhooks \
+curl https://api-sandbox.asaas.com/v3/webhooks \
+  -H "accept: application/json" \
+  -H "access_token: $ASAAS_API_KEY"
+```
+
+**Resposta**: Lista de webhooks com seus IDs, status, eventos configurados e se a fila está interrompida.
+
+### Visualizar Webhook Específico
+
+**Endpoint**: `GET /v3/webhooks/{id}`
+
+```bash
+curl https://api-sandbox.asaas.com/v3/webhooks/WEBHOOK_ID \
+  -H "accept: application/json" \
   -H "access_token: $ASAAS_API_KEY"
 ```
 
 ### Criar Novo Webhook
 
+**Endpoint**: `POST /v3/webhooks`
+
 ```bash
-curl -X POST https://sandbox.asaas.com/api/v3/webhooks \
+curl -X POST https://api-sandbox.asaas.com/v3/webhooks \
   -H "accept: application/json" \
   -H "content-type: application/json" \
   -H "access_token: $ASAAS_API_KEY" \
   -d @webhook-config.json
 ```
 
-### Atualizar Webhook Existente
+**Resposta 200**: Webhook criado com ID
+
+### Editar Webhook Existente
+
+**Endpoint**: `PUT /v3/webhooks/{id}`
 
 ```bash
-curl -X PUT https://sandbox.asaas.com/api/v3/webhooks/WEBHOOK_ID \
-  -H "access_token: $ASAAS_API_KEY" \
+curl -X PUT https://api-sandbox.asaas.com/v3/webhooks/WEBHOOK_ID \
+  -H "accept: application/json" \
   -H "content-type: application/json" \
+  -H "access_token: $ASAAS_API_KEY" \
   -d @webhook-config.json
 ```
 
 ### Deletar Webhook
 
+**Endpoint**: `DELETE /v3/webhooks/{id}`
+
 ```bash
-curl -X DELETE https://sandbox.asaas.com/api/v3/webhooks/WEBHOOK_ID \
+curl -X DELETE https://api-sandbox.asaas.com/v3/webhooks/WEBHOOK_ID \
+  -H "accept: application/json" \
   -H "access_token: $ASAAS_API_KEY"
 ```
+
+---
+
+## 🚀 COMANDOS PRONTOS (Sandbox)
 
 ---
 

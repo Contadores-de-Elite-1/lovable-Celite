@@ -8,7 +8,7 @@
  */
 
 const ASAAS_API_KEY = '$aact_hmlg_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6Ojg5NGI4NmYzLWQxYmUtNDkwYy05ZWMwLTM5ZTFhZGUwYWM2MDo6JGFhY2hfNDNkMWQ3N2YtNTEzOS00NmU3LWE4NzAtMzU0Y2Q1ZWEyYTA4';
-const ASAAS_API_URL = 'https://sandbox.asaas.com/api/v3';
+const ASAAS_API_URL = 'https://api-sandbox.asaas.com/v3';
 
 console.log('🔗 CONFIGURANDO WEBHOOK DO ASAAS...\n');
 
@@ -49,24 +49,31 @@ const webhookConfig = {
   apiVersion: 3,
   enabled: true,
   interrupted: false,
-  // Eventos de pagamento (principais para o sistema de comissões)
+  // Eventos de pagamento - TODOS os eventos disponíveis na API ASAAS
   events: [
-    'PAYMENT_CREATED',           // Nova cobrança gerada
-    'PAYMENT_UPDATED',           // Alteração em vencimento/valor
-    'PAYMENT_CONFIRMED',         // Pagamento confirmado ⭐ PRINCIPAL
-    'PAYMENT_RECEIVED',          // Pagamento recebido ⭐ PRINCIPAL
-    'PAYMENT_OVERDUE',           // Pagamento vencido
-    'PAYMENT_DELETED',           // Cobrança removida
-    'PAYMENT_RESTORED',          // Cobrança restaurada
-    'PAYMENT_REFUNDED',          // Pagamento estornado
-    'PAYMENT_RECEIVED_IN_CASH_UNDONE', // Confirmação desfeita
-    'PAYMENT_CHARGEBACK_REQUESTED',    // Chargeback solicitado
-    'PAYMENT_CHARGEBACK_DISPUTE',      // Contestação de chargeback
+    'PAYMENT_CREATED',                      // Nova cobrança gerada
+    'PAYMENT_UPDATED',                      // Alteração em vencimento/valor
+    'PAYMENT_CONFIRMED',                    // Pagamento confirmado ⭐ PRINCIPAL
+    'PAYMENT_RECEIVED',                     // Pagamento recebido ⭐ PRINCIPAL
+    'PAYMENT_ANTICIPATED',                  // Pagamento antecipado
+    'PAYMENT_OVERDUE',                      // Pagamento vencido
+    'PAYMENT_DELETED',                      // Cobrança removida
+    'PAYMENT_RESTORED',                     // Cobrança restaurada
+    'PAYMENT_REFUNDED',                     // Pagamento estornado
+    'PAYMENT_REFUND_IN_PROGRESS',           // Estorno em andamento
+    'PAYMENT_RECEIVED_IN_CASH_UNDONE',      // Confirmação desfeita
+    'PAYMENT_CHARGEBACK_REQUESTED',         // Chargeback solicitado
+    'PAYMENT_CHARGEBACK_DISPUTE',           // Contestação de chargeback
     'PAYMENT_AWAITING_CHARGEBACK_REVERSAL', // Aguardando reversão
-    'PAYMENT_DUNNING_RECEIVED',   // Pagamento de negativação recebido
-    'PAYMENT_DUNNING_REQUESTED',  // Negativação solicitada
-    'PAYMENT_BANK_SLIP_VIEWED',   // Boleto visualizado
-    'PAYMENT_CHECKOUT_VIEWED'     // Checkout visualizado
+    'PAYMENT_DUNNING_RECEIVED',             // Pagamento de negativação recebido
+    'PAYMENT_DUNNING_REQUESTED',            // Negativação solicitada
+    'PAYMENT_BANK_SLIP_VIEWED',             // Boleto visualizado
+    'PAYMENT_CHECKOUT_VIEWED',              // Checkout visualizado
+    'PAYMENT_AUTHORIZED',                   // Pagamento autorizado
+    'PAYMENT_AWAITING_RISK_ANALYSIS',       // Aguardando análise de risco
+    'PAYMENT_APPROVED_BY_RISK_ANALYSIS',    // Aprovado pela análise de risco
+    'PAYMENT_REPROVED_BY_RISK_ANALYSIS',    // Reprovado pela análise de risco
+    'PAYMENT_CREDIT_CARD_CAPTURE_REFUSED'   // Captura de cartão recusada
   ],
   sendType: 'SEQUENTIALLY'  // Enviar eventos sequencialmente
 };

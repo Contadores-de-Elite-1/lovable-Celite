@@ -9,9 +9,17 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { DollarSign, TrendingUp, Clock, Download, Wallet } from 'lucide-react';
+import { DollarSign, TrendingUp, Clock, Download, Wallet, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import {
   calculateTotalCommissions,
   calculatePaidCommissions,
@@ -28,6 +36,7 @@ const Comissoes = () => {
   const [dateEnd, setDateEnd] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [isProcessingSaque, setIsProcessingSaque] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // Get contador info
   const { data: contador } = useQuery({
@@ -144,7 +153,7 @@ const Comissoes = () => {
       .reduce((acc, c) => acc + Number(c.valor), 0);
   }, [comissoes]);
 
-  const handleSolicitarSaque = async () => {
+  const handleSolicitarSaque = async (confirmed: boolean = false) => {
     if (!contador || !user?.id) {
       toast.error('Erro: Contador não encontrado');
       return;
@@ -157,6 +166,12 @@ const Comissoes = () => {
 
     if (!userProfile?.chave_pix && !userProfile?.conta) {
       toast.error('Complete seus dados bancários no Perfil antes de solicitar saque');
+      return;
+    }
+
+    // Show confirmation modal first
+    if (!confirmed) {
+      setShowConfirmModal(true);
       return;
     }
 
@@ -182,7 +197,8 @@ const Comissoes = () => {
 
       if (error) throw error;
 
-      toast.success('✅ Solicitação de saque enviada! Processaremos em até 2 dias úteis.');
+      setShowConfirmModal(false);
+      toast.success('✅ Solicitação de saque enviada! Você será notificado em breve.');
       refetchComissoes();
     } catch (error) {
       console.error('Erro ao solicitar saque:', error);
@@ -304,6 +320,87 @@ const Comissoes = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Confirmation Modal */}
+      <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-yellow-600" />
+              Confirmar Solicitação de Saque
+            </DialogTitle>
+            <DialogDescription>
+              Verifique os dados antes de confirmar
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Saque Info */}
+            <div className="bg-blue-50 p-4 rounded-lg space-y-2">
+              <p className="text-sm font-semibold text-blue-900">Dados do Saque</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-gray-600">Valor</p>
+                  <p className="font-bold text-green-600">R$ {totalAprovadas.toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-600">Comissões</p>
+                  <p className="font-bold text-gray-900">{comissoes.filter((c) => c.status_comissao === 'aprovada').length}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Bank Info */}
+            <div className="bg-gray-50 p-4 rounded-lg space-y-2 border border-gray-200">
+              <p className="text-sm font-semibold text-gray-900">Dados Bancários</p>
+              {userProfile?.chave_pix && (
+                <div className="text-sm">
+                  <p className="text-xs text-gray-600">PIX</p>
+                  <p className="font-mono text-gray-900 break-all">{userProfile.chave_pix}</p>
+                </div>
+              )}
+              {userProfile?.titular_conta && (
+                <div className="text-sm">
+                  <p className="text-xs text-gray-600">Titular</p>
+                  <p className="font-semibold text-gray-900">{userProfile.titular_conta}</p>
+                </div>
+              )}
+              {userProfile?.banco && (
+                <div className="text-sm">
+                  <p className="text-xs text-gray-600">Banco</p>
+                  <p className="text-gray-900">
+                    {userProfile.banco}
+                    {userProfile.agencia && ` / Agência: ${userProfile.agencia}`}
+                    {userProfile.conta && ` / Conta: ${userProfile.conta}`}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Warning */}
+            <div className="bg-amber-50 border border-amber-200 p-3 rounded text-sm text-amber-800">
+              ⚠️ Após confirmar, sua solicitação será enviada para processamento. Você receberá notificação quando concluída.
+            </div>
+          </div>
+
+          <DialogFooter className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowConfirmModal(false)}
+              className="flex-1"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => handleSolicitarSaque(true)}
+              disabled={isProcessingSaque}
+              className="flex-1 bg-green-600 hover:bg-green-700"
+            >
+              {isProcessingSaque ? 'Processando...' : 'Confirmar Saque'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <header className="bg-gradient-to-r from-blue-900 to-blue-800 text-white p-6">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-2xl md:text-3xl font-serif font-bold text-yellow-400">Comissões</h1>
@@ -356,7 +453,7 @@ const Comissoes = () => {
                   R$ {totalAprovadas.toFixed(0)}
                 </div>
                 <Button
-                  onClick={handleSolicitarSaque}
+                  onClick={() => handleSolicitarSaque(false)}
                   disabled={totalAprovadas < 100 || isProcessingSaque}
                   className="mt-3 w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400"
                 >

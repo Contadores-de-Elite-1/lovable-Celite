@@ -5,9 +5,13 @@
   "apiVersion": 3,
   "enabled": true,
   "interrupted": false,
+  "authToken": null,
+  "sendType": "SEQUENTIALLY",
   "events": [
-    "PAYMENT_RECEIVED",
+    "PAYMENT_CREATED",
+    "PAYMENT_UPDATED",
     "PAYMENT_CONFIRMED",
+    "PAYMENT_RECEIVED",
     "PAYMENT_OVERDUE",
     "PAYMENT_DELETED",
     "PAYMENT_RESTORED",
@@ -20,6 +24,5 @@
     "PAYMENT_DUNNING_REQUESTED",
     "PAYMENT_BANK_SLIP_VIEWED",
     "PAYMENT_CHECKOUT_VIEWED"
-  ],
-  "sendType": "SEQUENTIALLY"
+  ]
 }

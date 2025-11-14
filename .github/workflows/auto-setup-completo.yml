@@ -3,11 +3,11 @@ name: 🤖 Auto Setup Completo (ROBÔ)
 on:
   workflow_dispatch:
 
-  # Roda automaticamente após deploy
-  workflow_run:
-    workflows: ["Deploy to Supabase Cloud"]
-    types:
-      - completed
+  # DESABILITADO - Causava execuções automáticas com erro
+  # workflow_run:
+  #   workflows: ["Deploy to Supabase Cloud"]
+  #   types:
+  #     - completed
 
 jobs:
   setup-completo:

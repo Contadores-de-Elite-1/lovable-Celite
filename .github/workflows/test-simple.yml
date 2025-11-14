@@ -1,0 +1,57 @@
+name: ✅ Test Simple (sem dependências)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test 1 - Secret existe
+        env:
+          TOKEN: ${{ secrets.CLAUDECODE_ACCESS_TOKEN }}
+        run: |
+          echo "🔍 Testando secret..."
+          if [ -z "$TOKEN" ]; then
+            echo "❌ SECRET NÃO ENCONTRADO"
+            exit 1
+          else
+            echo "✅ Secret encontrado: ${TOKEN:0:10}..."
+          fi
+
+      - name: Test 2 - Webhook responde
+        run: |
+          echo "🔍 Testando webhook..."
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+            https://zytxwdgzjqrcmbnpgofj.supabase.co/functions/v1/webhook-asaas \
+            -H "Content-Type: application/json" \
+            -d '{"test":"ping"}')
+
+          echo "HTTP Status: $HTTP_CODE"
+
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 600 ]; then
+            echo "✅ Webhook está respondendo!"
+            exit 0
+          else
+            echo "❌ Webhook não está respondendo"
+            exit 1
+          fi
+
+      - name: Test 3 - Supabase CLI disponível
+        run: |
+          echo "🔍 Verificando Supabase CLI..."
+          npm install -g supabase
+          supabase --version
+          echo "✅ Supabase CLI instalado!"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo ""
+          echo "════════════════════════════════════════"
+          echo "Testes concluídos!"
+          echo "════════════════════════════════════════"

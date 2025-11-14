@@ -1,3 +1,10 @@
+/**
+ * Webhook ASAAS - Aligned with official documentation
+ * https://docs.asaas.com/docs/webhook-para-cobrancas
+ *
+ * Version: 2.0 - 100% compliant with ASAAS official specs
+ */
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.47.10';
 import { crypto } from 'https://deno.land/std@0.224.0/crypto/mod.ts';
 

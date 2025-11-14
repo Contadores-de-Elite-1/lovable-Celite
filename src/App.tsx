@@ -21,6 +21,8 @@ import Assistente from "./pages/Assistente";
 import AuthSecurityDashboard from "./pages/AuthSecurityDashboard";
 import AuditoriaComissoes from "./pages/AuditoriaComissoes";
 import AdminApprovalsPage from "./pages/AdminApprovalsPage";
+import AdminWithdrawals from "./pages/AdminWithdrawals";
+import Saques from "./pages/Saques";
 import Perfil from "./pages/Perfil";
 import Rede from "./pages/Rede";
 import Relatorios from "./pages/Relatorios";
@@ -53,6 +55,7 @@ const App = () => (
                           <Routes>
                           <Route path="/dashboard" element={<Dashboard />} />
                           <Route path="/comissoes" element={<Comissoes />} />
+                          <Route path="/saques" element={<Saques />} />
                           <Route path="/links" element={<LinksIndicacao />} />
                           <Route path="/simulador" element={<Simulador />} />
                           <Route path="/rede" element={<Rede />} />
@@ -64,6 +67,7 @@ const App = () => (
                           <Route path="/auth-security" element={<AuthSecurityDashboard />} />
                           <Route path="/auditoria-comissoes" element={<AuditoriaComissoes />} />
                           <Route path="/admin/approvals" element={<AdminApprovalsPage />} />
+                          <Route path="/admin/withdrawals" element={<AdminWithdrawals />} />
                           <Route path="*" element={<NotFound />} />
                         </Routes>
                         </main>

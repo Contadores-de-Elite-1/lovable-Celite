@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -9,8 +9,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { DollarSign, TrendingUp, Clock, Download } from 'lucide-react';
+import { DollarSign, TrendingUp, Clock, Download, Wallet } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 import {
   calculateTotalCommissions,
   calculatePaidCommissions,
@@ -26,16 +27,25 @@ const Comissoes = () => {
   const [dateStart, setDateStart] = useState('');
   const [dateEnd, setDateEnd] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [isProcessingSaque, setIsProcessingSaque] = useState(false);
 
-  const { data: allComissoes, isLoading } = useQuery({
-    queryKey: ['comissoes', user?.id],
+  // Get contador info
+  const { data: contador } = useQuery({
+    queryKey: ['contador', user?.id],
     queryFn: async () => {
-      const { data: contador } = await supabase
+      const { data } = await supabase
         .from('contadores')
-        .select('id')
+        .select('*')
         .eq('user_id', user?.id)
         .single();
+      return data;
+    },
+    enabled: !!user,
+  });
 
+  const { data: allComissoes, isLoading, refetch: refetchComissoes } = useQuery({
+    queryKey: ['comissoes', contador?.id],
+    queryFn: async () => {
       if (!contador) return [];
 
       const { data } = await supabase
@@ -52,7 +62,21 @@ const Comissoes = () => {
 
       return data || [];
     },
-    enabled: !!user,
+    enabled: !!contador?.id,
+  });
+
+  // Get user profile for payment methods
+  const { data: userProfile } = useQuery({
+    queryKey: ['profile', user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('banco, agencia, conta, tipo_conta, titular_conta, chave_pix')
+        .eq('id', user?.id)
+        .single();
+      return data;
+    },
+    enabled: !!user?.id,
   });
 
   // Apply filters using tested utility
@@ -106,12 +130,67 @@ const Comissoes = () => {
       .reduce((acc, c) => acc + Number(c.valor), 0);
   }, [comissoes]);
 
+  const totalAprovadas = useMemo(() => {
+    if (!comissoes) return 0;
+    return comissoes
+      .filter((c) => c.status_comissao === 'aprovada')
+      .reduce((acc, c) => acc + Number(c.valor), 0);
+  }, [comissoes]);
+
   const totalLiberadas = useMemo(() => {
     if (!comissoes) return 0;
     return comissoes
       .filter((c) => c.status_comissao === 'paga')
       .reduce((acc, c) => acc + Number(c.valor), 0);
   }, [comissoes]);
+
+  const handleSolicitarSaque = async () => {
+    if (!contador || !user?.id) {
+      toast.error('Erro: Contador não encontrado');
+      return;
+    }
+
+    if (totalAprovadas < 100) {
+      toast.error('Valor mínimo para saque é R$ 100,00');
+      return;
+    }
+
+    if (!userProfile?.chave_pix && !userProfile?.conta) {
+      toast.error('Complete seus dados bancários no Perfil antes de solicitar saque');
+      return;
+    }
+
+    setIsProcessingSaque(true);
+
+    try {
+      const aprovadas = comissoes.filter((c) => c.status_comissao === 'aprovada');
+
+      const { error } = await supabase.from('solicitacoes_saque').insert({
+        contador_id: contador.id,
+        valor_solicitado: totalAprovadas,
+        comissoes_ids: aprovadas.map((c) => c.id),
+        metodo_pagamento: userProfile?.chave_pix ? 'pix' : 'transferencia',
+        dados_bancarios: {
+          banco: userProfile?.banco,
+          agencia: userProfile?.agencia,
+          conta: userProfile?.conta,
+          tipo_conta: userProfile?.tipo_conta,
+          titular_conta: userProfile?.titular_conta,
+          chave_pix: userProfile?.chave_pix,
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success('✅ Solicitação de saque enviada! Processaremos em até 2 dias úteis.');
+      refetchComissoes();
+    } catch (error) {
+      console.error('Erro ao solicitar saque:', error);
+      toast.error('Erro ao solicitar saque. Tente novamente.');
+    } finally {
+      setIsProcessingSaque(false);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: 'secondary' | 'default' | 'destructive'; label: string; color: string }> = {
@@ -264,6 +343,28 @@ const Comissoes = () => {
                   R$ {totalLiberadas.toFixed(0)}
                 </div>
                 <p className="text-xs text-gray-500 mt-1">Já pagas</p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white border-0 shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-gray-700">Disponível para Saque</CardTitle>
+                <Wallet className="h-5 w-5 text-purple-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-serif font-bold text-purple-600">
+                  R$ {totalAprovadas.toFixed(0)}
+                </div>
+                <Button
+                  onClick={handleSolicitarSaque}
+                  disabled={totalAprovadas < 100 || isProcessingSaque}
+                  className="mt-3 w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400"
+                >
+                  {isProcessingSaque ? 'Processando...' : totalAprovadas >= 100 ? 'Solicitar Saque' : 'Mínimo R$ 100'}
+                </Button>
+                <p className="text-xs text-gray-500 mt-2">
+                  {totalAprovadas >= 100 ? 'Clique para solicitar saque' : `Faltam R$ ${(100 - totalAprovadas).toFixed(2)}`}
+                </p>
               </CardContent>
             </Card>
 

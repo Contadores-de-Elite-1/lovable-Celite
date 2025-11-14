@@ -15,6 +15,7 @@ import {
   ChevronRight,
   ClipboardCheck,
   CheckSquare,
+  Wallet,
 } from "lucide-react";
 import {
   Sidebar,
@@ -37,6 +38,7 @@ const menuItems = {
   principal: [
     { title: "Dashboard", url: "/dashboard", icon: Home },
     { title: "Comissões", url: "/comissoes", icon: DollarSign },
+    { title: "Saques", url: "/saques", icon: Wallet },
     { title: "Links de Indicação", url: "/links", icon: LinkIcon },
     { title: "Simulador", url: "/simulador", icon: Calculator },
     { title: "Rede", url: "/rede", icon: Users },

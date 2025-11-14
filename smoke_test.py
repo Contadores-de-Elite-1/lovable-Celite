@@ -89,12 +89,12 @@ def main():
         ),
         (
             "Perfil validation for bank data",
-            "grep -q 'hasPixKey\\|hasBankAccount' lovable-Celite/src/pages/Perfil.tsx",
+            "grep -q 'hasPixKey\\|hasBankAccount' src/pages/Perfil.tsx",
             True
         ),
         (
             "Withdrawal confirmation modal exists",
-            "grep -q 'Confirmar Solicitação de Saque' lovable-Celite/src/pages/Comissoes.tsx",
+            "grep -q 'Confirmar Solicitação de Saque' src/pages/Comissoes.tsx",
             True
         ),
         (

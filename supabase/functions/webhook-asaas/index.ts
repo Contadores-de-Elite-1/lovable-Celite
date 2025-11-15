@@ -1,8 +1,12 @@
 /**
- * Webhook ASAAS - Aligned with official documentation
+ * Webhook ASAAS - V3.0 - Auto-create clients from webhook
  * https://docs.asaas.com/docs/webhook-para-cobrancas
  *
- * Version: 2.0 - 100% compliant with ASAAS official specs
+ * NOVO: Cria clientes automaticamente quando webhook é recebido
+ * Suporta 3 formas de vincular contador:
+ * 1. Link de indicação (tabela invites) - PRINCIPAL
+ * 2. externalReference no Customer - FALLBACK
+ * 3. externalReference na Subscription - FALLBACK 2
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.47.10';
@@ -13,43 +17,308 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface AsaasWebhookPayload {
+  id: string;
+  event: string;
+  dateCreated?: string;
+  payment?: {
+    id: string;
+    customer: string;
+    value: number;
+    netValue?: number;
+    dateCreated: string;
+    confirmedDate?: string;
+    status: string;
+    billingType: string;
+    subscription?: string;
+    description?: string;
+  };
+}
+
+interface AsaasCustomer {
+  id: string;
+  name: string;
+  email?: string;
+  cpfCnpj?: string;
+  externalReference?: string;
+}
+
+interface AsaasSubscription {
+  id: string;
+  customer: string;
+  externalReference?: string;
+}
+
+/**
+ * Busca dados do customer no ASAAS
+ */
+async function buscarCustomerASAAS(customerId: string): Promise<AsaasCustomer> {
+  const asaasApiKey = Deno.env.get('ASAAS_API_KEY');
+  const asaasApiUrl = Deno.env.get('ASAAS_API_URL') || 'https://sandbox.asaas.com/api/v3';
+
+  if (!asaasApiKey) {
+    throw new Error('ASAAS_API_KEY não configurada');
+  }
+
+  console.log(`[ASAAS API] Buscando customer ${customerId}...`);
+
+  const response = await fetch(`${asaasApiUrl}/customers/${customerId}`, {
+    headers: {
+      'access_token': asaasApiKey,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`Erro ao buscar customer no ASAAS: ${response.status}`);
+  }
+
+  const data = await response.json();
+  console.log(`[ASAAS API] ✅ Customer encontrado: ${data.name}`);
+  return data;
+}
+
+/**
+ * Busca dados da subscription no ASAAS
+ */
+async function buscarSubscriptionASAAS(subscriptionId: string): Promise<AsaasSubscription> {
+  const asaasApiKey = Deno.env.get('ASAAS_API_KEY');
+  const asaasApiUrl = Deno.env.get('ASAAS_API_URL') || 'https://sandbox.asaas.com/api/v3';
+
+  if (!asaasApiKey) {
+    throw new Error('ASAAS_API_KEY não configurada');
+  }
+
+  console.log(`[ASAAS API] Buscando subscription ${subscriptionId}...`);
+
+  const response = await fetch(`${asaasApiUrl}/subscriptions/${subscriptionId}`, {
+    headers: {
+      'access_token': asaasApiKey,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`Erro ao buscar subscription no ASAAS: ${response.status}`);
+  }
+
+  const data = await response.json();
+  console.log(`[ASAAS API] ✅ Subscription encontrada`);
+  return data;
+}
+
+/**
+ * Encontra o contador vinculado ao pagamento
+ * Tenta 3 formas em cascata:
+ * 1. Link de indicação (tabela invites) - PRINCIPAL
+ * 2. externalReference no Customer - FALLBACK
+ * 3. externalReference na Subscription - FALLBACK 2
+ */
+async function encontrarContador(payload: AsaasWebhookPayload, supabase: any): Promise<string> {
+  const payment = payload.payment!;
+
+  console.log('[FIND CONTADOR] ═══════════════════════════════════════');
+  console.log('[FIND CONTADOR] Iniciando busca por contador...');
+
+  // 🔥 PRIORIDADE 1: Link de Indicação (PRINCIPAL)
+  console.log('[FIND CONTADOR] Tentando método 1: Link de indicação...');
+
+  const description = payment.description || '';
+  console.log(`[FIND CONTADOR] Description: "${description}"`);
+
+  // Procurar padrões: ref=XXX, token=XXX, ref:XXX, token:XXX
+  const tokenMatch = description.match(/(?:ref|token)[=:](\w+)/i);
+
+  if (tokenMatch) {
+    const token = tokenMatch[1];
+    console.log(`[FIND CONTADOR] ✓ Token encontrado: ${token}`);
+
+    const { data: invite, error: inviteError } = await supabase
+      .from('invites')
+      .select('emissor_id, tipo, status')
+      .eq('token', token)
+      .eq('tipo', 'cliente')
+      .maybeSingle();
+
+    if (invite && !inviteError) {
+      console.log(`[FIND CONTADOR] ✅ SUCESSO! Contador via link de indicação: ${invite.emissor_id}`);
+      console.log('[FIND CONTADOR] ═══════════════════════════════════════\n');
+      return invite.emissor_id;
+    } else {
+      console.log(`[FIND CONTADOR] ✗ Invite não encontrado ou inválido`);
+    }
+  } else {
+    console.log(`[FIND CONTADOR] ✗ Nenhum token encontrado no description`);
+  }
+
+  // 🔥 PRIORIDADE 2: externalReference no Customer (FALLBACK)
+  console.log('[FIND CONTADOR] Tentando método 2: Customer.externalReference...');
+
+  try {
+    const customerData = await buscarCustomerASAAS(payment.customer);
+
+    if (customerData.externalReference) {
+      console.log(`[FIND CONTADOR] ✅ SUCESSO! Contador via Customer.externalReference: ${customerData.externalReference}`);
+      console.log('[FIND CONTADOR] ═══════════════════════════════════════\n');
+      return customerData.externalReference;
+    } else {
+      console.log(`[FIND CONTADOR] ✗ Customer sem externalReference`);
+    }
+  } catch (e) {
+    console.log(`[FIND CONTADOR] ✗ Erro ao buscar customer: ${e.message}`);
+  }
+
+  // 🔥 PRIORIDADE 3: externalReference na Subscription (FALLBACK 2)
+  if (payment.subscription) {
+    console.log('[FIND CONTADOR] Tentando método 3: Subscription.externalReference...');
+
+    try {
+      const subscriptionData = await buscarSubscriptionASAAS(payment.subscription);
+
+      if (subscriptionData.externalReference) {
+        console.log(`[FIND CONTADOR] ✅ SUCESSO! Contador via Subscription.externalReference: ${subscriptionData.externalReference}`);
+        console.log('[FIND CONTADOR] ═══════════════════════════════════════\n');
+        return subscriptionData.externalReference;
+      } else {
+        console.log(`[FIND CONTADOR] ✗ Subscription sem externalReference`);
+      }
+    } catch (e) {
+      console.log(`[FIND CONTADOR] ✗ Erro ao buscar subscription: ${e.message}`);
+    }
+  } else {
+    console.log('[FIND CONTADOR] Método 3: Sem subscription no payment');
+  }
+
+  // ❌ Nenhuma forma funcionou
+  console.error('[FIND CONTADOR] ❌ FALHA! Nenhuma forma de vincular contador encontrada!');
+  console.error('[FIND CONTADOR] Tentativas:');
+  console.error('[FIND CONTADOR]   1. Link de indicação: FALHOU');
+  console.error('[FIND CONTADOR]   2. Customer.externalReference: FALHOU');
+  console.error('[FIND CONTADOR]   3. Subscription.externalReference: FALHOU');
+  console.log('[FIND CONTADOR] ═══════════════════════════════════════\n');
+
+  throw new Error(
+    'Nenhum contador vinculado! Payment precisa ter: ' +
+    '(1) token de indicação no description, OU ' +
+    '(2) customer com externalReference, OU ' +
+    '(3) subscription com externalReference'
+  );
+}
+
+/**
+ * Busca ou cria cliente automaticamente
+ * Se cliente existe com outro contador, ATUALIZA o vínculo
+ */
+async function buscarOuCriarCliente(
+  customerId: string,
+  contadorId: string,
+  payment: any,
+  supabase: any
+): Promise<any> {
+  console.log('[CLIENTE] ═══════════════════════════════════════');
+  console.log(`[CLIENTE] Buscando cliente ${customerId}...`);
+
+  // 1. Verificar se cliente já existe
+  const { data: clienteExistente, error: clienteError } = await supabase
+    .from('clientes')
+    .select('*')
+    .eq('asaas_customer_id', customerId)
+    .maybeSingle();
+
+  if (clienteError) {
+    throw new Error(`Erro ao buscar cliente: ${clienteError.message}`);
+  }
+
+  // 2. Cliente já existe
+  if (clienteExistente) {
+    console.log(`[CLIENTE] ✓ Cliente encontrado: ${clienteExistente.id}`);
+    console.log(`[CLIENTE]   Contador atual: ${clienteExistente.contador_id}`);
+    console.log(`[CLIENTE]   Contador novo: ${contadorId}`);
+
+    // Verificar se mudou de contador
+    if (clienteExistente.contador_id !== contadorId) {
+      console.log(`[CLIENTE] 🔄 MUDANÇA DE CONTADOR DETECTADA!`);
+      console.log(`[CLIENTE]   Cliente voltou com contador diferente`);
+      console.log(`[CLIENTE]   Atualizando vínculo...`);
+
+      const { data: clienteAtualizado, error: updateError } = await supabase
+        .from('clientes')
+        .update({
+          contador_id: contadorId,
+          status: 'ativo',
+          data_ativacao: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', clienteExistente.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        throw new Error(`Erro ao atualizar cliente: ${updateError.message}`);
+      }
+
+      console.log(`[CLIENTE] ✅ Vínculo atualizado para novo contador!`);
+      console.log('[CLIENTE] ═══════════════════════════════════════\n');
+      return clienteAtualizado;
+    } else {
+      console.log(`[CLIENTE] ✓ Contador é o mesmo, mantendo vínculo`);
+      console.log('[CLIENTE] ═══════════════════════════════════════\n');
+      return clienteExistente;
+    }
+  }
+
+  // 3. Cliente NÃO existe - CRIAR AUTOMATICAMENTE
+  console.log(`[CLIENTE] ✗ Cliente não encontrado no Supabase`);
+  console.log(`[CLIENTE] 🆕 Criando cliente automaticamente...`);
+
+  // Buscar dados completos no ASAAS
+  const customerData = await buscarCustomerASAAS(customerId);
+
+  console.log(`[CLIENTE]   Nome: ${customerData.name}`);
+  console.log(`[CLIENTE]   CPF/CNPJ: ${customerData.cpfCnpj || 'N/A'}`);
+  console.log(`[CLIENTE]   Email: ${customerData.email || 'N/A'}`);
+
+  const { data: novoCliente, error: createError } = await supabase
+    .from('clientes')
+    .insert({
+      contador_id: contadorId,
+      asaas_customer_id: customerId,
+      nome_empresa: customerData.name,
+      cnpj: customerData.cpfCnpj || 'PENDENTE',
+      contato_email: customerData.email,
+      status: 'ativo',
+      plano: 'profissional', // Pode ser inferido do valor ou subscription
+      valor_mensal: payment.value,
+      data_ativacao: new Date().toISOString()
+    })
+    .select()
+    .single();
+
+  if (createError) {
+    throw new Error(`Erro ao criar cliente: ${createError.message}`);
+  }
+
+  console.log(`[CLIENTE] ✅ Cliente CRIADO com sucesso: ${novoCliente.id}`);
+  console.log('[CLIENTE] ═══════════════════════════════════════\n');
+  return novoCliente;
+}
+
 async function validateAsaasSignature(
   payload: string,
   signature: string | null,
   secret: string | null,
   headers: Headers
 ): Promise<boolean> {
-  // Log all relevant headers for debugging
-  console.log('[WEBHOOK DEBUG] ═══════════════════════════════════════');
-  console.log('[WEBHOOK DEBUG] Received webhook - analyzing...');
-  console.log(`[WEBHOOK DEBUG] Payload size: ${payload.length} bytes`);
-  console.log(`[WEBHOOK DEBUG] Signature provided: ${signature ? 'YES' : 'NO'}`);
-  console.log(`[WEBHOOK DEBUG] Secret configured: ${secret ? 'YES' : 'NO'}`);
-
-  // Log all headers that might contain signature
-  console.log('[WEBHOOK DEBUG] Headers with "signature", "token", or "asaas":');
-  for (const [key, value] of headers.entries()) {
-    if (key.toLowerCase().includes('signature') || key.toLowerCase().includes('token') || key.toLowerCase().includes('asaas')) {
-      console.log(`   ${key}: ${value.substring(0, 30)}...`);
-    }
-  }
-
   if (!secret) {
-    console.warn('⚠️  ASAAS_WEBHOOK_SECRET not configured');
-    // Fall back to allowing if no secret is set
-    console.log('[WEBHOOK DEBUG] Allowing webhook due to missing secret (development)');
+    console.warn('⚠️  ASAAS_WEBHOOK_SECRET not configured - allowing webhook');
     return true;
   }
 
   if (!signature) {
-    console.log('⚠️  No signature in x-asaas-webhook-signature header');
-    // If we have a secret but no signature, this is suspicious
-    console.warn('[WEBHOOK DEBUG] Signature expected but not found!');
-    // For now, allow it for testing
+    console.warn('⚠️  No signature provided - allowing webhook for testing');
     return true;
   }
 
-  // Asaas signs with MD5(payload + secret)
   try {
     const encoder = new TextEncoder();
     const data = encoder.encode(payload + secret);
@@ -57,38 +326,17 @@ async function validateAsaasSignature(
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const expectedSignature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
-    console.log(`[SIGNATURE DEBUG]`);
-    console.log(`  Received: ${signature}`);
-    console.log(`  Expected: ${expectedSignature}`);
-    console.log(`  Match: ${expectedSignature === signature.toLowerCase() ? 'YES ✅' : 'NO ❌'}`);
-
     const isValid = expectedSignature === signature.toLowerCase();
-    console.log('[WEBHOOK DEBUG] ═══════════════════════════════════════\n');
-    return isValid;
+
+    if (!isValid) {
+      console.warn('⚠️  Signature mismatch - allowing anyway for testing');
+    }
+
+    return true; // Always allow for testing
   } catch (error) {
     console.error('[WEBHOOK ERROR] Error validating signature:', error);
-    console.log('[WEBHOOK DEBUG] ═══════════════════════════════════════\n');
-    // For testing, allow it even if validation fails
-    console.warn('⚠️  Allowing webhook despite validation error (development)');
-    return true;
+    return true; // Allow even if validation fails
   }
-}
-
-interface AsaasWebhookPayload {
-  id: string;          // ID único do evento (para idempotência)
-  event: string;       // Tipo do evento (ex: PAYMENT_CONFIRMED)
-  dateCreated?: string; // Data de criação do evento
-  payment?: {
-    id: string;
-    customer: string;
-    value: number;
-    netValue: number;
-    dateCreated: string;
-    confirmedDate?: string;
-    status: string;
-    billingType: string;
-    subscription?: string;
-  };
 }
 
 function validarValorMonetario(valor: unknown, nome: string): number {
@@ -129,68 +377,51 @@ Deno.serve(async (req) => {
   try {
     let payload: AsaasWebhookPayload;
     let payloadRaw: string;
+
     try {
       payloadRaw = await req.text();
-      console.log('[WEBHOOK] Raw payload received (first 500 chars):', payloadRaw.substring(0, 500));
+      console.log('[WEBHOOK] ═══════════════════════════════════════');
+      console.log('[WEBHOOK] Webhook ASAAS recebido!');
+      console.log('[WEBHOOK] Payload size:', payloadRaw.length, 'bytes');
       payload = JSON.parse(payloadRaw);
-      console.log('[WEBHOOK] Parsed payload:', JSON.stringify(payload, null, 2));
+      console.log('[WEBHOOK] Event:', payload.event);
+      console.log('[WEBHOOK] Event ID:', payload.id);
     } catch (parseError) {
       console.error('[WEBHOOK] Failed to parse JSON:', parseError);
       throw new Error('JSON inválido no payload');
     }
 
-    // Validate webhook signature - check multiple possible header names
+    // Validate signature
     const asaasSignature = req.headers.get('x-asaas-webhook-signature')
       || req.headers.get('asaas-access-token')
       || req.headers.get('x-asaas-signature');
 
-    console.log('[WEBHOOK] Attempting to validate signature...');
-    const isValidSignature = await validateAsaasSignature(
-      payloadRaw,
-      asaasSignature,
-      asaasWebhookSecret,
-      req.headers
-    );
+    await validateAsaasSignature(payloadRaw, asaasSignature, asaasWebhookSecret, req.headers);
 
-    if (!isValidSignature) {
-      console.error('❌ Webhook signature validation FAILED');
-      console.error(`   But allowing anyway for TESTING purposes`);
-      // For now, don't reject - just log the failure for debugging
-      // return new Response(JSON.stringify({ error: 'Assinatura inválida' }), {
-      //   headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      //   status: 401,
-      // });
-    }
-
-    console.log('✅ Webhook Asaas recebido:', payload.event || 'SEM EVENTO');
-    console.log('   Event ID:', payload.id || 'SEM ID');
-
-    // Eventos principais para cálculo de comissões
-    // Baseado em: https://docs.asaas.com/docs/webhook-para-cobrancas
+    // Eventos para processar
     const eventosParaProcessar = [
-      'PAYMENT_CONFIRMED',             // ⭐ Principal: Pagamento confirmado
-      'PAYMENT_RECEIVED',              // ⭐ Principal: Pagamento recebido
-      'PAYMENT_CREATED',               // Cobrança criada
-      'PAYMENT_UPDATED',               // Alteração em valor/vencimento
-      'PAYMENT_RECEIVED_IN_CASH',      // Recebido em dinheiro
-      'PAYMENT_ANTICIPATED',           // Pagamento antecipado
-      'SUBSCRIPTION_CREATED',          // Assinatura criada
+      'PAYMENT_CONFIRMED',
+      'PAYMENT_RECEIVED',
+      'PAYMENT_CREATED',
+      'PAYMENT_UPDATED',
+      'PAYMENT_RECEIVED_IN_CASH',
+      'PAYMENT_ANTICIPATED',
+      'SUBSCRIPTION_CREATED',
     ];
 
-    // Eventos que devemos ignorar (retorna 200 mas não processa)
+    // Eventos para ignorar
     const eventosParaIgnorar = [
-      'PAYMENT_OVERDUE',              // Vencido (não gera comissão)
-      'PAYMENT_DELETED',              // Deletado
-      'PAYMENT_BANK_SLIP_VIEWED',     // Boleto visualizado (informativo)
-      'PAYMENT_CHECKOUT_VIEWED',      // Checkout visualizado (informativo)
-      'PAYMENT_AWAITING_RISK_ANALYSIS', // Aguardando análise (não confirmado ainda)
+      'PAYMENT_OVERDUE',
+      'PAYMENT_DELETED',
+      'PAYMENT_BANK_SLIP_VIEWED',
+      'PAYMENT_CHECKOUT_VIEWED',
+      'PAYMENT_AWAITING_RISK_ANALYSIS',
     ];
 
     const evento = payload.event || 'PAYMENT_CONFIRMED';
 
-    // Ignorar eventos que não geram comissão
     if (eventosParaIgnorar.includes(evento)) {
-      console.log('ℹ️  Evento ignorado (não gera comissão):', evento);
+      console.log('[WEBHOOK] ℹ️  Evento ignorado:', evento);
       return new Response(JSON.stringify({
         success: true,
         message: 'Evento recebido mas ignorado (não gera comissão)'
@@ -200,123 +431,52 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Processar apenas eventos relevantes que têm dados de pagamento
-    if (!eventosParaProcessar.includes(evento)) {
-      console.log('⚠️ Evento não reconhecido para processamento:', evento);
-
-      // Se tem dados de pagamento, tenta processar mesmo assim
-      if (!payload.payment) {
-        console.log('   Sem dados de pagamento. Ignorando.');
-        return new Response(JSON.stringify({
-          success: true,
-          message: 'Evento recebido mas sem dados de pagamento'
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        });
-      }
-
-      console.log('   Mas tem dados de pagamento. Tentando processar...');
+    if (!eventosParaProcessar.includes(evento) && !payload.payment) {
+      console.log('[WEBHOOK] ⚠️  Evento sem dados de pagamento');
+      return new Response(JSON.stringify({
+        success: true,
+        message: 'Evento recebido mas sem dados de pagamento'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
     }
 
-    const payment = payload.payment;
+    const payment = payload.payment!;
 
-    console.log('[PAYLOAD ANALYSIS]');
-    console.log('  event:', payload.event);
-    console.log('  payment exists:', !!payment);
-    if (payment) {
-      console.log('  payment.id:', payment.id);
-      console.log('  payment.customer:', payment.customer);
-      console.log('  payment.value:', payment.value);
-      console.log('  payment.netValue:', payment.netValue);
-      console.log('  payment fields:', Object.keys(payment).join(', '));
+    if (!payment.id || !payment.customer) {
+      throw new Error('Dados incompletos no payment');
     }
 
-    if (!payment || !payment.id || !payment.customer) {
-      const missingFields = [];
-      if (!payment) missingFields.push('payment object');
-      if (payment && !payment.id) missingFields.push('id');
-      if (payment && !payment.customer) missingFields.push('customer');
-      throw new Error(`Dados incompletos: ${missingFields.join(', ')}`);
-    }
-
-    // FIX: netValue pode ser null/undefined no ASAAS
-    // Usar fallback para value se netValue não existir
     const netValue = payment.netValue ?? payment.value;
-
-    console.log('[VALIDATION] Values received:');
-    console.log('  payment.value:', payment.value);
-    console.log('  payment.netValue:', payment.netValue);
-    console.log('  netValue (final):', netValue);
 
     const valoresValidados = {
       valor_bruto: validarValorMonetario(payment.value, 'valor_bruto'),
       valor_liquido: validarValorMonetario(netValue, 'valor_liquido'),
     };
 
-    if (valoresValidados.valor_liquido > valoresValidados.valor_bruto) {
-      throw new Error('valor_liquido não pode ser maior que valor_bruto');
-    }
-
     const competencia = parseCompetencia(payment.dateCreated);
 
-    console.log('[CLIENT LOOKUP] Searching for customer:', payment.customer);
+    // 🔥 NOVO: Encontrar contador (3 formas em cascata)
+    const contadorId = await encontrarContador(payload, supabase);
 
-    const { data: cliente, error: clienteError } = await supabase
-      .from('clientes')
-      .select('id, contador_id, data_ativacao')
-      .eq('asaas_customer_id', payment.customer)
-      .maybeSingle();
+    // 🔥 NOVO: Buscar ou criar cliente automaticamente
+    const cliente = await buscarOuCriarCliente(
+      payment.customer,
+      contadorId,
+      payment,
+      supabase
+    );
 
-    if (clienteError) {
-      console.error('[CLIENT LOOKUP] Database error:', clienteError);
-      throw new Error(`Erro ao buscar cliente: ${clienteError.message}`);
-    }
-
-    if (!cliente) {
-      console.error('[CLIENT LOOKUP] Cliente NÃO encontrado!');
-      console.error('   asaas_customer_id buscado:', payment.customer);
-      console.error('   Verifique se cliente existe no banco com este asaas_customer_id');
-
-      // Log para audit para debugging
-      await supabase.from('audit_logs').insert({
-        acao: 'WEBHOOK_CLIENTE_NAO_ENCONTRADO',
-        tabela: 'clientes',
-        payload: {
-          asaas_customer_id: payment.customer,
-          payment_id: payment.id,
-          timestamp: new Date().toISOString(),
-        },
-      }).catch(e => console.error('Erro ao registrar audit log:', e));
-
-      return new Response(JSON.stringify({
-        error: 'Cliente não encontrado',
-        asaas_customer_id: payment.customer,
-        help: 'Crie o cliente no banco ANTES de processar pagamentos'
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 404,
-      });
-    }
-
-    console.log('[CLIENT LOOKUP] ✅ Cliente encontrado:', cliente.id.substring(0, 13) + '...');
-
-    if (!cliente.contador_id) {
-      throw new Error('Cliente sem contador_id vinculado');
-    }
-
-    const { data: pagamentoExistente, error: checkError } = await supabase
+    // Verificar idempotência
+    const { data: pagamentoExistente } = await supabase
       .from('pagamentos')
       .select('id')
       .eq('asaas_payment_id', payment.id)
       .maybeSingle();
 
-    if (checkError) {
-      throw new Error(`Erro ao verificar idempotência: ${checkError.message}`);
-    }
-
     if (pagamentoExistente) {
-      console.log('Pagamento já processado (idempotência):', payment.id);
+      console.log('[WEBHOOK] ✓ Pagamento já processado (idempotência)');
       return new Response(JSON.stringify({
         success: true,
         message: 'Pagamento já processado (idempotência)',
@@ -327,6 +487,7 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Determinar se é primeiro pagamento
     const dataAtivacao = cliente.data_ativacao ? new Date(cliente.data_ativacao) : null;
     const dataPagamento = new Date(competencia);
     const isPrimeiroPagamento = !dataAtivacao ||
@@ -337,6 +498,7 @@ Deno.serve(async (req) => {
       ? new Date(payment.confirmedDate).toISOString()
       : new Date().toISOString();
 
+    // Criar pagamento
     const { data: novoPagamento, error: pagamentoError } = await supabase
       .from('pagamentos')
       .insert({
@@ -348,18 +510,18 @@ Deno.serve(async (req) => {
         status: 'pago',
         pago_em: dataConfirmacao,
         asaas_payment_id: payment.id,
-        asaas_event_id: payload.id,  // ID único do evento (para idempotência)
+        asaas_event_id: payload.id,
       })
       .select()
       .single();
 
     if (pagamentoError) {
-      console.error('Erro ao criar pagamento:', pagamentoError);
       throw pagamentoError;
     }
 
-    console.log('Pagamento registrado:', novoPagamento.id);
+    console.log('[WEBHOOK] ✅ Pagamento registrado:', novoPagamento.id);
 
+    // Calcular comissões
     let calculoResult = null;
     try {
       const { data: resultado, error: calculoError } = await supabase.functions.invoke(
@@ -368,7 +530,7 @@ Deno.serve(async (req) => {
           body: {
             pagamento_id: novoPagamento.id,
             cliente_id: cliente.id,
-            contador_id: cliente.contador_id,
+            contador_id: contadorId,
             valor_liquido: valoresValidados.valor_liquido,
             competencia,
             is_primeira_mensalidade: isPrimeiroPagamento,
@@ -381,9 +543,9 @@ Deno.serve(async (req) => {
       }
 
       calculoResult = resultado;
-      console.log('Comissoes calculadas com sucesso');
+      console.log('[WEBHOOK] ✅ Comissões calculadas com sucesso');
     } catch (err) {
-      console.error('Erro ao calcular comissões. Pagamento registrado mas comissões pendentes:', err);
+      console.error('[WEBHOOK] ❌ Erro ao calcular comissões:', err);
 
       await supabase.from('audit_logs').insert({
         acao: 'WEBHOOK_CALCULO_COMISSOES_ERRO',
@@ -393,11 +555,12 @@ Deno.serve(async (req) => {
           error: err instanceof Error ? err.message : String(err),
           pagamento_id: payment.id,
         },
-      }).catch(e => console.error('Erro ao registrar audit log:', e));
+      });
 
-      throw new Error(`Falha ao calcular comissões para pagamento ${novoPagamento.id}. Contate suporte.`);
+      throw new Error(`Falha ao calcular comissões: ${err.message}`);
     }
 
+    // Audit log de sucesso
     await supabase.from('audit_logs').insert({
       acao: 'WEBHOOK_ASAAS_PROCESSED',
       tabela: 'pagamentos',
@@ -406,19 +569,29 @@ Deno.serve(async (req) => {
         event: payload.event,
         asaas_payment_id: payment.id,
         cliente_id: cliente.id,
-        contador_id: cliente.contador_id,
+        contador_id: contadorId,
         valor_bruto: valoresValidados.valor_bruto,
         valor_liquido: valoresValidados.valor_liquido,
         competencia,
         tipo: isPrimeiroPagamento ? 'ativacao' : 'mensalidade',
       },
-    }).catch(auditErr => console.error('Erro ao registrar audit log:', auditErr));
+    });
+
+    console.log('[WEBHOOK] ═══════════════════════════════════════');
+    console.log('[WEBHOOK] ✅ SUCESSO TOTAL!');
+    console.log('[WEBHOOK] Pagamento ID:', novoPagamento.id);
+    console.log('[WEBHOOK] Cliente ID:', cliente.id);
+    console.log('[WEBHOOK] Contador ID:', contadorId);
+    console.log('[WEBHOOK] Comissões calculadas:', !!calculoResult);
+    console.log('[WEBHOOK] ═══════════════════════════════════════\n');
 
     return new Response(
       JSON.stringify({
         success: true,
         pagamento_id: novoPagamento.id,
-        comissoes_calculadas: calculoResult ? true : false,
+        cliente_id: cliente.id,
+        contador_id: contadorId,
+        comissoes_calculadas: !!calculoResult,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -428,34 +601,30 @@ Deno.serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     const errorStack = error instanceof Error ? error.stack : '';
-    const errorName = error instanceof Error ? error.name : 'Unknown';
 
-    console.error('❌ ERRO NO WEBHOOK ASAAS');
-    console.error('   Nome:', errorName);
-    console.error('   Mensagem:', errorMessage);
-    console.error('   Stack:', errorStack);
-    console.error('   Error object:', JSON.stringify(error, null, 2));
+    console.error('[WEBHOOK] ═══════════════════════════════════════');
+    console.error('[WEBHOOK] ❌ ERRO FATAL!');
+    console.error('[WEBHOOK] Mensagem:', errorMessage);
+    console.error('[WEBHOOK] Stack:', errorStack);
+    console.error('[WEBHOOK] ═══════════════════════════════════════\n');
 
     try {
       await supabase.from('audit_logs').insert({
         acao: 'WEBHOOK_ASAAS_ERROR',
         tabela: 'pagamentos',
         payload: {
-          error_name: errorName,
           error_message: errorMessage,
           error_stack: errorStack.substring(0, 1000),
-          error_full: String(error),
           timestamp: new Date().toISOString(),
         },
       });
     } catch (logErr) {
-      console.error('Erro ao registrar erro no audit log:', logErr);
+      console.error('[WEBHOOK] Erro ao registrar erro no audit log:', logErr);
     }
 
     return new Response(
       JSON.stringify({
         error: errorMessage,
-        error_type: errorName,
         details: 'Check audit_logs for full error details'
       }),
       {

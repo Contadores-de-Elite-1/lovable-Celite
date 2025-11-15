@@ -43,42 +43,60 @@ export class StripeClient {
     const {
       contadorId,
       priceId,
-      successUrl = `${window.location.origin}/dashboard?checkout=success`,
+      successUrl = `${window.location.origin}/pagamentos?checkout=success`,
       cancelUrl = `${window.location.origin}/pagamentos?checkout=cancel`,
     } = config;
 
     console.log('[STRIPE_CLIENT] Creating checkout session...');
     console.log('[STRIPE_CLIENT] Contador ID:', contadorId);
 
-    try {
-      // Chamar edge function create-checkout-session
-      const { data, error } = await supabase.functions.invoke(
-        'create-checkout-session',
-        {
-          body: {
-            contador_id: contadorId,
-            price_id: priceId,
-            success_url: successUrl,
-            cancel_url: cancelUrl,
-          },
+    // Retry logic for network failures
+    const maxRetries = 3;
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        if (attempt > 0) {
+          console.log(`[STRIPE_CLIENT] Retry attempt ${attempt + 1}/${maxRetries}`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
         }
-      );
 
-      if (error) {
-        console.error('[STRIPE_CLIENT] Error creating checkout:', error);
-        throw new Error(error.message || 'Failed to create checkout session');
+        // Chamar edge function create-checkout-session
+        const { data, error } = await supabase.functions.invoke(
+          'create-checkout-session',
+          {
+            body: {
+              contador_id: contadorId,
+              price_id: priceId,
+              success_url: successUrl,
+              cancel_url: cancelUrl,
+            },
+          }
+        );
+
+        if (error) {
+          throw new Error(error.message || 'Failed to create checkout session');
+        }
+
+        if (!data || !data.url) {
+          throw new Error('No checkout URL returned');
+        }
+
+        console.log('[STRIPE_CLIENT] Checkout session created successfully');
+        return data;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error('Unknown error');
+        console.error(`[STRIPE_CLIENT] Attempt ${attempt + 1} failed:`, lastError.message);
+
+        // Don't retry on validation errors (4xx)
+        if (lastError.message.includes('not found') || lastError.message.includes('invalid')) {
+          throw lastError;
+        }
       }
-
-      if (!data || !data.url) {
-        throw new Error('No checkout URL returned');
-      }
-
-      console.log('[STRIPE_CLIENT] Checkout session created:', data.session_id);
-      return data;
-    } catch (error) {
-      console.error('[STRIPE_CLIENT] Checkout error:', error);
-      throw error;
     }
+
+    console.error('[STRIPE_CLIENT] All retry attempts failed');
+    throw lastError || new Error('Failed to create checkout session');
   }
 
   /**

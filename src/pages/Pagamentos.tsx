@@ -136,8 +136,8 @@ export default function Pagamentos() {
       // Redirect to Stripe checkout
       await StripeClient.redirectToCheckout({
         contadorId: contadorData.id,
-        successUrl: `${window.location.origin}/pagamentos?checkout=success`,
-        cancelUrl: `${window.location.origin}/pagamentos?checkout=cancel`,
+        successUrl: `${window.location.origin}/checkout-confirmation?checkout=success`,
+        cancelUrl: `${window.location.origin}/checkout-confirmation?checkout=cancel`,
       });
     } catch (error) {
       console.error('Erro ao criar checkout Stripe:', error);

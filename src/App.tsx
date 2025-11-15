@@ -26,6 +26,8 @@ import Saques from "./pages/Saques";
 import Perfil from "./pages/Perfil";
 import Rede from "./pages/Rede";
 import Relatorios from "./pages/Relatorios";
+import Pagamentos from "./pages/Pagamentos";
+import CheckoutConfirmation from "./pages/CheckoutConfirmation";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -56,6 +58,8 @@ const App = () => (
                           <Route path="/dashboard" element={<Dashboard />} />
                           <Route path="/comissoes" element={<Comissoes />} />
                           <Route path="/saques" element={<Saques />} />
+                          <Route path="/pagamentos" element={<Pagamentos />} />
+                          <Route path="/checkout-confirmation" element={<CheckoutConfirmation />} />
                           <Route path="/links" element={<LinksIndicacao />} />
                           <Route path="/simulador" element={<Simulador />} />
                           <Route path="/rede" element={<Rede />} />

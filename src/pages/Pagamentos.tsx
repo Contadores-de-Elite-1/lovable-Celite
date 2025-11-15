@@ -5,8 +5,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { AlertCircle, CheckCircle, Loader2, Zap, CreditCard, Calendar } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { AlertCircle, CheckCircle, Loader2, Zap, CreditCard, Calendar, TestTube } from 'lucide-react';
 import { StripeClient } from '@/lib/stripe-client';
+import { isTestMode } from '@/lib/stripe-config';
+import { useToast } from '@/hooks/use-toast';
+import { trackCheckoutStep, CheckoutEvents } from '@/lib/analytics';
 
 interface Cliente {
   id: string;
@@ -23,12 +27,14 @@ export default function Pagamentos() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { toast } = useToast();
 
   const [cliente, setCliente] = useState<Cliente | null>(null);
   const [stripeSubscription, setStripeSubscription] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
+  const testMode = isTestMode();
 
   useEffect(() => {
     if (authLoading) return;
@@ -36,6 +42,11 @@ export default function Pagamentos() {
       navigate('/auth');
       return;
     }
+
+    // Track page view
+    trackCheckoutStep(CheckoutEvents.VIEWED_PRICING, {
+      testMode,
+    });
 
     loadClienteData();
   }, [user, authLoading, navigate]);
@@ -116,6 +127,12 @@ export default function Pagamentos() {
   const handleStripeCheckout = async () => {
     if (!cliente) return;
 
+    // Track button click
+    trackCheckoutStep(CheckoutEvents.CLICKED_SUBSCRIBE, {
+      clienteId: cliente.id,
+      testMode,
+    });
+
     try {
       setIsProcessing(true);
       setMessage(null);
@@ -133,26 +150,91 @@ export default function Pagamentos() {
 
       console.log('[PAGAMENTOS] Creating Stripe checkout for contador:', contadorData.id);
 
+      // Show loading toast
+      toast({
+        title: "Processando...",
+        description: "Criando sessão de pagamento segura",
+      });
+
+      // Track session creation
+      trackCheckoutStep(CheckoutEvents.SESSION_CREATED, {
+        contadorId: contadorData.id,
+        testMode,
+      });
+
       // Redirect to Stripe checkout
       await StripeClient.redirectToCheckout({
         contadorId: contadorData.id,
         successUrl: `${window.location.origin}/checkout-confirmation?checkout=success`,
         cancelUrl: `${window.location.origin}/checkout-confirmation?checkout=cancel`,
       });
+
+      // Track redirect (might not fire if redirect is immediate)
+      trackCheckoutStep(CheckoutEvents.REDIRECTED_TO_STRIPE, {
+        contadorId: contadorData.id,
+        testMode,
+      });
     } catch (error) {
       console.error('Erro ao criar checkout Stripe:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao criar checkout';
+
+      // Track error
+      trackCheckoutStep(CheckoutEvents.ERROR, {
+        error: errorMessage,
+        testMode,
+      });
+
       setMessage({
         type: 'error',
-        text: error instanceof Error ? error.message : 'Erro ao criar checkout',
+        text: errorMessage,
       });
+
+      // Show error toast
+      toast({
+        variant: "destructive",
+        title: "Erro no pagamento",
+        description: errorMessage,
+      });
+
       setIsProcessing(false);
     }
   };
 
   if (authLoading || isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin" />
+      <div className="container mx-auto py-6 px-4 md:py-8">
+        <div className="grid gap-6 md:gap-8">
+          {/* Header Skeleton */}
+          <div>
+            <Skeleton className="h-8 w-48 mb-2" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+
+          {/* Main Card Skeleton */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-40 mb-2" />
+              <Skeleton className="h-4 w-56" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Skeleton className="h-32 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </CardContent>
+          </Card>
+
+          {/* Info Card Skeleton */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-48" />
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -180,7 +262,15 @@ export default function Pagamentos() {
       <div className="grid gap-6 md:gap-8">
         {/* Header */}
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Assinaturas</h1>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-2xl md:text-3xl font-bold">Assinaturas</h1>
+            {testMode && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-medium border border-amber-200">
+                <TestTube className="w-3.5 h-3.5" />
+                Modo Teste
+              </span>
+            )}
+          </div>
           <p className="text-gray-600 mt-1 md:mt-2 text-sm md:text-base">
             Gerencie sua assinatura com Stripe
           </p>

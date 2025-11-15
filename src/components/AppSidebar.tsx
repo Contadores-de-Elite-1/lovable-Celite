@@ -16,6 +16,7 @@ import {
   ClipboardCheck,
   CheckSquare,
   Wallet,
+  CreditCard,
 } from "lucide-react";
 import {
   Sidebar,
@@ -39,6 +40,7 @@ const menuItems = {
     { title: "Dashboard", url: "/dashboard", icon: Home },
     { title: "Comissões", url: "/comissoes", icon: DollarSign },
     { title: "Saques", url: "/saques", icon: Wallet },
+    { title: "Assinatura", url: "/pagamentos", icon: CreditCard },
     { title: "Links de Indicação", url: "/links", icon: LinkIcon },
     { title: "Simulador", url: "/simulador", icon: Calculator },
     { title: "Rede", url: "/rede", icon: Users },

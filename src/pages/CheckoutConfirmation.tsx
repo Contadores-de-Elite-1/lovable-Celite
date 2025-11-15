@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, Loader2, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { trackCheckoutStep, CheckoutEvents } from '@/lib/analytics';
 
 export default function CheckoutConfirmation() {
   const [searchParams] = useSearchParams();
@@ -18,6 +19,13 @@ export default function CheckoutConfirmation() {
   const isCancel = status === 'cancel';
 
   useEffect(() => {
+    // Track checkout result
+    if (isSuccess) {
+      trackCheckoutStep(CheckoutEvents.SUCCESS);
+    } else if (isCancel) {
+      trackCheckoutStep(CheckoutEvents.CANCELLED);
+    }
+
     if (isSuccess && user) {
       // Wait a bit for webhook to process
       setTimeout(() => {
@@ -26,7 +34,7 @@ export default function CheckoutConfirmation() {
     } else {
       setLoading(false);
     }
-  }, [isSuccess, user]);
+  }, [isSuccess, isCancel, user]);
 
   const checkSubscription = async () => {
     if (!user) return;

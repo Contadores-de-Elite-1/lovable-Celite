@@ -401,9 +401,24 @@ export default function Pagamentos() {
                 )}
               </Button>
 
-              <p className="text-xs md:text-sm text-center text-gray-600">
-                Pagamento seguro via Stripe • Cancele quando quiser
-              </p>
+              <div className="space-y-3">
+                <p className="text-xs md:text-sm text-center text-gray-600">
+                  Pagamento seguro via Stripe • Cancele quando quiser
+                </p>
+
+                {/* Payment Methods */}
+                <div className="flex items-center justify-center gap-3 pt-2 border-t border-gray-200">
+                  <p className="text-xs text-gray-500">Aceitamos:</p>
+                  <div className="flex items-center gap-2">
+                    <div className="h-6 px-2 bg-white rounded border border-gray-200 flex items-center justify-center">
+                      <CreditCard className="w-4 h-4 text-gray-600" />
+                    </div>
+                    <span className="text-xs text-gray-600 font-medium">Visa</span>
+                    <span className="text-xs text-gray-600 font-medium">Mastercard</span>
+                    <span className="text-xs text-gray-600 font-medium">Elo</span>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -495,6 +510,60 @@ export default function Pagamentos() {
                   )}
                 </p>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* FAQ Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg md:text-xl">Perguntas Frequentes</CardTitle>
+            <CardDescription>Respostas rápidas para dúvidas comuns</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-1 pb-3 border-b border-gray-100">
+              <p className="font-semibold text-sm md:text-base text-gray-900">
+                Como funciona a cobrança?
+              </p>
+              <p className="text-xs md:text-sm text-gray-600">
+                A cobrança é mensal e recorrente. Você será cobrado automaticamente todo mês até cancelar sua assinatura.
+              </p>
+            </div>
+
+            <div className="space-y-1 pb-3 border-b border-gray-100">
+              <p className="font-semibold text-sm md:text-base text-gray-900">
+                Posso cancelar a qualquer momento?
+              </p>
+              <p className="text-xs md:text-sm text-gray-600">
+                Sim! Você pode cancelar sua assinatura a qualquer momento através do portal do Stripe, sem taxas de cancelamento.
+              </p>
+            </div>
+
+            <div className="space-y-1 pb-3 border-b border-gray-100">
+              <p className="font-semibold text-sm md:text-base text-gray-900">
+                Quando começo a receber comissões?
+              </p>
+              <p className="text-xs md:text-sm text-gray-600">
+                Assim que sua assinatura for ativada, você já pode começar a convidar clientes e receberá comissões conforme sua rede crescer.
+              </p>
+            </div>
+
+            <div className="space-y-1 pb-3 border-b border-gray-100">
+              <p className="font-semibold text-sm md:text-base text-gray-900">
+                O pagamento é seguro?
+              </p>
+              <p className="text-xs md:text-sm text-gray-600">
+                Sim! Usamos o Stripe, uma das plataformas de pagamento mais seguras do mundo. Seus dados de cartão são criptografados e nunca passam pelos nossos servidores.
+              </p>
+            </div>
+
+            <div className="space-y-1">
+              <p className="font-semibold text-sm md:text-base text-gray-900">
+                Como atualizo meu cartão de crédito?
+              </p>
+              <p className="text-xs md:text-sm text-gray-600">
+                Você receberá um email do Stripe após a primeira cobrança com acesso ao portal do cliente, onde pode atualizar seus dados de pagamento.
+              </p>
             </div>
           </CardContent>
         </Card>

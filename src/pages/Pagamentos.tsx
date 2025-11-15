@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, CheckCircle, Loader2, Zap, CreditCard, Calendar, TestTube } from 'lucide-react';
+import { AlertCircle, CheckCircle, Loader2, Zap, CreditCard, Calendar, TestTube, WifiOff, RefreshCw } from 'lucide-react';
 import { StripeClient } from '@/lib/stripe-client';
 import { isTestMode } from '@/lib/stripe-config';
 import { useToast } from '@/hooks/use-toast';
@@ -28,6 +29,7 @@ export default function Pagamentos() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
+  const isOnline = useOnlineStatus();
 
   const [cliente, setCliente] = useState<Cliente | null>(null);
   const [stripeSubscription, setStripeSubscription] = useState<any>(null);
@@ -276,18 +278,53 @@ export default function Pagamentos() {
           </p>
         </div>
 
+        {/* Offline Warning */}
+        {!isOnline && (
+          <Card className="border-amber-500 bg-amber-50">
+            <CardContent className="pt-6 flex items-start gap-3">
+              <WifiOff className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-semibold text-amber-900 text-sm md:text-base">
+                  Sem conexão com a internet
+                </p>
+                <p className="text-xs md:text-sm text-amber-800 mt-1">
+                  Conecte-se à internet para gerenciar sua assinatura e realizar pagamentos.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Messages */}
         {message && (
           <Card className={message.type === 'error' ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'}>
-            <CardContent className="pt-6 flex items-start gap-3">
-              {message.type === 'error' ? (
-                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-              ) : (
-                <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-              )}
-              <p className={`text-sm md:text-base ${message.type === 'error' ? 'text-red-800' : 'text-green-800'}`}>
-                {message.text}
-              </p>
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-3">
+                {message.type === 'error' ? (
+                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                ) : (
+                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                )}
+                <div className="flex-1">
+                  <p className={`text-sm md:text-base ${message.type === 'error' ? 'text-red-800' : 'text-green-800'}`}>
+                    {message.text}
+                  </p>
+                  {message.type === 'error' && !stripeSubscription && (
+                    <Button
+                      onClick={() => {
+                        setMessage(null);
+                        handleStripeCheckout();
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="mt-3 border-red-300 hover:bg-red-100"
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Tentar Novamente
+                    </Button>
+                  )}
+                </div>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -303,6 +340,17 @@ export default function Pagamentos() {
               <CardDescription className="text-sm md:text-base">
                 Comece a receber comissões e ganhar com sua rede
               </CardDescription>
+
+              {/* Price Display */}
+              <div className="mt-6 pt-6 border-t border-primary/20">
+                <div className="flex items-baseline justify-center gap-2">
+                  <span className="text-4xl md:text-5xl font-bold text-primary">R$ 99,90</span>
+                  <span className="text-lg text-gray-600">/mês</span>
+                </div>
+                <p className="text-xs text-gray-600 mt-2">
+                  Cancele quando quiser • Sem taxas de adesão
+                </p>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="bg-white rounded-lg p-4 space-y-3">
@@ -331,7 +379,7 @@ export default function Pagamentos() {
 
               <Button
                 onClick={handleStripeCheckout}
-                disabled={isProcessing}
+                disabled={isProcessing || !isOnline}
                 className="w-full h-12 text-base md:text-lg"
                 size="lg"
               >
@@ -339,6 +387,11 @@ export default function Pagamentos() {
                   <>
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                     Processando...
+                  </>
+                ) : !isOnline ? (
+                  <>
+                    <WifiOff className="w-5 h-5 mr-2" />
+                    Sem Conexão
                   </>
                 ) : (
                   <>

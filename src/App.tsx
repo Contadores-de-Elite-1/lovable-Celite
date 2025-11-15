@@ -11,6 +11,8 @@ import { MobileHeader } from "@/components/MobileHeader";
 import { lazy, Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { OnboardingTour } from "@/components/OnboardingTour";
+import { QuickActionsFAB } from "@/components/QuickActionsFAB";
 
 // Eager load critical pages
 import Index from "./pages/Index";
@@ -59,6 +61,9 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
           <Suspense fallback={<PageLoader />}>
+            {/* Global Components */}
+            <OnboardingTour />
+
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
@@ -95,6 +100,9 @@ const App = () => (
                           <Route path="*" element={<NotFound />} />
                         </Routes>
                         </main>
+
+                        {/* Mobile Quick Actions FAB */}
+                        <QuickActionsFAB />
                       </div>
                     </div>
                   </SidebarProvider>

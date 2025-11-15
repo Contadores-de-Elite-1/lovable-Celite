@@ -1,14 +1,28 @@
-User-agent: Googlebot
-Allow: /
+# robots.txt - Contadores de Elite
+# https://www.robotstxt.org/
 
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
+# Allow all crawlers
 User-agent: *
 Allow: /
+
+# Disallow admin/private pages
+Disallow: /auth
+Disallow: /reset-password
+Disallow: /dashboard
+Disallow: /comissoes
+Disallow: /links
+Disallow: /rede
+Disallow: /simulador
+Disallow: /educacao
+Disallow: /materiais
+Disallow: /assistente
+Disallow: /perfil
+Disallow: /relatorios
+Disallow: /auditoria-comissoes
+Disallow: /auth-security
+
+# Disallow API endpoints
+Disallow: /api/
+
+# Sitemap
+Sitemap: https://contadores-elite.com/sitemap.xml

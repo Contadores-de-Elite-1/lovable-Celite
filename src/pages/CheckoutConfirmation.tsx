@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { CheckCircle, XCircle, Loader2, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -70,7 +71,7 @@ export default function CheckoutConfirmation() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md" role="main" aria-live="polite">
         {isSuccess && (
           <>
             <CardHeader className="text-center pb-4">
@@ -93,45 +94,57 @@ export default function CheckoutConfirmation() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-2">
-                <h3 className="font-semibold text-green-900 text-sm">O que acontece agora?</h3>
-                <ul className="space-y-2 text-sm text-green-800">
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    <span>Sua assinatura foi ativada</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    <span>Você já pode começar a receber comissões</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    <span>Convide clientes e construa sua rede</span>
-                  </li>
-                </ul>
-              </div>
+              {loading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-24 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              ) : (
+                <>
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-2">
+                    <h3 className="font-semibold text-green-900 text-sm">O que acontece agora?</h3>
+                    <ul className="space-y-2 text-sm text-green-800">
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                        <span>Sua assinatura foi ativada</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                        <span>Você já pode começar a receber comissões</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                        <span>Convide clientes e construa sua rede</span>
+                      </li>
+                    </ul>
+                  </div>
 
-              <div className="flex flex-col gap-2">
-                <Button
-                  onClick={() => navigate('/dashboard')}
-                  className="w-full"
-                  size="lg"
-                >
-                  Ir para Dashboard
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-                <Button
-                  onClick={() => navigate('/links')}
-                  variant="outline"
-                  className="w-full"
-                >
-                  Ver Meus Links de Indicação
-                </Button>
-              </div>
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      onClick={() => navigate('/dashboard')}
+                      className="w-full"
+                      size="lg"
+                      aria-label="Ir para página principal do dashboard"
+                    >
+                      Ir para Dashboard
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                    <Button
+                      onClick={() => navigate('/links')}
+                      variant="outline"
+                      className="w-full"
+                      aria-label="Ver meus links de indicação de clientes"
+                    >
+                      Ver Meus Links de Indicação
+                    </Button>
+                  </div>
 
-              <p className="text-xs text-center text-gray-600">
-                Você receberá um email de confirmação do Stripe com os detalhes da sua assinatura
-              </p>
+                  <p className="text-xs text-center text-gray-600">
+                    Você receberá um email de confirmação do Stripe com os detalhes da sua assinatura
+                  </p>
+                </>
+              )}
             </CardContent>
           </>
         )}
@@ -159,6 +172,7 @@ export default function CheckoutConfirmation() {
                   onClick={() => navigate('/pagamentos')}
                   className="w-full"
                   size="lg"
+                  aria-label="Tentar assinar novamente"
                 >
                   Tentar Novamente
                 </Button>
@@ -166,6 +180,7 @@ export default function CheckoutConfirmation() {
                   onClick={() => navigate('/dashboard')}
                   variant="outline"
                   className="w-full"
+                  aria-label="Voltar para a página principal"
                 >
                   Voltar para Dashboard
                 </Button>

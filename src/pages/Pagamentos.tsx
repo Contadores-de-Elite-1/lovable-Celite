@@ -263,7 +263,7 @@ export default function Pagamentos() {
     <div className="container mx-auto py-6 px-4 md:py-8">
       <div className="grid gap-6 md:gap-8">
         {/* Header */}
-        <div>
+        <header role="banner">
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-2xl md:text-3xl font-bold">Assinaturas</h1>
             {testMode && (
@@ -276,11 +276,11 @@ export default function Pagamentos() {
           <p className="text-gray-600 mt-1 md:mt-2 text-sm md:text-base">
             Gerencie sua assinatura com Stripe
           </p>
-        </div>
+        </header>
 
         {/* Offline Warning */}
         {!isOnline && (
-          <Card className="border-amber-500 bg-amber-50">
+          <Card className="border-amber-500 bg-amber-50" role="alert" aria-live="polite">
             <CardContent className="pt-6 flex items-start gap-3">
               <WifiOff className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
@@ -297,7 +297,11 @@ export default function Pagamentos() {
 
         {/* Messages */}
         {message && (
-          <Card className={message.type === 'error' ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'}>
+          <Card
+            className={message.type === 'error' ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'}
+            role="alert"
+            aria-live="assertive"
+          >
             <CardContent className="pt-6">
               <div className="flex items-start gap-3">
                 {message.type === 'error' ? (
@@ -382,6 +386,7 @@ export default function Pagamentos() {
                 disabled={isProcessing || !isOnline}
                 className="w-full h-12 text-base md:text-lg"
                 size="lg"
+                aria-label={isProcessing ? "Processando pagamento" : !isOnline ? "Checkout desabilitado - sem conexão" : "Assinar plano premium"}
               >
                 {isProcessing ? (
                   <>

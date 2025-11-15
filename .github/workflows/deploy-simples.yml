@@ -19,12 +19,24 @@ jobs:
       - name: 📦 Install Supabase CLI
         run: npm install -g supabase
 
-      - name: 🚀 Deploy Webhook
+      - name: 🚀 Deploy Functions
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.CLAUDECODE_ACCESS_TOKEN }}
         run: |
-          echo "Deploying webhook-asaas..."
+          echo "Deploying all functions..."
+
+          echo "1. Deploying webhook-asaas..."
           supabase functions deploy webhook-asaas \
+            --project-ref zytxwdgzjqrcmbnpgofj \
+            --no-verify-jwt || echo "Deploy may have warnings but continuing..."
+
+          echo "2. Deploying create-test-client..."
+          supabase functions deploy create-test-client \
+            --project-ref zytxwdgzjqrcmbnpgofj \
+            --no-verify-jwt || echo "Deploy may have warnings but continuing..."
+
+          echo "3. Deploying calcular-comissoes..."
+          supabase functions deploy calcular-comissoes \
             --project-ref zytxwdgzjqrcmbnpgofj \
             --no-verify-jwt || echo "Deploy may have warnings but continuing..."
 

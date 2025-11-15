@@ -1,8 +1,24 @@
-# 🚀 STRIPE PRONTO PARA DEPLOY!
+# 🚀 STRIPE PRONTO PARA DEPLOY! (Stripe-Only)
 
 **Data:** 15 de novembro de 2025
 **Status:** ✅ **100% COMPLETO E PRONTO**
+**Gateway:** 🎯 **STRIPE EXCLUSIVO** (ASAAS removido)
 **Branch:** `claude/auto-mode-mobile-first-011Qqu5wN96UmLxdioNTka61`
+
+---
+
+## 🎯 MUDANÇA IMPORTANTE: STRIPE-ONLY
+
+**ASAAS foi completamente removido do frontend!**
+
+- ❌ Sem dual gateway
+- ❌ Sem gateway selector
+- ❌ Sem código ASAAS
+- ✅ UI simplificada
+- ✅ Stripe exclusivo
+- ✅ -114 linhas de código
+
+Ver detalhes: `ASAAS-DEPRECATION.md`
 
 ---
 

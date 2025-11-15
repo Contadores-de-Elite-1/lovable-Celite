@@ -1,58 +1,34 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { AlertCircle, CheckCircle, Loader2, CreditCard, Smartphone, Banknote, Zap } from 'lucide-react';
-import { asaasClient } from '@/lib/asaas-client';
+import { AlertCircle, CheckCircle, Loader2, Zap, CreditCard, Calendar } from 'lucide-react';
 import { StripeClient } from '@/lib/stripe-client';
 
 interface Cliente {
   id: string;
   nome: string;
   email: string;
-  cpf_cnpj: string;
-  asaas_customer_id?: string;
+  cpf_cnpj?: string;
   stripe_customer_id?: string;
   stripe_subscription_id?: string;
   status?: string;
   plano?: string;
 }
 
-interface SubscriptionInfo {
-  id: string;
-  status: string;
-  value: number;
-  nextDueDate: string;
-  billingType: string;
-}
-
-type BillingType = 'CREDIT_CARD' | 'BOLETO' | 'PIX' | 'DEBIT_ACCOUNT';
-
 export default function Pagamentos() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [cliente, setCliente] = useState<Cliente | null>(null);
-  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
   const [stripeSubscription, setStripeSubscription] = useState<any>(null);
-  const [billingType, setBillingType] = useState<BillingType>('CREDIT_CARD');
-  const [paymentValue, setPaymentValue] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
-  const [showPaymentForm, setShowPaymentForm] = useState(false);
-  const [selectedGateway, setSelectedGateway] = useState<'STRIPE' | 'ASAAS'>('STRIPE');
 
   useEffect(() => {
     if (authLoading) return;
@@ -63,6 +39,22 @@ export default function Pagamentos() {
 
     loadClienteData();
   }, [user, authLoading, navigate]);
+
+  // Handle checkout redirect
+  useEffect(() => {
+    const checkoutStatus = searchParams.get('checkout');
+    if (checkoutStatus === 'success') {
+      setMessage({
+        type: 'success',
+        text: 'Pagamento processado com sucesso! Sua assinatura está ativa.',
+      });
+    } else if (checkoutStatus === 'cancel') {
+      setMessage({
+        type: 'error',
+        text: 'Pagamento cancelado. Você pode tentar novamente quando quiser.',
+      });
+    }
+  }, [searchParams]);
 
   const loadClienteData = async () => {
     try {
@@ -84,17 +76,12 @@ export default function Pagamentos() {
       // Check if contador has a cliente record (subscription info)
       const { data: clienteData } = await supabase
         .from('clientes')
-        .select('id, nome, email, cpf_cnpj, asaas_customer_id, stripe_customer_id, stripe_subscription_id, status, plano')
+        .select('id, nome, email, cpf_cnpj, stripe_customer_id, stripe_subscription_id, status, plano')
         .eq('contador_id', contadorData.id)
         .maybeSingle();
 
       if (clienteData) {
         setCliente(clienteData as Cliente);
-
-        // Load ASAAS subscription if exists
-        if (clienteData.asaas_customer_id) {
-          await loadSubscriptionInfo(clienteData.asaas_customer_id);
-        }
 
         // Load Stripe subscription if exists
         if (clienteData.stripe_subscription_id) {
@@ -117,152 +104,12 @@ export default function Pagamentos() {
     }
   };
 
-  const loadSubscriptionInfo = async (customerId: string) => {
-    try {
-      const payments = await asaasClient.getCustomerPayments(customerId);
-
-      // Find active subscription (most recent)
-      const activePayments = payments.filter(
-        (p) =>
-          p.status === 'OPEN' ||
-          p.status === 'CONFIRMED' ||
-          p.status === 'RECEIVED'
-      );
-
-      if (activePayments.length > 0) {
-        const latestPayment = activePayments[0];
-        setSubscription({
-          id: latestPayment.id,
-          status: latestPayment.status,
-          value: latestPayment.value,
-          nextDueDate: latestPayment.dueDate,
-          billingType: latestPayment.billingType,
-        });
-      }
-    } catch (error) {
-      console.error('Erro ao carregar informações de pagamento:', error);
-    }
-  };
-
   const loadStripeSubscriptionInfo = async (contadorId: string) => {
     try {
       const subscription = await StripeClient.getSubscriptionStatus(contadorId);
       setStripeSubscription(subscription);
     } catch (error) {
       console.error('Erro ao carregar informações de assinatura Stripe:', error);
-    }
-  };
-
-  const handleCreateOrUpdateCustomer = async () => {
-    if (!cliente) return;
-
-    try {
-      setIsProcessing(true);
-      setMessage(null);
-
-      // If no Asaas customer ID, create one
-      if (!cliente.asaas_customer_id) {
-        const newCustomer = await asaasClient.createCustomer({
-          name: cliente.nome,
-          email: cliente.email,
-          cpfCnpj: cliente.cpf_cnpj,
-          observation: `Cliente/Contador criado em ${new Date().toLocaleDateString('pt-BR')}`,
-        });
-
-        // Update database with Asaas customer ID
-        const { error: updateError } = await supabase
-          .from(cliente.asaas_customer_id ? 'clientes' : 'contadores')
-          .update({ asaas_customer_id: newCustomer.id })
-          .eq('id', cliente.id);
-
-        if (updateError) throw updateError;
-
-        setCliente({ ...cliente, asaas_customer_id: newCustomer.id });
-        setMessage({
-          type: 'success',
-          text: 'Cliente registrado com sucesso! Agora você pode criar uma assinatura.',
-        });
-      } else {
-        setMessage({ type: 'success', text: 'Cliente já registrado no Asaas.' });
-      }
-
-      setShowPaymentForm(true);
-    } catch (error) {
-      console.error('Erro ao criar/atualizar cliente:', error);
-      setMessage({
-        type: 'error',
-        text: error instanceof Error ? error.message : 'Erro ao processar cliente',
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleCreatePayment = async () => {
-    if (!cliente || !cliente.asaas_customer_id || !paymentValue) {
-      setMessage({ type: 'error', text: 'Dados incompletos para criar pagamento' });
-      return;
-    }
-
-    try {
-      setIsProcessing(true);
-      setMessage(null);
-
-      const amount = parseFloat(paymentValue);
-      if (isNaN(amount) || amount <= 0) {
-        setMessage({ type: 'error', text: 'Valor inválido' });
-        return;
-      }
-
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const dueDate = tomorrow.toISOString().split('T')[0];
-
-      const payment = await asaasClient.createPayment({
-        customerId: cliente.asaas_customer_id,
-        billingType,
-        value: amount,
-        dueDate,
-        description: 'Pagamento - Contadores de Elite',
-      });
-
-      // Save payment record to database
-      const { error: dbError } = await supabase.from('pagamentos').insert({
-        cliente_id: cliente.id,
-        tipo: 'manual',
-        valor_bruto: amount,
-        valor_liquido: amount,
-        competencia: new Date().toISOString().split('T')[0],
-        status: 'pending',
-        asaas_payment_id: payment.id,
-        asaas_event_id: 'MANUAL_PAYMENT_CREATED',
-      });
-
-      if (dbError) {
-        console.warn('Aviso ao salvar em DB:', dbError);
-        // Don't fail if DB insert fails - payment is still created in Asaas
-      }
-
-      setMessage({
-        type: 'success',
-        text: `Pagamento criado! Link: ${payment.invoiceUrl || 'Verifique no Asaas'}`,
-      });
-
-      setPaymentValue('');
-      setShowPaymentForm(false);
-
-      // Reload subscription info
-      if (cliente.asaas_customer_id) {
-        await loadSubscriptionInfo(cliente.asaas_customer_id);
-      }
-    } catch (error) {
-      console.error('Erro ao criar pagamento:', error);
-      setMessage({
-        type: 'error',
-        text: error instanceof Error ? error.message : 'Erro ao criar pagamento',
-      });
-    } finally {
-      setIsProcessing(false);
     }
   };
 
@@ -273,7 +120,7 @@ export default function Pagamentos() {
       setIsProcessing(true);
       setMessage(null);
 
-      // Get contador_id from cliente or use cliente.id
+      // Get contador_id
       const { data: contadorData } = await supabase
         .from('contadores')
         .select('id')
@@ -312,7 +159,7 @@ export default function Pagamentos() {
 
   if (!cliente) {
     return (
-      <div className="container mx-auto py-8">
+      <div className="container mx-auto py-8 px-4">
         <Card className="border-red-200 bg-red-50">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-red-900">
@@ -329,149 +176,176 @@ export default function Pagamentos() {
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="grid gap-8">
+    <div className="container mx-auto py-6 px-4 md:py-8">
+      <div className="grid gap-6 md:gap-8">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold">Pagamentos</h1>
-          <p className="text-gray-600 mt-2">Gerencie suas assinaturas e pagamentos</p>
+          <h1 className="text-2xl md:text-3xl font-bold">Assinaturas</h1>
+          <p className="text-gray-600 mt-1 md:mt-2 text-sm md:text-base">
+            Gerencie sua assinatura com Stripe
+          </p>
         </div>
 
         {/* Messages */}
         {message && (
           <Card className={message.type === 'error' ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'}>
-            <CardContent className="pt-6 flex items-gap gap-3">
+            <CardContent className="pt-6 flex items-start gap-3">
               {message.type === 'error' ? (
-                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
               ) : (
-                <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
               )}
-              <p className={message.type === 'error' ? 'text-red-800' : 'text-green-800'}>
+              <p className={`text-sm md:text-base ${message.type === 'error' ? 'text-red-800' : 'text-green-800'}`}>
                 {message.text}
               </p>
             </CardContent>
           </Card>
         )}
 
-        {/* Gateway Selection */}
-        <Card className="border-2 border-primary">
+        {/* Main CTA - If no subscription */}
+        {!stripeSubscription && (
+          <Card className="border-2 border-primary bg-gradient-to-br from-primary/5 to-primary/10">
+            <CardHeader className="text-center pb-4">
+              <div className="mx-auto w-16 h-16 bg-primary rounded-full flex items-center justify-center mb-4">
+                <Zap className="w-8 h-8 text-primary-foreground" />
+              </div>
+              <CardTitle className="text-xl md:text-2xl">Assine o Plano Premium</CardTitle>
+              <CardDescription className="text-sm md:text-base">
+                Comece a receber comissões e ganhar com sua rede
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-white rounded-lg p-4 space-y-3">
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-sm md:text-base">Comissões recorrentes</p>
+                    <p className="text-xs md:text-sm text-gray-600">Ganhe mensalmente com seus clientes ativos</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-sm md:text-base">Rede multinível</p>
+                    <p className="text-xs md:text-sm text-gray-600">Ganhe com indicações de até 5 níveis</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-sm md:text-base">Bônus progressivos</p>
+                    <p className="text-xs md:text-sm text-gray-600">Desbloqueie recompensas ao subir de nível</p>
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                onClick={handleStripeCheckout}
+                disabled={isProcessing}
+                className="w-full h-12 text-base md:text-lg"
+                size="lg"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Processando...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-5 h-5 mr-2" />
+                    Assinar Agora
+                  </>
+                )}
+              </Button>
+
+              <p className="text-xs md:text-sm text-center text-gray-600">
+                Pagamento seguro via Stripe • Cancele quando quiser
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Active Subscription Info */}
+        {stripeSubscription && (
+          <Card className="border-2 border-green-500 bg-gradient-to-br from-green-50 to-emerald-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-green-900">
+                <CheckCircle className="w-6 h-6 text-green-600" />
+                Assinatura Ativa
+              </CardTitle>
+              <CardDescription>Sua assinatura está ativa via Stripe</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-white rounded-lg p-4">
+                  <Label className="text-xs text-gray-600">Status</Label>
+                  <p className="font-bold text-lg text-green-600 mt-1">
+                    {stripeSubscription.status === 'ativo' ? '✓ Ativo' : stripeSubscription.status}
+                  </p>
+                </div>
+                <div className="bg-white rounded-lg p-4">
+                  <Label className="text-xs text-gray-600">Plano</Label>
+                  <p className="font-bold text-lg mt-1">{stripeSubscription.plano || 'Premium'}</p>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg p-4">
+                <Label className="text-xs text-gray-600 mb-2 block">Informações da Conta</Label>
+                <div className="space-y-2">
+                  <div>
+                    <Label className="text-xs text-gray-500">Customer ID</Label>
+                    <p className="font-mono text-xs text-gray-700 break-all">
+                      {stripeSubscription.stripe_customer_id}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-500">Subscription ID</Label>
+                    <p className="font-mono text-xs text-gray-700 break-all">
+                      {stripeSubscription.stripe_subscription_id}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-gray-200">
+                <p className="text-xs md:text-sm text-gray-600 text-center">
+                  Para gerenciar sua assinatura (atualizar cartão, cancelar, etc),<br className="hidden md:block" />
+                  acesse o portal do Stripe através do seu email de confirmação
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Account Info */}
+        <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Zap className="w-5 h-5 text-primary" />
-              Escolha sua forma de pagamento
-            </CardTitle>
-            <CardDescription>Selecione Stripe (recomendado) ou ASAAS</CardDescription>
+            <CardTitle className="text-lg md:text-xl">Informações da Conta</CardTitle>
+            <CardDescription>Dados do seu cadastro</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div
-                className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
-                  selectedGateway === 'STRIPE'
-                    ? 'border-primary bg-primary/10'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-                onClick={() => setSelectedGateway('STRIPE')}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <Zap className="w-8 h-8 text-primary" />
-                  {selectedGateway === 'STRIPE' && (
-                    <CheckCircle className="w-5 h-5 text-primary" />
-                  )}
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-600">Nome</Label>
+                <p className="font-medium text-sm md:text-base">{cliente.nome}</p>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-600">Email</Label>
+                <p className="font-medium text-sm md:text-base break-all">{cliente.email}</p>
+              </div>
+              {cliente.cpf_cnpj && (
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-600">CPF/CNPJ</Label>
+                  <p className="font-medium text-sm md:text-base">{cliente.cpf_cnpj}</p>
                 </div>
-                <h3 className="font-bold text-lg mb-1">Stripe</h3>
-                <p className="text-sm text-gray-600">Pagamento internacional, seguro e rápido</p>
-                {!stripeSubscription && (
-                  <Button
-                    onClick={handleStripeCheckout}
-                    disabled={isProcessing}
-                    className="w-full mt-4"
-                    variant={selectedGateway === 'STRIPE' ? 'default' : 'outline'}
-                  >
-                    {isProcessing ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Processando...
-                      </>
-                    ) : (
-                      <>
-                        <Zap className="w-4 h-4 mr-2" />
-                        Assinar com Stripe
-                      </>
-                    )}
-                  </Button>
-                )}
-              </div>
-
-              <div
-                className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
-                  selectedGateway === 'ASAAS'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-                onClick={() => setSelectedGateway('ASAAS')}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <CreditCard className="w-8 h-8 text-blue-600" />
-                  {selectedGateway === 'ASAAS' && (
-                    <CheckCircle className="w-5 h-5 text-blue-600" />
-                  )}
-                </div>
-                <h3 className="font-bold text-lg mb-1">ASAAS</h3>
-                <p className="text-sm text-gray-600">Gateway nacional com PIX e boleto</p>
-                {!cliente.asaas_customer_id && selectedGateway === 'ASAAS' && (
-                  <Button
-                    onClick={handleCreateOrUpdateCustomer}
-                    disabled={isProcessing}
-                    className="w-full mt-4"
-                    variant="outline"
-                  >
-                    {isProcessing ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Registrando...
-                      </>
-                    ) : (
-                      'Registrar no ASAAS'
-                    )}
-                  </Button>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Customer Info */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Informações da Conta</CardTitle>
-            <CardDescription>Dados do cliente registrado no sistema</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label className="text-sm text-gray-600">Nome</Label>
-                <p className="font-medium">{cliente.nome}</p>
-              </div>
-              <div>
-                <Label className="text-sm text-gray-600">Email</Label>
-                <p className="font-medium">{cliente.email}</p>
-              </div>
-              <div>
-                <Label className="text-sm text-gray-600">CPF/CNPJ</Label>
-                <p className="font-medium">{cliente.cpf_cnpj || 'Não informado'}</p>
-              </div>
-              <div>
-                <Label className="text-sm text-gray-600">Status</Label>
-                <p className="font-medium">
+              )}
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-600">Status da Assinatura</Label>
+                <p className="font-medium text-sm md:text-base">
                   {stripeSubscription?.status === 'ativo' ? (
                     <span className="text-green-600 flex items-center gap-1">
                       <CheckCircle className="w-4 h-4" />
                       Ativo (Stripe)
-                    </span>
-                  ) : cliente.asaas_customer_id ? (
-                    <span className="text-blue-600 flex items-center gap-1">
-                      <CheckCircle className="w-4 h-4" />
-                      Ativo (ASAAS)
                     </span>
                   ) : (
                     <span className="text-amber-600">Sem assinatura</span>
@@ -482,195 +356,28 @@ export default function Pagamentos() {
           </CardContent>
         </Card>
 
-        {/* Stripe Subscription Info */}
-        {stripeSubscription && (
-          <Card className="border-primary">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="w-5 h-5 text-primary" />
-                Assinatura Stripe Ativa
-              </CardTitle>
-              <CardDescription>Sua assinatura via Stripe</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm text-gray-600">Status</Label>
-                  <p className="font-medium">
-                    <span className={stripeSubscription.status === 'ativo' ? 'text-green-600' : 'text-amber-600'}>
-                      {stripeSubscription.status === 'ativo' ? '✓ Ativo' : stripeSubscription.status}
-                    </span>
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-sm text-gray-600">Plano</Label>
-                  <p className="font-medium">{stripeSubscription.plano || 'Standard'}</p>
-                </div>
-                <div>
-                  <Label className="text-sm text-gray-600">Customer ID</Label>
-                  <p className="font-medium text-xs text-gray-500">{stripeSubscription.stripe_customer_id}</p>
-                </div>
-                <div>
-                  <Label className="text-sm text-gray-600">Subscription ID</Label>
-                  <p className="font-medium text-xs text-gray-500">{stripeSubscription.stripe_subscription_id}</p>
-                </div>
+        {/* Help Card */}
+        <Card className="bg-blue-50 border-blue-200">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                <CreditCard className="w-5 h-5 text-blue-600" />
               </div>
-              <div className="pt-4 border-t">
-                <p className="text-sm text-gray-600">
-                  Gerencie sua assinatura diretamente no portal do Stripe
+              <div>
+                <h3 className="font-semibold text-sm md:text-base text-blue-900 mb-1">
+                  Precisa de ajuda?
+                </h3>
+                <p className="text-xs md:text-sm text-blue-800">
+                  Entre em contato com nosso suporte através do email:
+                  <br />
+                  <a href="mailto:suporte@contadoresdeelite.com" className="font-medium underline">
+                    suporte@contadoresdeelite.com
+                  </a>
                 </p>
               </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* ASAAS Subscription Info */}
-        {subscription && selectedGateway === 'ASAAS' && (
-          <Card className="border-blue-500">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="w-5 h-5 text-blue-600" />
-                Assinatura ASAAS Ativa
-              </CardTitle>
-              <CardDescription>Informações da sua assinatura ASAAS</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm text-gray-600">Valor</Label>
-                  <p className="font-medium text-lg">R$ {subscription.value.toFixed(2)}</p>
-                </div>
-                <div>
-                  <Label className="text-sm text-gray-600">Próximo Vencimento</Label>
-                  <p className="font-medium">
-                    {new Date(subscription.nextDueDate).toLocaleDateString('pt-BR')}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-sm text-gray-600">Status</Label>
-                  <p className="font-medium">
-                    <span
-                      className={
-                        subscription.status === 'RECEIVED'
-                          ? 'text-green-600'
-                          : subscription.status === 'CONFIRMED'
-                            ? 'text-blue-600'
-                            : 'text-amber-600'
-                      }
-                    >
-                      {subscription.status}
-                    </span>
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-sm text-gray-600">Forma de Pagamento</Label>
-                  <p className="font-medium">{subscription.billingType}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Payment Methods - ASAAS */}
-        {cliente.asaas_customer_id && !showPaymentForm && selectedGateway === 'ASAAS' && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Formas de Pagamento Disponíveis</CardTitle>
-              <CardDescription>Escolha como deseja pagar</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="border rounded-lg p-4 cursor-pointer hover:bg-gray-50"
-                     onClick={() => { setBillingType('CREDIT_CARD'); setShowPaymentForm(true); }}>
-                  <CreditCard className="w-8 h-8 mb-2 text-blue-600" />
-                  <h3 className="font-medium">Cartão de Crédito</h3>
-                  <p className="text-sm text-gray-600">Parcelamento disponível</p>
-                </div>
-                <div className="border rounded-lg p-4 cursor-pointer hover:bg-gray-50"
-                     onClick={() => { setBillingType('PIX'); setShowPaymentForm(true); }}>
-                  <Smartphone className="w-8 h-8 mb-2 text-green-600" />
-                  <h3 className="font-medium">PIX</h3>
-                  <p className="text-sm text-gray-600">Transferência imediata</p>
-                </div>
-                <div className="border rounded-lg p-4 cursor-pointer hover:bg-gray-50"
-                     onClick={() => { setBillingType('BOLETO'); setShowPaymentForm(true); }}>
-                  <Banknote className="w-8 h-8 mb-2 text-amber-600" />
-                  <h3 className="font-medium">Boleto</h3>
-                  <p className="text-sm text-gray-600">Código para pagamento</p>
-                </div>
-                <div className="border rounded-lg p-4 cursor-pointer hover:bg-gray-50"
-                     onClick={() => { setBillingType('DEBIT_ACCOUNT'); setShowPaymentForm(true); }}>
-                  <Banknote className="w-8 h-8 mb-2 text-purple-600" />
-                  <h3 className="font-medium">Débito em Conta</h3>
-                  <p className="text-sm text-gray-600">Automático mensalmente</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Payment Form - ASAAS */}
-        {cliente.asaas_customer_id && showPaymentForm && selectedGateway === 'ASAAS' && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Novo Pagamento</CardTitle>
-              <CardDescription>Crie um pagamento único ou assinatura</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="value">Valor (R$)</Label>
-                <Input
-                  id="value"
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={paymentValue}
-                  onChange={(e) => setPaymentValue(e.target.value)}
-                  disabled={isProcessing}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="billing">Forma de Pagamento</Label>
-                <Select value={billingType} onValueChange={(value) => setBillingType(value as BillingType)}>
-                  <SelectTrigger id="billing" disabled={isProcessing}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="CREDIT_CARD">Cartão de Crédito</SelectItem>
-                    <SelectItem value="PIX">PIX</SelectItem>
-                    <SelectItem value="BOLETO">Boleto</SelectItem>
-                    <SelectItem value="DEBIT_ACCOUNT">Débito em Conta</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex gap-3">
-                <Button
-                  onClick={handleCreatePayment}
-                  disabled={isProcessing || !paymentValue}
-                  className="flex-1"
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Processando...
-                    </>
-                  ) : (
-                    'Criar Pagamento'
-                  )}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowPaymentForm(false)}
-                  disabled={isProcessing}
-                >
-                  Cancelar
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

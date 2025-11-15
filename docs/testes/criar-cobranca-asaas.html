@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar Cobrança ASAAS - Modo Automático</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #7f8c8d;
+            margin-bottom: 30px;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+        .success {
+            background: #27ae60;
+        }
+        .success:hover {
+            background: #229954;
+        }
+        .log {
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #3498db;
+            padding-left: 10px;
+        }
+        .log-success {
+            border-left-color: #27ae60;
+            background: #d5f4e6;
+        }
+        .log-error {
+            border-left-color: #e74c3c;
+            background: #fadbd8;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            background: #e8f8f5;
+            border: 1px solid #27ae60;
+        }
+        .step {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+        }
+        .step h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .copy-btn {
+            background: #95a5a6;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        .copy-btn:hover {
+            background: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Criar Cobrança ASAAS (Modo Automático)</h1>
+        <p class="subtitle">Execução automática via API - Um clique e pronto!</p>
+
+        <div class="step">
+            <h3>📋 Dados da Cobrança</h3>
+            <p><strong>Cliente:</strong> cus_000007222099</p>
+            <p><strong>Valor:</strong> R$ 199,90</p>
+            <p><strong>Vencimento:</strong> Hoje (2025-11-15)</p>
+            <p><strong>Forma:</strong> PIX</p>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <button id="btnCriar" onclick="criarCobranca()">
+                🚀 PASSO 1: Criar Cobrança
+            </button>
+            <button id="btnMarcarPaga" onclick="marcarComoPaga()" disabled>
+                ✅ PASSO 2: Marcar como Recebida
+            </button>
+        </div>
+
+        <div id="log" class="log" style="display: none;"></div>
+        <div id="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        const ASAAS_API_KEY = '$aact_hmlg_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6Ojg5NGI4NmYzLWQxYmUtNDkwYy05ZWMwLTM5ZTFhZGUwYWM2MDo6JGFhY2hfNDNkMWQ3N2YtNTEzOS00NmU3LWE4NzAtMzU0Y2Q1ZWEyYTA4';
+        const ASAAS_BASE_URL = 'https://sandbox.asaas.com/api/v3';
+
+        let paymentId = null;
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            logDiv.style.display = 'block';
+
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type === 'success' ? 'log-success' : type === 'error' ? 'log-error' : ''}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        async function criarCobranca() {
+            const btn = document.getElementById('btnCriar');
+            btn.disabled = true;
+            btn.textContent = '⏳ Criando...';
+
+            log('🚀 Iniciando criação de cobrança no ASAAS...');
+
+            try {
+                const response = await fetch(`${ASAAS_BASE_URL}/payments`, {
+                    method: 'POST',
+                    headers: {
+                        'access_token': ASAAS_API_KEY,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        customer: 'cus_000007222099',
+                        billingType: 'PIX',
+                        value: 199.90,
+                        dueDate: '2025-11-15',
+                        description: 'Teste automático integração webhook Supabase'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    paymentId = data.id;
+                    log(`✅ Cobrança criada com sucesso!`, 'success');
+                    log(`   ID: ${paymentId}`);
+                    log(`   Valor: R$ ${data.value}`);
+                    log(`   Status: ${data.status}`);
+
+                    document.getElementById('btnMarcarPaga').disabled = false;
+                    btn.textContent = '✅ Cobrança Criada!';
+                    btn.classList.add('success');
+
+                    showResult(`
+                        <h3>✅ Cobrança Criada!</h3>
+                        <p><strong>ID da Cobrança:</strong> ${paymentId}</p>
+                        <p><strong>Valor:</strong> R$ ${data.value}</p>
+                        <p><strong>Status:</strong> ${data.status}</p>
+                        <p style="margin-top: 15px;">
+                            <button class="copy-btn" onclick="copyToClipboard('${paymentId}')">
+                                📋 Copiar ID
+                            </button>
+                        </p>
+                    `);
+                } else {
+                    throw new Error(data.errors ? data.errors[0].description : 'Erro desconhecido');
+                }
+
+            } catch (error) {
+                log(`❌ ERRO: ${error.message}`, 'error');
+                btn.disabled = false;
+                btn.textContent = '🔄 Tentar Novamente';
+            }
+        }
+
+        async function marcarComoPaga() {
+            const btn = document.getElementById('btnMarcarPaga');
+            btn.disabled = true;
+            btn.textContent = '⏳ Processando...';
+
+            log(`💰 Marcando cobrança ${paymentId} como recebida...`);
+
+            try {
+                // ASAAS Sandbox permite simular recebimento
+                const response = await fetch(`${ASAAS_BASE_URL}/payments/${paymentId}/receiveInCash`, {
+                    method: 'POST',
+                    headers: {
+                        'access_token': ASAAS_API_KEY,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        paymentDate: '2025-11-15',
+                        value: 199.90
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    log(`✅ Cobrança marcada como RECEBIDA!`, 'success');
+                    log(`   Status: ${data.status}`);
+                    log(`   Valor recebido: R$ ${data.value}`);
+                    log(``);
+                    log(`🔔 Webhook será enviado automaticamente para o Supabase!`);
+                    log(`   Aguarde 5-10 segundos para processamento...`);
+
+                    btn.textContent = '✅ Recebida! Webhook Enviado';
+                    btn.classList.add('success');
+
+                    showResult(`
+                        <h3>✅ SUCESSO TOTAL!</h3>
+                        <p><strong>Cobrança ID:</strong> ${paymentId}</p>
+                        <p><strong>Status:</strong> RECEBIDA</p>
+                        <p><strong>Webhook:</strong> Enviado para Supabase</p>
+                        <hr>
+                        <h4>📊 Próximo Passo:</h4>
+                        <p>Execute as queries SQL no Supabase para verificar:</p>
+                        <ol>
+                            <li>Pagamento criado na tabela <code>pagamentos</code></li>
+                            <li>Comissões calculadas na tabela <code>comissoes</code></li>
+                            <li>Audit log registrado</li>
+                        </ol>
+                        <p style="margin-top: 15px;">
+                            <button onclick="window.open('https://supabase.com/dashboard/project/zytxwdgzjqrcmbnpgofj/editor', '_blank')">
+                                🔗 Abrir Supabase Dashboard
+                            </button>
+                        </p>
+                    `);
+
+                    // Copiar ID automaticamente
+                    copyToClipboard(paymentId);
+
+                } else {
+                    throw new Error(data.errors ? data.errors[0].description : 'Erro ao marcar como paga');
+                }
+
+            } catch (error) {
+                log(`❌ ERRO: ${error.message}`, 'error');
+                btn.disabled = false;
+                btn.textContent = '🔄 Tentar Novamente';
+            }
+        }
+
+        function showResult(html) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = html;
+            resultDiv.style.display = 'block';
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                log(`📋 ID copiado para área de transferência!`, 'success');
+            });
+        }
+
+        // Log inicial
+        log('✅ Página carregada. Pronto para criar cobrança!');
+        log(`🔑 API Key configurada`);
+        log(`🌐 Ambiente: ASAAS Sandbox`);
+    </script>
+</body>
+</html>

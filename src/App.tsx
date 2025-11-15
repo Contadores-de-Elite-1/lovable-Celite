@@ -8,27 +8,44 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileHeader } from "@/components/MobileHeader";
+import { lazy, Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Eager load critical pages
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
-import ResetPassword from "./pages/ResetPassword";
-import Dashboard from "./pages/Dashboard";
-import Comissoes from "./pages/Comissoes";
-import LinksIndicacao from "./pages/LinksIndicacao";
-import Simulador from "./pages/Simulador";
-import Educacao from "./pages/Educacao";
-import Materiais from "./pages/Materiais";
-import Assistente from "./pages/Assistente";
-import AuthSecurityDashboard from "./pages/AuthSecurityDashboard";
-import AuditoriaComissoes from "./pages/AuditoriaComissoes";
-import AdminApprovalsPage from "./pages/AdminApprovalsPage";
-import AdminWithdrawals from "./pages/AdminWithdrawals";
-import Saques from "./pages/Saques";
-import Perfil from "./pages/Perfil";
-import Rede from "./pages/Rede";
-import Relatorios from "./pages/Relatorios";
-import Pagamentos from "./pages/Pagamentos";
-import CheckoutConfirmation from "./pages/CheckoutConfirmation";
-import NotFound from "./pages/NotFound";
+
+// Lazy load non-critical pages
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Comissoes = lazy(() => import("./pages/Comissoes"));
+const LinksIndicacao = lazy(() => import("./pages/LinksIndicacao"));
+const Simulador = lazy(() => import("./pages/Simulador"));
+const Educacao = lazy(() => import("./pages/Educacao"));
+const Materiais = lazy(() => import("./pages/Materiais"));
+const Assistente = lazy(() => import("./pages/Assistente"));
+const AuthSecurityDashboard = lazy(() => import("./pages/AuthSecurityDashboard"));
+const AuditoriaComissoes = lazy(() => import("./pages/AuditoriaComissoes"));
+const AdminApprovalsPage = lazy(() => import("./pages/AdminApprovalsPage"));
+const AdminWithdrawals = lazy(() => import("./pages/AdminWithdrawals"));
+const Saques = lazy(() => import("./pages/Saques"));
+const Perfil = lazy(() => import("./pages/Perfil"));
+const Rede = lazy(() => import("./pages/Rede"));
+const Relatorios = lazy(() => import("./pages/Relatorios"));
+const Pagamentos = lazy(() => import("./pages/Pagamentos"));
+const CheckoutConfirmation = lazy(() => import("./pages/CheckoutConfirmation"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+// Loading fallback component
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <div className="space-y-4 w-full max-w-md p-4">
+      <Skeleton className="h-12 w-full" />
+      <Skeleton className="h-64 w-full" />
+      <Skeleton className="h-12 w-full" />
+    </div>
+  </div>
+);
 
 const queryClient = new QueryClient();
 
@@ -39,11 +56,12 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/auth/reset-password" element={<ResetPassword />} />
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/auth/reset-password" element={<ResetPassword />} />
             <Route
               path="/*"
               element={
@@ -82,6 +100,7 @@ const App = () => (
               }
             />
           </Routes>
+          </Suspense>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

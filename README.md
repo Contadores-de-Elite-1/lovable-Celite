@@ -62,11 +62,17 @@ lovable-Celite/
 │   ├── lib/                # Utilitários e helpers
 │   └── integrations/       # Integrações (Supabase, etc)
 ├── supabase/
-│   ├── migrations/         # Migrações do banco
-│   └── functions/          # Edge Functions
-├── PRODUCTION-CHECKLIST.md # Checklist de deploy
-├── MONITORING-LOGGING.md   # Guia de monitoramento
-└── AUTO-MODE-SUMMARY.md    # Resumo de features
+│   ├── migrations/         # Migrações do banco (20+ migrations)
+│   └── functions/          # Edge Functions (Stripe webhooks)
+├── scripts/                # Scripts de automação
+│   ├── deploy-production.sh   # Deploy completo
+│   └── sync-local.sh          # Sync desenvolvimento
+├── docs/archive/           # Documentação histórica (81 arquivos)
+├── quick-start.sh          # Setup em 30 segundos
+├── STATUS.md               # Status atual (100% ready)
+├── PRODUCTION-CHECKLIST.md # Checklist de deploy (600+ linhas)
+├── MONITORING-LOGGING.md   # Guia de monitoramento (500+ linhas)
+└── AUTO-MODE-SUMMARY.md    # Resumo de features (500+ linhas)
 ```
 
 ## 🔧 Configuração
@@ -100,12 +106,35 @@ Ver `PRODUCTION-CHECKLIST.md` para deployment completo.
 
 ## 📚 Documentação
 
-- **[CLAUDE.md](./CLAUDE.md)** - Visão geral do projeto
-- **[PRODUCTION-CHECKLIST.md](./PRODUCTION-CHECKLIST.md)** - Checklist de deploy (100+ itens)
-- **[MONITORING-LOGGING.md](./MONITORING-LOGGING.md)** - Monitoramento e logs
-- **[AUTO-MODE-SUMMARY.md](./AUTO-MODE-SUMMARY.md)** - Resumo de features implementadas
+### Essencial
+- **[STATUS.md](./STATUS.md)** - Status atual do projeto (100% production ready)
+- **[CLAUDE.md](./CLAUDE.md)** - Arquitetura e instruções de desenvolvimento
+- **[COMO-RODAR-AGORA.md](./COMO-RODAR-AGORA.md)** - Guia rápido em 3 minutos
+
+### Deploy
+- **[DEPLOY-SUPABASE.md](./DEPLOY-SUPABASE.md)** - Deploy backend (400+ linhas)
+- **[DEPLOY-FRONTEND.md](./DEPLOY-FRONTEND.md)** - Deploy frontend (350+ linhas)
+- **[PRODUCTION-CHECKLIST.md](./PRODUCTION-CHECKLIST.md)** - Checklist completo (600+ linhas)
+
+### Operações
+- **[MONITORING-LOGGING.md](./MONITORING-LOGGING.md)** - Monitoramento e logs (500+ linhas)
+- **[AUTO-MODE-SUMMARY.md](./AUTO-MODE-SUMMARY.md)** - Features implementadas (500+ linhas)
+- **[ASAAS-DEPRECATION.md](./ASAAS-DEPRECATION.md)** - Remoção ASAAS (histórico)
+
+### Histórico
+- **[docs/archive/](./docs/archive/)** - 81 arquivos de documentação histórica
 
 ## 🚢 Deploy
+
+### Script Automatizado (Recomendado)
+
+```bash
+# Deploy completo (GitHub + Supabase + Frontend)
+./scripts/deploy-production.sh
+
+# Sync desenvolvimento (Git + Dependencies + Supabase)
+./scripts/sync-local.sh
+```
 
 ### Desenvolvimento via Lovable
 
@@ -113,15 +142,12 @@ Ver `PRODUCTION-CHECKLIST.md` para deployment completo.
 
 Changes made via Lovable will be committed automatically to this repo.
 
-### Produção
+### Produção Manual
 
-```bash
-# 1. Build
-npm run build
-
-# 2. Deploy (Vercel/Netlify/etc)
-# Siga o guia em PRODUCTION-CHECKLIST.md
-```
+Ver guias completos:
+- **[DEPLOY-SUPABASE.md](./DEPLOY-SUPABASE.md)** - Backend (migrations + functions)
+- **[DEPLOY-FRONTEND.md](./DEPLOY-FRONTEND.md)** - Frontend (Vercel/Netlify)
+- **[PRODUCTION-CHECKLIST.md](./PRODUCTION-CHECKLIST.md)** - Checklist 100+ itens
 
 ## 🔒 Segurança
 

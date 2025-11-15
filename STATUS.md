@@ -2,8 +2,9 @@
 
 **Data**: 15/11/2024
 **Branch**: `claude/auto-mode-mobile-first-011Qqu5wN96UmLxdioNTka61`
-**Commits totais**: 248
+**Commits totais**: 250+
 **Status**: ✅ **100% PRODUCTION READY**
+**Documentação**: 🧹 **CLEAN** (10 arquivos essenciais + 81 arquivados)
 
 ---
 
@@ -75,8 +76,9 @@
 - `scripts/sync-local.sh` - Sync desenvolvimento
 - `scripts/deploy-stripe.sh` - Stripe specific
 
-### Documentação (10)
+### Documentação (10 essenciais)
 - `README.md` - Overview atualizado
+- `STATUS.md` - Status atual (este arquivo)
 - `CLAUDE.md` - Arquitetura do projeto
 - `COMO-RODAR-AGORA.md` - Guia rápido 3min
 - `AUTO-MODE-SUMMARY.md` - Resumo features (500+ linhas)
@@ -85,7 +87,15 @@
 - `DEPLOY-SUPABASE.md` - Deploy backend (400+ linhas)
 - `DEPLOY-FRONTEND.md` - Deploy frontend (350+ linhas)
 - `ASAAS-DEPRECATION.md` - Remoção ASAAS
-- `DEPLOY-AGORA.md` - Quick deploy
+
+### Documentação Arquivada (81 arquivos)
+- `docs/archive/` - Documentação histórica
+  - Webhooks ASAAS (11 arquivos)
+  - Deploy antigos (6 arquivos)
+  - Testes e guias (10 arquivos)
+  - Relatórios (5 arquivos)
+  - Setup e config (7 arquivos)
+  - Outros (42 arquivos)
 
 ### Config (3)
 - `public/manifest.json` - PWA manifest
@@ -93,8 +103,9 @@
 - `.env.example` - Environment template
 
 **Total**: 23 novos arquivos
+**Arquivados**: 81 arquivos históricos
 **Linhas de código**: 5000+
-**Linhas de docs**: 3500+
+**Linhas de docs ativas**: 3500+
 
 ---
 
@@ -302,17 +313,20 @@ Perfil.js          13.85 KB
 
 **Modo Robô Automático Total:**
 - ✅ 25+ features implementadas
-- ✅ 248 commits
+- ✅ 250+ commits
 - ✅ 5000+ linhas de código
-- ✅ 3500+ linhas de docs
+- ✅ 3500+ linhas de docs ativas
+- ✅ 81 arquivos históricos arquivados
 - ✅ 23 arquivos criados
 - ✅ Bundle 64% menor
 - ✅ Lighthouse +30 pontos
 - ✅ Setup 98% mais rápido
 - ✅ Deploy automatizado
+- ✅ Documentação clean (10 essenciais)
 - ✅ 100% production ready
 
 **Tempo total**: Sessão contínua modo automático
+**Limpeza final**: Concluída
 
 ---
 

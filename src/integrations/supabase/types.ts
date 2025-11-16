@@ -201,8 +201,6 @@ export type Database = {
       }
       clientes: {
         Row: {
-          asaas_customer_id: string | null
-          asaas_subscription_id: string | null
           cnpj: string
           contador_id: string
           contato_email: string | null
@@ -216,12 +214,13 @@ export type Database = {
           nome_empresa: string
           plano: Database["public"]["Enums"]["tipo_plano"]
           status: Database["public"]["Enums"]["status_cliente"] | null
+          stripe_customer_id: string | null
+          stripe_price_id: string | null
+          stripe_subscription_id: string | null
           updated_at: string | null
           valor_mensal: number
         }
         Insert: {
-          asaas_customer_id?: string | null
-          asaas_subscription_id?: string | null
           cnpj: string
           contador_id: string
           contato_email?: string | null
@@ -235,12 +234,13 @@ export type Database = {
           nome_empresa: string
           plano: Database["public"]["Enums"]["tipo_plano"]
           status?: Database["public"]["Enums"]["status_cliente"] | null
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_subscription_id?: string | null
           updated_at?: string | null
           valor_mensal: number
         }
         Update: {
-          asaas_customer_id?: string | null
-          asaas_subscription_id?: string | null
           cnpj?: string
           contador_id?: string
           contato_email?: string | null
@@ -254,6 +254,9 @@ export type Database = {
           nome_empresa?: string
           plano?: Database["public"]["Enums"]["tipo_plano"]
           status?: Database["public"]["Enums"]["status_cliente"] | null
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_subscription_id?: string | null
           updated_at?: string | null
           valor_mensal?: number
         }
@@ -1166,45 +1169,66 @@ export type Database = {
       }
       pagamentos: {
         Row: {
-          asaas_event_id: string | null
-          asaas_payment_id: string | null
+          card_brand: string | null
+          card_last4: string | null
           cashback: number | null
           cliente_id: string
           competencia: string
           created_at: string | null
+          customer_id: string | null
           id: string
+          metadata: Json | null
+          metodo_pagamento: string | null
+          moeda: string | null
+          order_id: string | null
           pago_em: string | null
           status: Database["public"]["Enums"]["status_pagamento"] | null
+          stripe_charge_id: string | null
+          stripe_payment_id: string | null
           tipo: Database["public"]["Enums"]["tipo_pagamento"]
           updated_at: string | null
           valor_bruto: number
           valor_liquido: number
         }
         Insert: {
-          asaas_event_id?: string | null
-          asaas_payment_id?: string | null
+          card_brand?: string | null
+          card_last4?: string | null
           cashback?: number | null
           cliente_id: string
           competencia: string
           created_at?: string | null
+          customer_id?: string | null
           id?: string
+          metadata?: Json | null
+          metodo_pagamento?: string | null
+          moeda?: string | null
+          order_id?: string | null
           pago_em?: string | null
           status?: Database["public"]["Enums"]["status_pagamento"] | null
+          stripe_charge_id?: string | null
+          stripe_payment_id?: string | null
           tipo: Database["public"]["Enums"]["tipo_pagamento"]
           updated_at?: string | null
           valor_bruto: number
           valor_liquido: number
         }
         Update: {
-          asaas_event_id?: string | null
-          asaas_payment_id?: string | null
+          card_brand?: string | null
+          card_last4?: string | null
           cashback?: number | null
           cliente_id?: string
           competencia?: string
           created_at?: string | null
+          customer_id?: string | null
           id?: string
+          metadata?: Json | null
+          metodo_pagamento?: string | null
+          moeda?: string | null
+          order_id?: string | null
           pago_em?: string | null
           status?: Database["public"]["Enums"]["status_pagamento"] | null
+          stripe_charge_id?: string | null
+          stripe_payment_id?: string | null
           tipo?: Database["public"]["Enums"]["tipo_pagamento"]
           updated_at?: string | null
           valor_bruto?: number

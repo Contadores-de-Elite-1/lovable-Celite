@@ -1,6 +1,6 @@
 project_id = "zytxwdgzjqrcmbnpgofj"
 
-[functions.webhook-asaas]
+[functions.webhook-stripe]
 verify_jwt = false
 
 [functions.calcular-comissoes]

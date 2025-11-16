@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Contadores de Elite** is a React + TypeScript web application for managing a commission system for accountants ("contadores"). It integrates with Supabase for backend/authentication and Asaas for payment processing.
+**Contadores de Elite** is a React + TypeScript web application for managing a commission system for accountants ("contadores"). It integrates with Supabase for backend/authentication and Stripe for payment processing.
 
 - **Frontend**: React 18 + Vite, shadcn-ui, Tailwind CSS, TypeScript
 - **Backend**: Supabase (PostgreSQL, Auth, Functions, RLS)
-- **Payments**: Asaas payment gateway integration
+- **Payments**: Stripe payment gateway integration
 - **Structure**: `/lovable-Celite/` contains the main app; `/supabase/` contains DB migrations and serverless functions
 
 ## Common Development Commands
@@ -115,7 +115,7 @@ All protected routes require authentication via `ProtectedRoute` component.
 - `rede_contadores` - Multi-level network (up to 5 levels)
 - `invites` - Referral invites
 - `indicacoes` - Referral tracking
-- `pagamentos` - Payment records (Asaas integration)
+- `pagamentos` - Payment records (Stripe integration)
 - `comissoes` - Commission records
 - `bonus_historico` - Bonus history
 - `conquistas` - Gamification achievements
@@ -132,30 +132,63 @@ All protected routes require authentication via `ProtectedRoute` component.
 - Triggers maintain `clientes_ativos` count
 
 **Serverless Functions** (`supabase/functions/`):
-- `webhook-asaas/` - Handles Asaas payment webhooks
+- `webhook-stripe/` - Handles Stripe payment webhooks
+- `create-checkout-session/` - Creates Stripe checkout sessions
 - `calcular-comissoes/` - Calculates commissions (called by webhook)
 - `processar-pagamento-comissoes/` - Processes payment thresholds
 - `verificar-bonus-ltv/` - Verifies LTV bonuses
 - `aprovar-comissoes/` - Approves calculated commissions
+- `health-check/` - System health monitoring
 
 **RPC Functions** (in migrations):
 - `executar_calculo_comissoes()` - Transactional commission calculation with idempotency
 - `cron_processar_pagamento_comissoes()` - CRON job runs day 25 of each month to process commissions >= R$100
 
-### Asaas Integration
+### Stripe Integration
 
 **Payment Flow**:
-1. Frontend creates customer & subscription via Asaas API
-2. Asaas sends webhook to `webhook-asaas` function on payment events
-3. Function triggers `calcular-comissoes` to compute commissions
-4. Commissions stored in `comissoes` table with status 'calculada'
-5. On day 25, CRON job processes approved commissions (>= R$100)
+1. Frontend creates checkout session via `create-checkout-session` edge function
+2. User completes payment on Stripe Checkout page
+3. Stripe sends webhook events to `webhook-stripe` function:
+   - `checkout.session.completed` - Session finalized
+   - `customer.subscription.created` - Subscription created
+   - `invoice.payment_succeeded` - Payment confirmed (TRIGGERS COMMISSION CALCULATION)
+   - `customer.subscription.updated` - Subscription status changed
+   - `customer.subscription.deleted` - Subscription cancelled
+4. Function triggers `calcular-comissoes` to compute commissions
+5. Commissions stored in `comissoes` table with status 'calculada'
+6. On day 25, CRON job processes approved commissions (>= R$100)
 
 **Database Fields** (in `clientes` & `pagamentos`):
-- `asaas_customer_id` - Asaas customer reference
-- `asaas_subscription_id` - Asaas subscription reference
-- `asaas_payment_id` - Asaas payment reference
-- `asaas_event_id` - Asaas webhook event ID (unique constraint)
+- `stripe_customer_id` - Stripe customer reference (cus_xxx)
+- `stripe_subscription_id` - Stripe subscription reference (sub_xxx)
+- `stripe_price_id` - Stripe price/plan reference (price_xxx)
+- `stripe_payment_id` - Stripe payment intent ID (pi_xxx) - unique constraint for idempotency
+- `stripe_charge_id` - Stripe charge ID (ch_xxx)
+- `moeda` - Payment currency (BRL, USD, EUR, etc.)
+- `metodo_pagamento` - Payment method (card, pix, boleto, etc.)
+- `card_brand` - Card brand (visa, mastercard, etc.)
+- `card_last4` - Last 4 digits of card
+- `customer_id` - Customer ID in payment gateway
+- `order_id` - Order/invoice ID
+- `metadata` - Additional payment metadata (JSONB)
+
+**Webhook Configuration**:
+- Webhook URL: `https://zytxwdgzjqrcmbnpgofj.supabase.co/functions/v1/webhook-stripe`
+- Secrets configured via Supabase CLI:
+  ```bash
+  supabase secrets set STRIPE_SECRET_KEY=sk_test_... # or sk_live_...
+  supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_...
+  supabase secrets set STRIPE_PUBLISHABLE_KEY=pk_test_... # or pk_live_...
+  ```
+- No JWT verification (`verify_jwt = false` in `config.toml`) - Stripe signature validation used instead
+
+**Commission Calculation Trigger**:
+- Event: `invoice.payment_succeeded` (handled in `webhook-stripe/index.ts:305-437`)
+- Determines payment type: `ativacao` (first payment) or `recorrente` (recurring)
+- Registers payment in `pagamentos` table with full Stripe metadata
+- Invokes `calcular-comissoes` edge function with payment details
+- Idempotency guaranteed by unique constraint on `stripe_payment_id`
 
 ### Key Business Logic
 

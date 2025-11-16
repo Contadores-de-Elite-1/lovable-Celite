@@ -14,7 +14,8 @@ interface Payment {
   competencia: string;
   status: string;
   pago_em?: string;
-  asaas_payment_id?: string;
+  stripe_payment_id?: string;
+  stripe_charge_id?: string;
   created_at: string;
 }
 
@@ -155,9 +156,9 @@ export function PaymentHistory({
                   Competência: {formatDate(payment.competencia)}
                   {payment.pago_em && ` • Pago em: ${formatDate(payment.pago_em)}`}
                 </p>
-                {payment.asaas_payment_id && (
+                {payment.stripe_payment_id && (
                   <p className="text-xs text-gray-500 mt-1">
-                    ID Asaas: {payment.asaas_payment_id.substring(0, 12)}...
+                    ID Stripe: {payment.stripe_payment_id.substring(0, 18)}...
                   </p>
                 )}
               </div>
@@ -183,18 +184,16 @@ export function PaymentHistory({
                 >
                   <Eye className="w-4 h-4" />
                 </Button>
-                {payment.asaas_payment_id && (
+                {payment.stripe_payment_id && (
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => {
-                      // Handle download receipt
-                      window.open(
-                        `https://asaas.com/pagamento/${payment.asaas_payment_id}`,
-                        '_blank'
-                      );
+                      // Open Stripe Dashboard for this payment
+                      const stripeUrl = `https://dashboard.stripe.com/payments/${payment.stripe_payment_id}`;
+                      window.open(stripeUrl, '_blank');
                     }}
-                    title="Baixar comprovante"
+                    title="Ver no Stripe Dashboard"
                   >
                     <Download className="w-4 h-4" />
                   </Button>

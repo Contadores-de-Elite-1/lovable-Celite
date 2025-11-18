@@ -108,7 +108,7 @@ const Saques = () => {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <div className="flex min-h-screen items-center justify-center bg-[#F5F6F8]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600 font-medium">Carregando saques...</p>
@@ -118,20 +118,27 @@ const Saques = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-blue-900 to-blue-800 text-white p-6">
+    <div className="min-h-screen bg-[#F5F6F8] text-[#0C1A2A]">
+      {/* Header com fundo escuro e conteúdo em tons de cinza (igual Comissões) */}
+      <header className="bg-gradient-to-r from-[#0C1A2A] to-[#1C2F4A] text-gray-200 px-4 py-6 md:px-8">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-2xl md:text-3xl font-serif font-bold text-yellow-400">Saques</h1>
-          <p className="text-blue-100 text-sm mt-1">Acompanhe suas solicitações de saque</p>
+          <p className="text-xs uppercase tracking-[0.18em] text-gray-400">
+            Área do Contador
+          </p>
+          <h1 className="mt-2 text-2xl md:text-3xl font-serif font-bold text-[#F4C430]">
+            Saques
+          </h1>
+          <p className="mt-1 text-sm md:text-base text-gray-300 max-w-xl">
+            Acompanhe o histórico e o status das suas solicitações de saque.
+          </p>
         </div>
       </header>
 
       {/* Main */}
       <main className="max-w-7xl mx-auto p-4 pb-8">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Summary Cards – 2x2 sempre que couber */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card className="bg-white border-0 shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-gray-700">Total Solicitado</CardTitle>
@@ -154,7 +161,9 @@ const Saques = () => {
                 <div className="text-3xl font-serif font-bold text-yellow-600">
                   R$ {stats.pendentes.toFixed(0)}
                 </div>
-                <p className="text-xs text-gray-500 mt-1">{saques.filter((s) => s.status === 'pendente').length} pendente(s)</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {saques.filter((s) => s.status === 'pendente').length} pendente(s)
+                </p>
               </CardContent>
             </Card>
 
@@ -167,7 +176,9 @@ const Saques = () => {
                 <div className="text-3xl font-serif font-bold text-green-600">
                   R$ {stats.processados.toFixed(0)}
                 </div>
-                <p className="text-xs text-gray-500 mt-1">{saques.filter((s) => s.status === 'processada').length} processado(s)</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {saques.filter((s) => s.status === 'processada').length} processado(s)
+                </p>
               </CardContent>
             </Card>
 
@@ -180,7 +191,9 @@ const Saques = () => {
                 <div className="text-3xl font-serif font-bold text-red-600">
                   R$ {stats.rejeitados.toFixed(0)}
                 </div>
-                <p className="text-xs text-gray-500 mt-1">{saques.filter((s) => s.status === 'rejeitada').length} rejeitado(s)</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {saques.filter((s) => s.status === 'rejeitada').length} rejeitado(s)
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -210,13 +223,18 @@ const Saques = () => {
                     <TableBody>
                       {saques.map((saque) => {
                         const statusInfo = getStatusBadge(saque.status);
-                        const diasAguardando = getDiasAguardando(saque.solicitado_em, saque.processada_em);
+                        const diasAguardando = getDiasAguardando(
+                          saque.solicitado_em,
+                          saque.processada_em
+                        );
 
                         return (
                           <motion.tr
                             key={saque.id}
                             className="hover:bg-gray-50 cursor-pointer"
-                            onClick={() => setExpandedSaque(expandedSaque === saque.id ? null : saque.id)}
+                            onClick={() =>
+                              setExpandedSaque(expandedSaque === saque.id ? null : saque.id)
+                            }
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                           >
@@ -259,7 +277,9 @@ const Saques = () => {
             >
               <Card className="bg-white border-0 shadow-sm">
                 <CardHeader>
-                  <CardTitle className="text-base font-serif text-blue-900">Detalhes do Saque</CardTitle>
+                  <CardTitle className="text-base font-serif text-blue-900">
+                    Detalhes do Saque
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {saques
@@ -269,14 +289,20 @@ const Saques = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
                             <p className="text-xs text-gray-500 uppercase font-semibold">Valor</p>
-                            <p className="text-lg font-bold text-green-600">R$ {saque.valor_solicitado.toFixed(2)}</p>
+                            <p className="text-lg font-bold text-green-600">
+                              R$ {saque.valor_solicitado.toFixed(2)}
+                            </p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500 uppercase font-semibold">Método</p>
-                            <p className="text-lg font-bold text-gray-900">{getMetodoLabel(saque.metodo_pagamento)}</p>
+                            <p className="text-lg font-bold text-gray-900">
+                              {getMetodoLabel(saque.metodo_pagamento)}
+                            </p>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-500 uppercase font-semibold">Solicitado em</p>
+                            <p className="text-xs text-gray-500 uppercase font-semibold">
+                              Solicitado em
+                            </p>
                             <p className="text-lg font-bold text-gray-900">
                               {new Date(saque.solicitado_em).toLocaleDateString('pt-BR', {
                                 weekday: 'short',
@@ -288,7 +314,9 @@ const Saques = () => {
                           </div>
                           {saque.processada_em && (
                             <div>
-                              <p className="text-xs text-gray-500 uppercase font-semibold">Processado em</p>
+                              <p className="text-xs text-gray-500 uppercase font-semibold">
+                                Processado em
+                              </p>
                               <p className="text-lg font-bold text-gray-900">
                                 {new Date(saque.processada_em).toLocaleDateString('pt-BR', {
                                   weekday: 'short',
@@ -303,7 +331,9 @@ const Saques = () => {
 
                         {saque.comprovante_url && (
                           <div>
-                            <p className="text-xs text-gray-500 uppercase font-semibold mb-2">Comprovante</p>
+                            <p className="text-xs text-gray-500 uppercase font-semibold mb-2">
+                              Comprovante
+                            </p>
                             <a
                               href={saque.comprovante_url}
                               target="_blank"
@@ -317,8 +347,12 @@ const Saques = () => {
 
                         {saque.observacao && (
                           <div>
-                            <p className="text-xs text-gray-500 uppercase font-semibold mb-2">Observações</p>
-                            <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">{saque.observacao}</p>
+                            <p className="text-xs text-gray-500 uppercase font-semibold mb-2">
+                              Observações
+                            </p>
+                            <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">
+                              {saque.observacao}
+                            </p>
                           </div>
                         )}
                       </div>

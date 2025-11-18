@@ -182,7 +182,6 @@ const Relatorios = () => {
   const stats = useMemo(() => {
     if (!relatorioData?.comissoes) return null;
 
-    // Use tested utility to calculate all stats
     const commissionData = relatorioData.comissoes.map((c: {
       valor: number;
       tipo_comissao: string;
@@ -208,7 +207,6 @@ const Relatorios = () => {
     }
 
     try {
-      // Prepare data for CSV export with proper formatting
       const rows = relatorioData.comissoes.map((c: {
         competencia: string;
         tipo_comissao: string;
@@ -223,10 +221,7 @@ const Relatorios = () => {
         c.clientes?.nome || 'N/A',
       ]);
 
-      // Use tested CSV utility to generate CSV with proper escaping
       const csv = convertToCSV(rows, ['Data', 'Tipo', 'Valor (R$)', 'Status', 'Cliente']);
-
-      // Use tested CSV utility to download
       const filename = generateCSVFilename('relatorio_comissoes');
       downloadCSV(csv, filename);
     } catch (error) {
@@ -247,12 +242,12 @@ const Relatorios = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-blue-900 to-blue-800 text-white p-6">
+    <div className="min-h-screen bg-[#F5F6F8]">
+      {/* HEADER NO MESMO ESTILO DE COMISSÕES */}
+      <header className="bg-gradient-to-r from-[#0C1A2A] to-[#1C2F4A] text-white p-6">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-serif font-bold text-yellow-400">
+            <h1 className="text-2xl md:text-3xl font-serif font-bold text-[#F4C430]">
               Relatórios
             </h1>
             <p className="text-blue-100 text-sm mt-1">
@@ -261,7 +256,7 @@ const Relatorios = () => {
           </div>
           <Button
             onClick={handleDownloadCSV}
-            className="bg-yellow-500 hover:bg-yellow-600 text-blue-900 font-medium rounded-lg py-2 px-4 flex items-center gap-2"
+            className="bg-[#27AE60] hover:bg-green-900 text-white font-medium rounded-lg py-2 px-4 flex items-center gap-2"
           >
             <Download className="h-4 w-4" />
             Exportar CSV
@@ -330,8 +325,8 @@ const Relatorios = () => {
             </CardContent>
           </Card>
 
-          {/* KPI Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {/* KPI Cards – 2x2 a partir de ~480px */}
+          <div className="grid grid-cols-1 min-[340px]:grid-cols-2 gap-4">
             <Card className="bg-white border-0 shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-gray-700">
@@ -388,6 +383,8 @@ const Relatorios = () => {
               </CardContent>
             </Card>
           </div>
+
+
 
           {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -467,7 +464,7 @@ const Relatorios = () => {
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value) => `R$ ${value.toFixed(2)}`} />
+                      <Tooltip formatter={(value: number) => `R$ ${value.toFixed(2)}`} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -500,7 +497,7 @@ const Relatorios = () => {
                     <div className="flex justify-between items-center pb-3 border-b border-gray-200">
                       <span className="text-gray-600">Média por comissão</span>
                       <span className="font-semibold text-gray-900">
-                        R${' '}
+                        R{'$ '}
                         {stats && stats.totalComissoes > 0
                           ? (stats.totalAcumulado / stats.totalComissoes).toFixed(2)
                           : '0.00'}

@@ -11,25 +11,37 @@ export function MobileHeader() {
   if (!isMobile) return null;
   
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-background/95 backdrop-blur border-b md:hidden">
+    <header className="
+      fixed top-0 left-0 right-0 z-50 h-14
+      bg-gradient-to-r from-[#0C1A2A] to-[#1C2F4A]
+      backdrop-blur border-b border-slate-800
+      md:hidden
+    ">
       <div className="flex items-center justify-between h-full px-4">
+        
+        {/* Botão do menu */}
         <Button 
           variant="ghost" 
           size="icon" 
           onClick={toggleSidebar}
-          className="text-foreground"
+          className="text-gray-200 hover:bg-white/10"
         >
           <Menu className="h-5 w-5" />
         </Button>
         
-        <h1 className="text-sm font-semibold text-foreground">Contadores de Elite</h1>
+        {/* Título */}
+        <h1 className="text-sm font-semibold text-gray-200">
+          Contadores de Elite
+        </h1>
         
-        <Avatar className="h-8 w-8">
+        {/* Avatar */}
+        <Avatar className="h-8 w-8 border border-slate-700 shadow-sm">
           <AvatarImage src="" alt={user?.email || ""} />
-          <AvatarFallback className="bg-muted text-foreground">
+          <AvatarFallback className="bg-slate-900 text-gray-200 text-xs">
             {user?.email?.charAt(0).toUpperCase() || "U"}
           </AvatarFallback>
         </Avatar>
+      
       </div>
     </header>
   );

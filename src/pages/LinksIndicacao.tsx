@@ -4,11 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Link, Copy, ExternalLink, MessageSquare, Mail, Linkedin } from 'lucide-react';
+import { Link, Copy, MessageSquare, Mail } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 
@@ -18,6 +17,7 @@ const LinksIndicacao = () => {
   const [tipo, setTipo] = useState<'cliente' | 'contador'>('cliente');
   const [canal, setCanal] = useState<'whatsapp' | 'email' | 'linkedin' | 'outros'>('whatsapp');
 
+  // Buscar contador
   const { data: contador } = useQuery({
     queryKey: ['contador', user?.id],
     queryFn: async () => {
@@ -31,6 +31,7 @@ const LinksIndicacao = () => {
     enabled: !!user
   });
 
+  // Buscar links
   const { data: links = [] } = useQuery({
     queryKey: ['links', contador?.id],
     queryFn: async () => {
@@ -44,12 +45,14 @@ const LinksIndicacao = () => {
     enabled: !!contador?.id
   });
 
+  // Criar link
   const criarLinkMutation = useMutation({
     mutationFn: async () => {
       const token = Math.random().toString(36).substring(2, 15);
-      const targetUrl = tipo === 'cliente' 
-        ? `${window.location.origin}/cadastro-cliente?ref=${token}`
-        : `${window.location.origin}/cadastro-contador?ref=${token}`;
+      const targetUrl =
+        tipo === 'cliente'
+          ? `${window.location.origin}/cadastro-cliente?ref=${token}`
+          : `${window.location.origin}/cadastro-contador?ref=${token}`;
 
       const { data, error } = await supabase
         .from('links')
@@ -81,9 +84,10 @@ const LinksIndicacao = () => {
   };
 
   const compartilharWhatsApp = (url: string) => {
-    const mensagem = tipo === 'cliente'
-      ? `Olá! Conheça nossa solução de contabilidade: ${url}`
-      : `Seja um parceiro Contadores de Elite: ${url}`;
+    const mensagem =
+      tipo === 'cliente'
+        ? `Olá! Conheça nossa solução de contabilidade: ${url}`
+        : `Seja um parceiro Contadores de Elite: ${url}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(mensagem)}`, '_blank');
   };
 
@@ -94,29 +98,42 @@ const LinksIndicacao = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="bg-primary text-primary-foreground p-6">
-        <div className="container mx-auto">
-          <h1 className="text-3xl font-serif font-bold">Links de Indicação</h1>
+    <div className="min-h-screen bg-gray-50">
+
+      {/* HEADER DARK IGUAL AO DE COMISSÕES E SAQUES */}
+      <header className="bg-gradient-to-r from-[#0C1A2A] to-[#1C2F4A] text-white p-6">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-2xl md:text-3xl font-serif font-bold text-[#F4C430]">
+            Links de Indicação
+          </h1>
+          <p className="text-blue-100 text-sm mt-1">
+            Crie e gerencie seus links de indicação
+          </p>
         </div>
       </header>
 
-      <main className="container mx-auto p-6">
+      <main className="max-w-7xl mx-auto p-4 pb-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="space-y-6"
         >
-          <Card className="bg-card border-border">
+
+          {/* CARD: CRIAR LINK */}
+          <Card className="bg-white border-0 shadow-sm">
             <CardHeader>
-              <CardTitle className="font-serif">Criar Novo Link</CardTitle>
+              <CardTitle className="font-serif text-[#0C1A2A]">
+                Criar Novo Link
+              </CardTitle>
             </CardHeader>
+
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Tipo de Link</Label>
+                  <Label className="text-sm font-semibold text-gray-700">Tipo de Link</Label>
                   <Select value={tipo} onValueChange={(v: string) => setTipo(v)}>
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-white">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -127,9 +144,9 @@ const LinksIndicacao = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Canal</Label>
+                  <Label className="text-sm font-semibold text-gray-700">Canal</Label>
                   <Select value={canal} onValueChange={(v: string) => setCanal(v)}>
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-white">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -142,9 +159,9 @@ const LinksIndicacao = () => {
                 </div>
               </div>
 
-              <Button 
-                onClick={() => criarLinkMutation.mutate()} 
-                className="w-full"
+              <Button
+                onClick={() => criarLinkMutation.mutate()}
+                className="w-full bg-[#27AE60] hover:bg-blue-800 text-white"
                 disabled={criarLinkMutation.isPending}
               >
                 <Link className="mr-2 h-4 w-4" />
@@ -153,11 +170,16 @@ const LinksIndicacao = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-card border-border">
+          {/* CARD: MEUS LINKS */}
+          <Card className="bg-white border-0 shadow-sm">
             <CardHeader>
-              <CardTitle className="font-serif">Meus Links</CardTitle>
+              <CardTitle className="font-serif text-[#0C1A2A]">
+                Meus Links
+              </CardTitle>
             </CardHeader>
+
             <CardContent>
+
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -169,46 +191,63 @@ const LinksIndicacao = () => {
                     <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
+
                 <TableBody>
                   {links.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground">
+                      <TableCell colSpan={6} className="text-center text-gray-500">
                         Nenhum link criado ainda
                       </TableCell>
                     </TableRow>
                   ) : (
                     links.map((link) => {
-                      const taxa = link.cliques > 0 
-                        ? ((link.conversoes / link.cliques) * 100).toFixed(1)
-                        : '0.0';
-                      
+                      const taxa =
+                        link.cliques > 0
+                          ? ((link.conversoes / link.cliques) * 100).toFixed(1)
+                          : '0.0';
+
                       return (
-                        <TableRow key={link.id}>
-                          <TableCell className="capitalize">{link.tipo}</TableCell>
-                          <TableCell className="capitalize">{link.canal}</TableCell>
+                        <TableRow key={link.id} className="hover:bg-gray-50">
+                          <TableCell className="capitalize font-medium text-gray-700">
+                            {link.tipo}
+                          </TableCell>
+
+                          <TableCell className="capitalize text-gray-600">
+                            {link.canal}
+                          </TableCell>
+
                           <TableCell>{link.cliques}</TableCell>
                           <TableCell>{link.conversoes}</TableCell>
-                          <TableCell className="font-semibold">{taxa}%</TableCell>
+
+                          <TableCell className="font-semibold">
+                            {taxa}%
+                          </TableCell>
+
                           <TableCell>
                             <div className="flex gap-2">
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => copiarLink(link.target_url || '')}
+                                className="border-gray-300"
                               >
                                 <Copy className="h-4 w-4" />
                               </Button>
+
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => compartilharWhatsApp(link.target_url || '')}
+                                className="border-gray-300"
                               >
                                 <MessageSquare className="h-4 w-4" />
                               </Button>
+
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => compartilharEmail(link.target_url || '')}
+                                className="border-gray-300"
                               >
                                 <Mail className="h-4 w-4" />
                               </Button>
@@ -220,8 +259,10 @@ const LinksIndicacao = () => {
                   )}
                 </TableBody>
               </Table>
+
             </CardContent>
           </Card>
+
         </motion.div>
       </main>
     </div>

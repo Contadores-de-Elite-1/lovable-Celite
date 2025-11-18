@@ -47,9 +47,15 @@ const Simulador = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-primary text-primary-foreground p-6">
-        <div className="container mx-auto">
-          <h1 className="text-3xl font-serif font-bold">Simulador de Crescimento</h1>
+      {/* HEADER NO MESMO ESTILO DE COMISSÕES */}
+      <header className="bg-gradient-to-r from-[#0C1A2A] to-[#1C2F4A] text-white p-6">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-2xl md:text-3xl font-serif font-bold text-[#F4C430]">
+            Simulador de Crescimento
+          </h1>
+          <p className="text-blue-100 text-sm mt-1">
+            Projete seus ganhos com clientes, rede de contadores e comissões mensais.
+          </p>
         </div>
       </header>
 
@@ -123,14 +129,18 @@ const Simulador = () => {
                     <Users className="h-4 w-4" />
                     <span className="text-sm">Clientes</span>
                   </div>
-                  <div className="text-3xl font-bold text-foreground">{conservador.totalClientes}</div>
+                  <div className="text-3xl font-bold text-foreground">
+                    {conservador.totalClientes}
+                  </div>
                 </div>
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-2 text-muted-foreground mb-2">
                     <TrendingUp className="h-4 w-4" />
                     <span className="text-sm">Contadores</span>
                   </div>
-                  <div className="text-2xl font-bold text-foreground">{conservador.totalContadores}</div>
+                  <div className="text-2xl font-bold text-foreground">
+                    {conservador.totalContadores}
+                  </div>
                 </div>
                 <div className="text-center pt-4 border-t border-border">
                   <div className="flex items-center justify-center gap-2 text-muted-foreground mb-2">
@@ -156,14 +166,18 @@ const Simulador = () => {
                     <Users className="h-4 w-4" />
                     <span className="text-sm">Clientes</span>
                   </div>
-                  <div className="text-3xl font-bold text-foreground">{realista.totalClientes}</div>
+                  <div className="text-3xl font-bold text-foreground">
+                    {realista.totalClientes}
+                  </div>
                 </div>
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-2 text-muted-foreground mb-2">
                     <TrendingUp className="h-4 w-4" />
                     <span className="text-sm">Contadores</span>
                   </div>
-                  <div className="text-2xl font-bold text-foreground">{realista.totalContadores}</div>
+                  <div className="text-2xl font-bold text-foreground">
+                    {realista.totalContadores}
+                  </div>
                 </div>
                 <div className="text-center pt-4 border-t border-border">
                   <div className="flex items-center justify-center gap-2 text-muted-foreground mb-2">
@@ -189,14 +203,18 @@ const Simulador = () => {
                     <Users className="h-4 w-4" />
                     <span className="text-sm">Clientes</span>
                   </div>
-                  <div className="text-3xl font-bold text-foreground">{otimista.totalClientes}</div>
+                  <div className="text-3xl font-bold text-foreground">
+                    {otimista.totalClientes}
+                  </div>
                 </div>
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-2 text-muted-foreground mb-2">
                     <TrendingUp className="h-4 w-4" />
                     <span className="text-sm">Contadores</span>
                   </div>
-                  <div className="text-2xl font-bold text-foreground">{otimista.totalContadores}</div>
+                  <div className="text-2xl font-bold text-foreground">
+                    {otimista.totalContadores}
+                  </div>
                 </div>
                 <div className="text-center pt-4 border-t border-border">
                   <div className="flex items-center justify-center gap-2 text-muted-foreground mb-2">

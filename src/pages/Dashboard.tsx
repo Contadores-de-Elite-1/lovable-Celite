@@ -42,69 +42,70 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#F5F6F8] text-[#0C1A2A] p-4">
-      {/* Header + Saldo */}
-      <div className="bg-gradient-to-r from-[#0C1A2A] to-[#1C2F4A] rounded-2xl p-5 text-white mb-24 relative">
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <p className="text-sm text-gray-300">Bem-vindo,</p>
-            <h1 className="text-lg font-semibold text-white">Contador</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <CalendarIcon className="text-white" />
-            <Button variant="ghost" size="sm" className="text-white flex items-center gap-1">
-              <LogOutIcon size={16} /> Sair
-            </Button>
-          </div>
-        </div>
-        <div className="bg-white bg-opacity-10 backdrop-blur-sm p-4 rounded-xl mt-4">
-          <p className="text-sm text-gray-200">Saldo Disponível</p>
-          <h2 className="text-3xl font-bold text-white">R$ 12.450,00</h2>
-          <div className="flex gap-3 mt-4">
-            <Button className="bg-white text-[#0C1A2A]">Sacar</Button>
-            <Button className="bg-[#D4AF37] text-[#0C1A2A] hover:bg-yellow-400">Indicar</Button>
-          </div>
-          
-        </div>
+      {/* Header */}
+<div className="bg-gradient-to-r from-[#0C1A2A] to-[#1C2F4A] rounded-2xl p-5 text-white mb-32">
+  <div className="flex justify-between items-start mb-4">
+    <div>
+      <p className="text-sm text-gray-300">Bem-vindo,</p>
+      <h1 className="text-lg font-semibold text-white">Contador</h1>
+    </div>
+    <div className="flex items-center gap-4">
+      <CalendarIcon className="text-white" />
+      <Button variant="ghost" size="sm" className="text-white flex items-center gap-1">
+        <LogOutIcon size={16} /> Sair
+      </Button>
+    </div>
+  </div>
 
-        {/* Floating Cards */}
-        <div className="absolute left-0 right-0 -bottom-60 px-5 grid grid-cols-2 gap-4">
-          <div className="bg-white rounded-xl p-4 shadow-md flex gap-3 items-start">
-            <CoinsIcon className="text-green-500" size={24} />
-            <div>
-              <p className="text-sm text-gray-500">Comissões</p>
-              <h3 className="text-xl font-semibold text-[#0C1A2A]">R$ 3.240</h3>
-              <p className="text-xs text-green-600 mt-1">+12% este mês</p>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl p-4 shadow-md flex gap-3 items-start">
-            <UsersIcon className="text-blue-500" size={24} />
-            <div>
-              <p className="text-sm text-gray-500">Clientes Ativos</p>
-              <h3 className="text-xl font-semibold text-[#0C1A2A]">148</h3>
-              <p className="text-xs text-blue-600 mt-1">+8 novos</p>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl p-4 shadow-md flex gap-3 items-start">
-            <AwardIcon className="text-yellow-500" size={24} />
-            <div>
-              <p className="text-sm text-gray-500">Experiência</p>
-              <h3 className="text-xl font-semibold text-[#0C1A2A]">R$ 3.240</h3>
-              <p className="text-xs text-green-600 mt-1">+12% este mês</p>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl p-4 shadow-md flex gap-3 items-start">
-            <LineChartIcon className="text-red-400" size={24} />
-            <div>
-              <p className="text-sm text-gray-500">Crescimento</p>
-              <h3 className="text-xl font-semibold text-[#0C1A2A]">148</h3>
-              <p className="text-xs text-blue-600 mt-1">+8 novos</p>
-            </div>
-          </div>
-        </div>
-      </div>
+  <div className="bg-white bg-opacity-10 backdrop-blur-sm p-4 rounded-xl mt-4">
+    <p className="text-sm text-gray-200">Saldo Disponível</p>
+    <h2 className="text-3xl font-bold text-white">R$ 12.450,00</h2>
 
-      {/* Spacer for floating cards */}
-      <div className="mt-[270px]" />
+    <div className="flex gap-3 mt-4">
+      <Button className="bg-white text-[#0C1A2A]">Sacar</Button>
+      <Button className="bg-[#D4AF37] text-[#0C1A2A] hover:bg-yellow-400">Indicar</Button>
+    </div>
+  </div>
+</div>
+
+{/* Cards abaixo do header, com margin-top negativa */}
+<div className="-mt-28 px-5 grid grid-cols-2 gap-4 mb-10">
+  <div className="bg-white rounded-xl p-4 shadow-md flex gap-3 items-start">
+    <CoinsIcon className="text-green-500" size={24} />
+    <div>
+      <p className="text-sm text-gray-500">Comissões</p>
+      <h3 className="text-xl font-semibold text-[#0C1A2A]">R$ 3.240</h3>
+      <p className="text-xs text-green-600 mt-1">+12% este mês</p>
+    </div>
+  </div>
+
+  <div className="bg-white rounded-xl p-4 shadow-md flex gap-3 items-start">
+    <UsersIcon className="text-blue-500" size={24} />
+    <div>
+      <p className="text-sm text-gray-500">Clientes Ativos</p>
+      <h3 className="text-xl font-semibold text-[#0C1A2A]">148</h3>
+      <p className="text-xs text-blue-600 mt-1">+8 novos</p>
+    </div>
+  </div>
+
+  <div className="bg-white rounded-xl p-4 shadow-md flex gap-3 items-start">
+    <AwardIcon className="text-yellow-500" size={24} />
+    <div>
+      <p className="text-sm text-gray-500">Experiência</p>
+      <h3 className="text-xl font-semibold text-[#0C1A2A]">R$ 3.240</h3>
+      <p className="text-xs text-green-600 mt-1">+12% este mês</p>
+    </div>
+  </div>
+
+  <div className="bg-white rounded-xl p-4 shadow-md flex gap-3 items-start">
+    <LineChartIcon className="text-red-400" size={24} />
+    <div>
+      <p className="text-sm text-gray-500">Crescimento</p>
+      <h3 className="text-xl font-semibold text-[#0C1A2A]">148</h3>
+      <p className="text-xs text-blue-600 mt-1">+8 novos</p>
+    </div>
+  </div>
+</div>
 
 
       {/* Gráfico */}

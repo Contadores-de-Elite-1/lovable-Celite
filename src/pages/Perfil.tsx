@@ -144,13 +144,16 @@ const Perfil = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="sticky top-0 z-10 bg-gradient-to-r from-blue-900 to-blue-800 text-white px-4 pt-6 pb-4">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-2xl md:text-3xl font-serif font-bold text-yellow-400">Perfil</h1>
-          <p className="text-blue-100 text-sm mt-1">Gerencie suas informações pessoais e bancárias</p>
-        </div>
-      </header>
+    <div className="min-h-screen bg-background">
+  {/* HEADER NO MESMO ESTILO DE COMISSÕES */}
+  <header className="bg-gradient-to-r from-[#0C1A2A] to-[#1C2F4A] text-white p-6">
+    <div className="max-w-7xl mx-auto">
+      <h1 className="text-2xl md:text-3xl font-serif font-bold text-[#F4C430]">
+        Perfil
+      </h1>
+      <p className="text-blue-100 text-sm mt-1">Gerencie suas informações pessoais e bancárias</p>
+    </div>
+  </header>
 
       <main className="max-w-4xl mx-auto p-4 pb-8">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
@@ -331,7 +334,7 @@ const Perfil = () => {
               <div className="flex gap-3">
                 <Button
                   onClick={handleEditClick}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg py-2 px-6"
+                  className="bg-[#27AE60] hover:bg-green-900 text-white font-medium rounded-lg py-2 px-6"
                 >
                   Editar Perfil
                 </Button>

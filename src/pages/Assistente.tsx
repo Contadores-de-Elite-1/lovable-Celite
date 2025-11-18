@@ -78,11 +78,14 @@ const Assistente = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-primary text-primary-foreground p-6">
-        <div className="container mx-auto">
-          <h1 className="text-3xl font-serif font-bold">Assistente Virtual</h1>
-        </div>
-      </header>
+  {/* HEADER NO MESMO ESTILO DE COMISSÕES */}
+  <header className="bg-gradient-to-r from-[#0C1A2A] to-[#1C2F4A] text-white p-6">
+    <div className="max-w-7xl mx-auto text-center">
+      <h1 className="text-2xl md:text-3xl font-serif font-bold text-[#F4C430]">
+        Assistente Virtual
+      </h1>
+    </div>
+  </header>
 
       <main className="container mx-auto p-6">
         <motion.div

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -20,18 +20,13 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  calculateTotalCommissions,
-  calculatePaidCommissions,
-  calculateCommissionStats,
-  formatCurrency,
-} from '@/lib/commission';
+import { calculateCommissionStats } from '@/lib/commission';
 import { filterByMultipleCriteria } from '@/lib/filters';
 import { convertToCSV, downloadCSV, generateCSVFilename } from '@/lib/csv';
 
 const Comissoes = () => {
   const { user } = useAuth();
-  const [periodo, setPeriodo] = useState('mes-atual');
+  const [periodo, setPeriodo] = useState('mes-atual'); // mantido para compatibilidade futura
   const [dateStart, setDateStart] = useState('');
   const [dateEnd, setDateEnd] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -88,11 +83,11 @@ const Comissoes = () => {
     enabled: !!user?.id,
   });
 
-  // Apply filters using tested utility
+  // Apply filters
   const comissoes = useMemo(() => {
     if (!allComissoes) return [];
 
-    const filterData = allComissoes.map(c => ({
+    const filterData = allComissoes.map((c) => ({
       competencia: c.competencia,
       status_comissao: c.status_comissao,
     }));
@@ -101,14 +96,17 @@ const Comissoes = () => {
       startDate: dateStart || undefined,
       endDate: dateEnd || undefined,
       status: statusFilter !== 'all' ? statusFilter : undefined,
-    }).map(filtered => {
-      return allComissoes.find(c => c.competencia === filtered.competencia);
-    }).filter(Boolean) as typeof allComissoes;
+    })
+      .map((filtered) => {
+        return allComissoes.find((c) => c.competencia === filtered.competencia);
+      })
+      .filter(Boolean) as typeof allComissoes;
   }, [allComissoes, dateStart, dateEnd, statusFilter]);
 
   const diretas =
-    comissoes?.filter((c) => c.tipo_comissao === 'ativacao' || c.tipo_comissao === 'recorrente') ||
-    [];
+    comissoes?.filter(
+      (c) => c.tipo_comissao === 'ativacao' || c.tipo_comissao === 'recorrente'
+    ) || [];
   const overrides = comissoes?.filter((c) => c.tipo_comissao === 'override') || [];
   const bonus =
     comissoes?.filter(
@@ -119,10 +117,10 @@ const Comissoes = () => {
         c.tipo_comissao === 'bonus_contador'
     ) || [];
 
-  // Use tested utility to calculate commission stats
+  // Stats (mantido se precisar depois)
   const stats = useMemo(() => {
     if (!comissoes) return null;
-    const commissionData = comissoes.map(c => ({
+    const commissionData = comissoes.map((c) => ({
       valor: Number(c.valor),
       tipo_comissao: c.tipo_comissao,
       status_comissao: c.status_comissao,
@@ -131,7 +129,7 @@ const Comissoes = () => {
     return calculateCommissionStats(commissionData);
   }, [comissoes]);
 
-  // Calculate totals using utility results
+  // Totais
   const totalProvisionadas = useMemo(() => {
     if (!comissoes) return 0;
     return comissoes
@@ -169,7 +167,6 @@ const Comissoes = () => {
       return;
     }
 
-    // Show confirmation modal first
     if (!confirmed) {
       setShowConfirmModal(true);
       return;
@@ -209,7 +206,10 @@ const Comissoes = () => {
   };
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, { variant: 'secondary' | 'default' | 'destructive'; label: string; color: string }> = {
+    const variants: Record<
+      string,
+      { variant: 'secondary' | 'default' | 'destructive'; label: string; color: string }
+    > = {
       calculada: { variant: 'secondary', label: 'Calculada', color: 'bg-blue-100 text-blue-800' },
       aprovada: { variant: 'default', label: 'Aprovada', color: 'bg-yellow-100 text-yellow-800' },
       paga: { variant: 'default', label: 'Paga', color: 'bg-green-100 text-green-800' },
@@ -238,7 +238,6 @@ const Comissoes = () => {
     }
 
     try {
-      // Prepare data in format expected by convertToCSV
       const rows = comissoes.map((c) => [
         c.clientes?.nome || 'N/A',
         new Date(c.competencia).toLocaleDateString('pt-BR'),
@@ -247,10 +246,7 @@ const Comissoes = () => {
         getStatusBadge(c.status_comissao).label,
       ]);
 
-      // Use tested CSV utility to generate CSV with proper escaping
       const csv = convertToCSV(rows, ['Cliente', 'Competência', 'Tipo', 'Valor (R$)', 'Status']);
-
-      // Use tested CSV utility to download
       const filename = generateCSVFilename('comissoes');
       downloadCSV(csv, filename);
     } catch (error) {
@@ -282,7 +278,7 @@ const Comissoes = () => {
             data.map((comissao) => {
               const statusInfo = getStatusBadge(comissao.status_comissao);
               return (
-                <TableRow key={comissao.id} className="hover:bg-gray-50">
+                <TableRow key={comissao.id} className="hover:bg-[#F5F6F8]">
                   <TableCell className="font-medium text-gray-900">
                     {comissao.clientes?.nome || 'N/A'}
                   </TableCell>
@@ -309,9 +305,9 @@ const Comissoes = () => {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <div className="flex min-h-screen items-center justify-center bg-[#F5F6F8]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#6366F1] mx-auto mb-4"></div>
           <p className="text-gray-600 font-medium">Carregando comissões...</p>
         </div>
       </div>
@@ -319,8 +315,8 @@ const Comissoes = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Confirmation Modal */}
+    <div className="min-h-screen bg-[#F5F6F8] text-[#0C1A2A]">
+      {/* MODAL CONFIRMAÇÃO SAQUE */}
       <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -328,9 +324,7 @@ const Comissoes = () => {
               <AlertCircle className="h-5 w-5 text-yellow-600" />
               Confirmar Solicitação de Saque
             </DialogTitle>
-            <DialogDescription>
-              Verifique os dados antes de confirmar
-            </DialogDescription>
+            <DialogDescription>Verifique os dados antes de confirmar</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -344,7 +338,9 @@ const Comissoes = () => {
                 </div>
                 <div>
                   <p className="text-xs text-gray-600">Comissões</p>
-                  <p className="font-bold text-gray-900">{comissoes.filter((c) => c.status_comissao === 'aprovada').length}</p>
+                  <p className="font-bold text-gray-900">
+                    {comissoes.filter((c) => c.status_comissao === 'aprovada').length}
+                  </p>
                 </div>
               </div>
             </div>
@@ -378,7 +374,8 @@ const Comissoes = () => {
 
             {/* Warning */}
             <div className="bg-amber-50 border border-amber-200 p-3 rounded text-sm text-amber-800">
-              ⚠️ Após confirmar, sua solicitação será enviada para processamento. Você receberá notificação quando concluída.
+              ⚠️ Após confirmar, sua solicitação será enviada para processamento. Você receberá
+              notificação quando concluída.
             </div>
           </div>
 
@@ -401,88 +398,30 @@ const Comissoes = () => {
         </DialogContent>
       </Dialog>
 
-      <header className="bg-gradient-to-r from-blue-900 to-blue-800 text-white p-6">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-2xl md:text-3xl font-serif font-bold text-yellow-400">Comissões</h1>
-          <p className="text-blue-100 text-sm mt-1">Acompanhe suas comissões e exporte dados</p>
+      {/* HEADER */}
+      <header className="bg-gradient-to-r from-[#0C1A2A] to-[#1C2F4A] text-white pb-20">
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <p className="text-xs text-gray-300">Área do Contador</p>
+          <h1 className="text-2xl md:text-3xl font-semibold text-[#F4C430] flex items-center gap-2">
+            Comissões
+          </h1>
+          <p className="text-sm mt-2 text-gray-200 max-w-md">
+            Acompanhe suas comissões, solicite saque e exporte seus dados financeiros.
+          </p>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto p-4 pb-8">
+      <main className="max-w-7xl mx-auto px-4 pb-10">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.5 }}
           className="space-y-6"
         >
-          {/* KPI Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Card className="bg-white border-0 shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-gray-700">Provisionadas</CardTitle>
-                <Clock className="h-5 w-5 text-yellow-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-serif font-bold text-blue-900">
-                  R$ {totalProvisionadas.toFixed(0)}
-                </div>
-                <p className="text-xs text-gray-500 mt-1">Aguardando aprovação</p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white border-0 shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-gray-700">Liberadas</CardTitle>
-                <DollarSign className="h-5 w-5 text-green-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-serif font-bold text-green-600">
-                  R$ {totalLiberadas.toFixed(0)}
-                </div>
-                <p className="text-xs text-gray-500 mt-1">Já pagas</p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white border-0 shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-gray-700">Disponível para Saque</CardTitle>
-                <Wallet className="h-5 w-5 text-purple-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-serif font-bold text-purple-600">
-                  R$ {totalAprovadas.toFixed(0)}
-                </div>
-                <Button
-                  onClick={() => handleSolicitarSaque(false)}
-                  disabled={totalAprovadas < 100 || isProcessingSaque}
-                  className="mt-3 w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400"
-                >
-                  {isProcessingSaque ? 'Processando...' : totalAprovadas >= 100 ? 'Solicitar Saque' : 'Mínimo R$ 100'}
-                </Button>
-                <p className="text-xs text-gray-500 mt-2">
-                  {totalAprovadas >= 100 ? 'Clique para solicitar saque' : `Faltam R$ ${(100 - totalAprovadas).toFixed(2)}`}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white border-0 shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-gray-700">Total</CardTitle>
-                <TrendingUp className="h-5 w-5 text-blue-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-serif font-bold text-blue-900">
-                  R$ {(totalProvisionadas + totalLiberadas).toFixed(0)}
-                </div>
-                <p className="text-xs text-gray-500 mt-1">Provisionadas + Pagas</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Filters */}
-          <Card className="bg-white border-0 shadow-sm">
+          {/* 1) FILTROS – FLUTUANDO LOGO ABAIXO DO HEADER */}
+          <Card className="bg-white border-0 shadow-md -mt-16">
             <CardHeader>
-              <CardTitle className="text-base font-serif text-blue-900">Filtros</CardTitle>
+              <CardTitle className="text-base font-serif text-[#0C1A2A]">Filtros</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -494,17 +433,19 @@ const Comissoes = () => {
                     type="date"
                     value={dateStart}
                     onChange={(e) => setDateStart(e.target.value)}
-                    className="border-gray-300"
+                    className="border-gray-300 bg-white"
                   />
                 </div>
 
                 <div>
-                  <Label className="text-sm font-medium text-gray-700 block mb-2">Data Final</Label>
+                  <Label className="text-sm font-medium text-gray-700 block mb-2">
+                    Data Final
+                  </Label>
                   <Input
                     type="date"
                     value={dateEnd}
                     onChange={(e) => setDateEnd(e.target.value)}
-                    className="border-gray-300"
+                    className="border-gray-300 bg-white"
                   />
                 </div>
 
@@ -513,7 +454,7 @@ const Comissoes = () => {
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366F1] text-sm bg-white"
                   >
                     <option value="all">Todos</option>
                     <option value="calculada">Calculada</option>
@@ -540,27 +481,99 @@ const Comissoes = () => {
             </CardContent>
           </Card>
 
-          {/* Export Button */}
+          {/* 2) KPI CARDS – AGORA FIXO EM 2 COLUNAS (2x2 EM QUALQUER LARGURA) */}
+          <section className="grid grid-cols-2 gap-4">
+            <Card className="bg-white border-0 shadow-md">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-gray-700">Provisionadas</CardTitle>
+                <Clock className="h-5 w-5 text-yellow-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-serif font-bold text-blue-900">
+                  R$ {totalProvisionadas.toFixed(0)}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Aguardando aprovação</p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white border-0 shadow-md">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-gray-700">Liberadas</CardTitle>
+                <DollarSign className="h-5 w-5 text-green-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-serif font-bold text-green-600">
+                  R$ {totalLiberadas.toFixed(0)}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Já pagas</p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white border-0 shadow-md">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-gray-700">
+                  Disponível para Saque
+                </CardTitle>
+                <Wallet className="h-5 w-5 text-purple-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-serif font-bold text-purple-600">
+                  R$ {totalAprovadas.toFixed(0)}
+                </div>
+                <Button
+                  onClick={() => handleSolicitarSaque(false)}
+                  disabled={totalAprovadas < 100 || isProcessingSaque}
+                  className="mt-3 w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400"
+                >
+                  {isProcessingSaque
+                    ? 'Processando...'
+                    : totalAprovadas >= 100
+                    ? 'Solicitar Saque'
+                    : 'Mínimo R$ 100'}
+                </Button>
+                <p className="text-xs text-gray-500 mt-2">
+                  {totalAprovadas >= 100
+                    ? 'Clique para solicitar saque'
+                    : `Faltam R$ ${(100 - totalAprovadas).toFixed(2)}`}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white border-0 shadow-md">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-gray-700">Total</CardTitle>
+                <TrendingUp className="h-5 w-5 text-blue-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-serif font-bold text-blue-900">
+                  R$ {(totalProvisionadas + totalLiberadas).toFixed(0)}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Provisionadas + Pagas</p>
+              </CardContent>
+            </Card>
+          </section>
+
+          {/* 3) EXPORTAR CSV */}
           <div className="flex justify-end">
             <Button
               onClick={handleDownloadCSV}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg py-2 px-4 flex items-center gap-2"
+              className="bg-[#6366F1] hover:bg-[#4F46E5] text-white font-medium rounded-lg py-2 px-4 flex items-center gap-2 shadow-sm"
             >
               <Download className="h-4 w-4" />
               Exportar CSV
             </Button>
           </div>
 
-          {/* Commissions Table */}
+          {/* 4) TABELA + TABS */}
           <Card className="bg-white border-0 shadow-sm">
             <CardHeader>
-              <CardTitle className="font-serif text-blue-900">
+              <CardTitle className="font-serif text-[#0C1A2A]">
                 Detalhamento de Comissões ({comissoes?.length || 0})
               </CardTitle>
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="diretas">
-                <TabsList className="grid w-full grid-cols-3 mb-6">
+                <TabsList className="grid w-full grid-cols-3 mb-6 bg-[#F5F6F8]">
                   <TabsTrigger value="diretas" className="text-sm">
                     Diretas ({diretas.length})
                   </TabsTrigger>
@@ -571,13 +584,13 @@ const Comissoes = () => {
                     Bônus ({bonus.length})
                   </TabsTrigger>
                 </TabsList>
-                <TabsContent value="diretas" className="mt-6">
+                <TabsContent value="diretas" className="mt-2">
                   <ComissoesTable data={diretas} />
                 </TabsContent>
-                <TabsContent value="overrides" className="mt-6">
+                <TabsContent value="overrides" className="mt-2">
                   <ComissoesTable data={overrides} />
                 </TabsContent>
-                <TabsContent value="bonus" className="mt-6">
+                <TabsContent value="bonus" className="mt-2">
                   <ComissoesTable data={bonus} />
                 </TabsContent>
               </Tabs>

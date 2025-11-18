@@ -1296,48 +1296,6 @@ export type Database = {
         }
         Relationships: []
       }
-      reconciliacoes: {
-        Row: {
-          competencia: string
-          created_at: string | null
-          diferenca: number | null
-          id: string
-          observacoes: string | null
-          payload_asaas: Json | null
-          reconciliado_em: string | null
-          reconciliado_por: string | null
-          status: string | null
-          total_asaas: number
-          total_banco: number
-        }
-        Insert: {
-          competencia: string
-          created_at?: string | null
-          diferenca?: number | null
-          id?: string
-          observacoes?: string | null
-          payload_asaas?: Json | null
-          reconciliado_em?: string | null
-          reconciliado_por?: string | null
-          status?: string | null
-          total_asaas: number
-          total_banco: number
-        }
-        Update: {
-          competencia?: string
-          created_at?: string | null
-          diferenca?: number | null
-          id?: string
-          observacoes?: string | null
-          payload_asaas?: Json | null
-          reconciliado_em?: string | null
-          reconciliado_por?: string | null
-          status?: string | null
-          total_asaas?: number
-          total_banco?: number
-        }
-        Relationships: []
-      }
       rede_contadores: {
         Row: {
           child_id: string

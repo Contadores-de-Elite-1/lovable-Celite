@@ -28,3 +28,4 @@ dist-ssr
 *.sln
 *.sw?
 .env.claude
+.archive-old-tests/

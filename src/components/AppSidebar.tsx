@@ -69,117 +69,153 @@ export function AppSidebar() {
 
   const getNavClass = ({ isActive }: { isActive: boolean }) =>
     isActive
-      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-      : "hover:bg-sidebar-accent/50 text-sidebar-foreground/80 hover:text-sidebar-foreground";
+      ? "bg-white/20 text-white font-medium"
+      : "text-gray-100 hover:bg-slate-100/10 hover:text-white transition-colors";
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-sidebar-border">
-      <SidebarHeader className="border-b border-sidebar-border p-4">
-        <div className="flex items-center justify-between">
-          {open && (
-            <h2 className="text-lg font-semibold text-sidebar-foreground">
-              Contadores de Elite
-            </h2>
-          )}
-          {!isMobile && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleSidebar}
-              className="ml-auto h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
-            >
-              {open ? (
-                <ChevronLeft className="h-4 w-4" />
-              ) : (
-                <ChevronRight className="h-4 w-4" />
-              )}
-            </Button>
-          )}
-        </div>
-      </SidebarHeader>
+    <Sidebar
+      collapsible="icon"
+      className="border-r border-slate-800 bg-transparent"
+    >
+      {/* WRAPPER COM GRADIENTE E CORES */}
+      <div className="flex h-full flex-col bg-gradient-to-b from-[#0C1A2A] to-[#111827] text-gray-200">
+        {/* HEADER */}
+        <SidebarHeader className="border-b border-slate-800 p-4">
+          <div className="flex items-center justify-between">
+            {open && (
+              <h2 className="text-lg font-semibold text-gray-100">
+                Contadores de Elite
+              </h2>
+            )}
+            {!isMobile && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleSidebar}
+                className="ml-auto h-8 w-8 text-gray-300 hover:bg-white/10"
+              >
+                {open ? (
+                  <ChevronLeft className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+              </Button>
+            )}
+          </div>
+        </SidebarHeader>
 
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/60 uppercase text-xs">
-            Principal
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.principal.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild tooltip={item.title}>
-                    <NavLink to={item.url} className={getNavClass} onClick={handleLinkClick}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {/* CONTEÚDO */}
+        <SidebarContent className="px-1">
+          {/* PRINCIPAL */}
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-gray-400 uppercase text-xs tracking-wide">
+              PRINCIPAL
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {menuItems.principal.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild tooltip={item.title}>
+                      <NavLink
+                        to={item.url}
+                        className={getNavClass}
+                        onClick={handleLinkClick}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/60 uppercase text-xs">
-            Recursos
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.recursos.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild tooltip={item.title}>
-                    <NavLink to={item.url} className={getNavClass} onClick={handleLinkClick}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+          {/* RECURSOS */}
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-gray-400 uppercase text-xs tracking-wide">
+              RECURSOS
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {menuItems.recursos.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild tooltip={item.title}>
+                      <NavLink
+                        to={item.url}
+                        className={getNavClass}
+                        onClick={handleLinkClick}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/60 uppercase text-xs">
-            Configurações
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.configuracoes.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild tooltip={item.title}>
-                    <NavLink to={item.url} className={getNavClass} onClick={handleLinkClick}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
+          {/* CONFIGURAÇÕES */}
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-gray-400 uppercase text-xs tracking-wide">
+              CONFIGURAÇÕES
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {menuItems.configuracoes.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild tooltip={item.title}>
+                      <NavLink
+                        to={item.url}
+                        className={getNavClass}
+                        onClick={handleLinkClick}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
 
-      <SidebarFooter className="border-t border-sidebar-border p-4">
-        <div className="flex items-center gap-3">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src="" alt={user?.email || ""} />
-            <AvatarFallback className="bg-sidebar-accent text-sidebar-accent-foreground">
-              {user?.email?.charAt(0).toUpperCase() || "U"}
-            </AvatarFallback>
-          </Avatar>
-          {open && (
-            <div className="flex flex-col overflow-hidden">
-              <span className="text-sm font-medium text-sidebar-foreground truncate">
-                {user?.user_metadata?.nome || "Usuário"}
-              </span>
-              <span className="text-xs text-sidebar-foreground/60 truncate">
-                {user?.email}
-              </span>
-            </div>
-          )}
-        </div>
-      </SidebarFooter>
+          {/* LOGO – ABAIXO DE APROVAÇÕES */}
+<div className="mt-4 mb-6 flex w-full justify-center">
+  <img
+    src="/ce-logo.png"
+    alt="Contadores de Elite"
+    className="h-32 w-auto mx-auto object-contain drop-shadow-[0_0_12px_rgba(0,0,0,0.6)]"
+  />
+</div>
+
+
+
+        </SidebarContent>
+
+        {/* FOOTER / USUÁRIO */}
+        <SidebarFooter className="border-t border-slate-800 p-4">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-8 w-8 border border-slate-700 shadow-sm">
+              <AvatarImage src="" alt={user?.email || ""} />
+              <AvatarFallback className="bg-slate-900 text-gray-200 text-xs">
+                {user?.email?.charAt(0).toUpperCase() || "U"}
+              </AvatarFallback>
+            </Avatar>
+            {open && (
+              <div className="flex flex-col overflow-hidden">
+                <span className="text-sm font-medium text-gray-100 truncate">
+                  {user?.user_metadata?.nome || "Usuário"}
+                </span>
+                <span className="text-xs text-gray-400 truncate">
+                  {user?.email}
+                </span>
+              </div>
+            )}
+          </div>
+        </SidebarFooter>
+      </div>
     </Sidebar>
   );
 }

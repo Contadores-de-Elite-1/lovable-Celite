@@ -1,0 +1,322 @@
+PROMPT 1 PARA O LOVABLE 
+
+Ao analisar este conteúdo, ative seu modo MetaPrompt (Self-Correction) e refaça o prompt de forma otimizada, mantendo 100% da intenção e coerência original. Aplique refino técnico, correção de estrutura, e gere a versão ideal para construção no Lovable com Supabase + Stripe.
+
+
+INSTRUÇÃO AO LOVABLE (modo conversa)
+Analise atentamente todo o conteúdo a seguir.
+ Sua tarefa é:
+Avaliar tecnicamente e detectar inconsistências ou ambiguidades no escopo.
+
+
+Corrigir e otimizar a estrutura de dados, lógica de fluxos e arquitetura.
+
+
+Gerar um “Build Prompt” definitivo, no formato ideal para o Lovable, pronto para iniciar a construção do app.
+
+
+Garantir clareza, modularidade e rastreabilidade entre frontend (Lovable), backend (Supabase) e gateway de pagamento (Stripe).
+
+
+🧭 CONTEXTO GERAL
+O app Programa Contadores de Elite, desenvolvido pela Top Class Escritório Virtual (Aracaju/SE), visa permitir que contadores parceiros indiquem clientes e outros contadores, gerando comissões automáticas, bonificações de performance e acompanhamento transparente em tempo real.
+Plataformas:
+Frontend: Lovable (interface web/app responsiva)
+
+
+Backend: Supabase (PostgreSQL, Auth, Edge Functions, Storage)
+
+
+Pagamentos: Stripe (checkout + webhook + split + conciliação)
+
+
+⚙️ OBJETIVOS PRINCIPAIS
+Automatizar o Programa de Indicação (rastreamento, cadastro, cobrança, cálculo de comissão e extrato).
+
+
+Rastrear e atribuir automaticamente cada cliente e contador ao parceiro que o indicou.
+
+
+Integrar o Stripe para geração de cobranças, split de pagamentos e reconciliação via webhook.
+
+
+Exibir no painel do contador:
+
+Clientes diretos
+
+Rede (contadores indicados)
+
+Ganhos (diretos + override)
+
+Alertas TIER, bônus e status de pagamento
+
+
+🧩 ARQUITETURA PRINCIPAL (Supabase)
+Entidades centrais e campos principais:
+Table
+Columns
+Description
+contadores
+id, user_id, nome, email, nivel (Bronze–Diamante), data_cadastro, ativo
+Parceiros cadastrados
+clientes
+id, nome, cnpj, plano, valor_plano, contador_id, status
+Clientes indicados
+indicacoes
+id, contador_id, cliente_id, origem, status, criado_em
+Registra clique/conversão
+rede_contadores
+id, sponsor_id, child_id, criado_em
+Rede de contadores (MMN)
+pagamentos
+id, cliente_id, tipo (ATIVACAO/RECORRENTE), valor_bruto, cashback, valor_liquido, pago_em
+Histórico financeiro
+comissoes
+id, tipo, base_pagamento_id, contador_id, valor, competencia, status
+Comissões geradas
+invites
+id, tipo (CLIENTE/CONTADOR), emissor_id, token, expira_em, usado_em, status
+Geração de links rastreáveis
+
+
+🔗 RASTREAMENTO DE LINKS
+Dois tipos de links rastreáveis com token HMAC (inalterável + TTL):
+/i/:token → indicação de cliente
+
+Grava em indicacoes, seta cookie httpOnly
+
+flow=lp: abre mini-LP direta ao ponto
+
+flow=checkout: gera cobrança Stripe e abre checkout imediato
+
+/r/:token → convite de contador
+
+Cria invite e, após cadastro, vincula em rede_contadores
+
+TTL recomendado: 7 dias.
+ Assinatura HMAC SHA-256 com secret_key Supabase.
+
+💰 REGRAS DE COMISSÃO E BONIFICAÇÃO
+Com base no documento “17 Bonificações e Regras”:
+Bônus de Ativação: 100% do 1º pagamento líquido do cliente.
+
+Comissão Recorrente: 15–20% sobre clientes diretos, conforme nível.
+
+Override Recorrente: 3–5% sobre clientes da rede.
+
+Retroatividade: novas porcentagens aplicam-se à carteira completa.
+
+Penalidades (TIER):
+
+Ano 1: 7%
+
+Ano 2: 3%
+
+Ano 3: 0% (perda total da carteira)
+
+Reativação: +4 clientes (90d) ou +6 (180d).
+
+Bônus Progressão (não cumulativos):
+
+Prata: 5 clientes = R$100
+
+Ouro: 10 = R$100
+
+Diamante: 15 = R$100
+
+Volume (20,25,30...): +R$100 a cada +5 clientes
+
+Bônus LTV (retenção):
+
+5–9 = 15%
+
+10–14 = 30%
+
+15+ = 50% (13º mês)
+
+Bônus Rede: R$50 por novo contador ativo.
+
+Lead Diamante: 1 lead/mês (CNPJ ativo, fit e contato verificável).
+
+
+📱 FLUXO TÉCNICO (MVP)
+Contador loga → gera link rastreável (gerar_link(tipo) → token assinado).
+
+Cliente ou contador convidado clica → Edge Function valida → grava indicação.
+
+Checkout Stripe criado com referência (indicacao_id, contador_id, cliente_id).
+
+Webhook Stripe → processar_pagamento() → calcula bônus, override e atualiza comissões.
+
+Painel Lovable exibe ganhos, tiers, bônus e status.
+
+Pagamentos automáticos via PIX dia 25.
+
+
+🧠 RECURSOS ADICIONAIS
+Mini-LP direta e elegante: preto, branco e bordô com CTA “Finalizar com Segurança”.
+
+Painel do contador: clientes diretos, rede, ganhos, leads, histórico.
+
+Painel admin (Top Class): relatórios, auditoria, push notifications.
+
+Auth: Supabase Auth + MFA opcional.
+
+RLS: auth.uid() = contador.user_id (para clientes, indicacoes, comissoes, pagamentos).
+
+Segurança: TLS, cookies httpOnly, HMAC, idempotência nos webhooks.
+
+LGPD: logs, consentimento, exclusão e anonimização.
+
+
+🧰 RPCs ESSENCIAIS (Supabase)
+registrar_clique(token)
+
+criar_cliente(indicacao_id, dados)
+
+criar_cobranca_Stripe(cliente_id, indicacao_id)
+
+processar_pagamento(evento_webhook)
+
+fechamento_mensal(competencia)
+
+simulador_crescimento(user_id, input_json)
+
+resgatar_bonus(bonus_id)
+
+
+Todas as RPCs devem validar request_id único para garantir idempotência.
+
+🧮 MÓDULO: SIMULADOR DE CRESCIMENTO
+Objetivo: estimular engajamento e fidelização.
+ O contador ajusta parâmetros simples — clientes/mês, valor médio, contadores convidados, produtividade da rede — e o app calcula ganhos diretos e indiretos.
+Três cenários automáticos:
+Conservador: +3%/mês, conversão 40%, churn 10%.
+
+
+Realista: +6%/mês, conversão 60%, churn 7%.
+
+
+Otimista: +10%/mês, conversão 75%, churn 5%.
+
+
+Fórmula base:
+ ganhos_total = (C * P * r_direta) + (R * P * r_override) + bonus
+ Resultado exibido com gráfico de linha (Chart.js) 12 meses + feedback visual.
+RPC recomendada:
+ simulador_crescimento(user_id, input_json) → { mes, ganho_direto, ganho_total }
+
+🎮 MÓDULO DE ENGAJAMENTO E GAMIFICAÇÃO HÍBRIDA
+Componentes principais:
+Barras de progresso: (clientes_ativos / meta_tier) × 100
+
+
+Sistema de XP: +10 por cliente, +20 por contador, +50 por bônus.
+
+
+Badges e conquistas: tabela conquistas(id, nome, descricao, requisito_xp, icone_url)
+
+
+Ranking mensal: soma comissões + bônus LTV.
+
+
+Push notifications: Firebase + Supabase Functions (event triggers: pagamento, tier, meta semanal).
+
+
+Eventos presenciais: módulo eventos com check-in QR code.
+
+
+Resgate de bônus: RPC resgatar_bonus(bonus_id) com log.
+
+
+Consentimento LGPD: checkbox “Desejo receber notificações”.
+
+
+Integração direta com o simulador para atualizar barras de progresso e alertas de bonificação.
+
+💻 DESIGN MOBILE-FIRST + EXPERIÊNCIA DESKTOP PREMIUM
+Mobile:
+Arquitetura mobile-first, grid 4-colunas, padding 24 px.
+
+
+Framer Motion para transições suaves.
+
+
+Tipografia: Playfair Display + Inter.
+
+
+Paleta: azul-marinho (#0A0F1F), dourado (#C7A94F), branco-off (#F8F8F4), bordô (#601D1D).
+
+
+Layout vertical, botões amplos, microanimações.
+
+
+Desktop:
+Interface aspiracional com fundo azul e destaques dourados (15% máximo).
+
+
+Tema escuro elegante, modo claro automático (prefers-color-scheme).
+
+
+Selo discreto “Powered by Top Class Escritório Virtual”.
+
+
+Performance:
+ Imagens < 500 KB, lazy-loading, tempo total < 2 s (rede 4G).
+
+🛡️ SEGURANÇA, RLS E IDEMPOTÊNCIA
+MFA opcional via OTP email/SMS.
+
+
+RLS Policies: auth.uid() = contador.user_id nas tabelas sensíveis.
+
+
+Criptografia AES-256: campos cpf, cnpj, chave_pix.
+
+
+Webhook idempotente: tabela webhook_log e verificação event_id.
+
+
+Logs de auditoria: função registrar_evento(user_id, acao, payload).
+
+
+Anonimização LGPD: delete_request(user_id) substitui dados pessoais por hash.
+
+
+PIX automático (dia 25): workflow validando saldo e gerando logs.
+
+
+Monitoramento: integração Supabase + Logflare.
+
+
+
+🧠 INSTRUÇÃO FINAL AO LOVABLE
+Agora, com base em tudo o que foi descrito:
+Avalie o escopo, corrija inconsistências e padronize nomes de campos e funções.
+
+
+Gere o Build Prompt definitivo no formato Lovable ideal.
+
+
+Assegure:
+
+
+Clareza nas entidades e relações
+
+
+Automação dos cálculos de comissão e penalidades
+
+
+Integração Lovable ↔ Supabase ↔ Stripe
+
+
+Segurança (Auth, RLS, Idempotência, HMAC, LGPD)
+
+
+Performance e manutenibilidade
+
+
+Execute o modo MetaPrompt (Self-Correction) automaticamente e apresente o resultado final otimizado, fiel às regras de negócio e pronto para uso no modo Build.
+
+
+

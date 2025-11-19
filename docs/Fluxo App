@@ -1,0 +1,520 @@
+
+Processo atual top class (Manual)
+Processo da Top Class: 
+1º Contador indica cliente 
+2º Estruturação de contrato 
+Se PF: (Documentos pessoais: RG,CPF,CNH + Comprovante de residência de todos os sócios se houver mais de um). 
+Se PJ: (Documentos pessoais: RG,CPF,CNH + Comprovante de residência de todos os sócios se houver mais de um + Contrato Social). 
+3º Envio de contrato pronto para assinatura do cliente (Sem assinatura da Top Class).
+4º Assinatura da Top Class e reenvio do contrato para o Contador. 
+OBS - Em paralelo e simultaneamente: No momento quando o contrato é enviado para o cliente consta o IPTU da Top Class, informação necessária para dar entrada na prefeitura a liberação do alvará para funcionamento da empresa do cliente. Exceção: Muitas vezes o contador parceiro antecipa essa etapa, porque já tem conhecimento do nosso IPTU.
+
+
+
+
+
+Meu rascunho de NOVO FLUXO COM STRIPE:
+
+Front end - 
+0. Contador faz cadastro na plataforma - Input: contador_id, usuario_id,
+0.1. passa por Onbourding recebe explicação sobre o programa 
+0.2 .Contador recebe info que ira receber Comissões via Stripe.
+0.3. Contador e direcionado para criar conta na Stripe
+1. Contador clica "Criar link de indicação para cliente com token de identificacao
+   ↓
+2. Sistema gera link único: /onboarding?ref=TOKEN
+   ↓
+3. CLIENTE clica no link e vai para FORMULÁRIO DE ONBOARDING
+   ↓
+4. Cliente preenche:
+   - Tipo: PF ou PJ
+   - Dados pessoais
+   - Upload documentos:
+     * PF: RG, CPF, Comprovante residência
+     * PJ: RG/CPF sócios, Comprovante, Contrato social
+   - Escolhe plano (Pro/Premium/Top)
+   ↓
+5. Cliente vai para PAGAMENTO (Stripe Checkout) -  Cliente paga no Stripe - Output: checkout_url (redirect para Stripe - dados; Cliente id, Token de ligacao com contador id; plano_id 
+   ↓
+6. Stripe processa → envia webhook - 3. STRIPE dispara webhook: payment_intent.succeeded 
+   ↓
+7. Edge Function recebe webhook 
+├─ Valida assinatura 
+├─ Extrai metadata (contador_id, usuario_id, valor, plano, etc…) 
+└─ Chama Supabase com dados - atualiza banco - 
+   ↓
+8.  SUPABASE processa lógica 
+├─ Cria subscription record 
+├─ Calcula distribuição de comissões 
+├─ ChamaStripe API pra atualizar transfers 
+└─ Retorna status atualizado 
+Enfim, Sistema calcula comissões
+
+9. 6. STRIPE distribui $ nas contas corretas - Supabase (Sistema) devolve informações das comissões calculadas para Stripe fazer o split de valores para contador e top class
+9.1. Ou, sistema faz a conta e o Split e devolve apenas a ordem de pagamento para contador e top class com o split já feito (não sei dizer qual das opções, se a 9 ou a 9.1, e a mais segura e recomendada.)
+
+10. FRONT-END atualizado em real-time (websocket ou polling)
+
+
+
+FLUXO ULTRA SIMPLES CLAUDE
+Pedro, vou te dar a versão MAIS SIMPLES POSSÍVEL que funciona:
+
+📱 FLUXO COMPLETO EM 5 TELAS
+┌─────────────────────────────────────────┐
+│ TELA 1: BEM-VINDO                        │
+│                                          │
+│ "Você foi indicado por [Contador]       │
+│  para usar o endereço da Top Class."    │
+│                                          │
+│ [COMEÇAR] ──────────────────────────────►│
+│                                          │
+│ 🟢 WhatsApp fixo no canto                │
+└─────────────────────────────────────────┘
+                 ↓
+┌─────────────────────────────────────────┐
+│ TELA 2: ESCOLHA SEU PLANO                │
+│                                          │
+│ 📦 PLANO BÁSICO - R$ 199/mês            │
+│ 📦 PLANO PRO    - R$ 299/mês            │
+│ 📦 PLANO VIP    - R$ 399/mês            │
+│                                          │
+│ [SELECIONAR PLANO] ─────────────────────►│
+│                                          │
+│ 🟢 WhatsApp fixo                         │
+└─────────────────────────────────────────┘
+                 ↓
+┌─────────────────────────────────────────┐
+│ TELA 3: TUDO EM UM SÓ LUGAR              │
+│                                          │
+│ ┌─────────────────────────────────────┐ │
+│ │ 1️⃣ SEUS DADOS                        │ │
+│ │ Nome: ___________                    │ │
+│ │ CPF/CNPJ: ________                   │ │
+│ │ Email: ___________                   │ │
+│ │ Telefone: ________                   │ │
+│ │ Endereço: ________                   │ │
+│ └─────────────────────────────────────┘ │
+│                                          │
+│ ┌─────────────────────────────────────┐ │
+│ │ 2️⃣ ENVIE SEUS DOCUMENTOS             │ │
+│ │ 📤 CNH/RG                            │ │
+│ │ 📤 Comprovante Residência            │ │
+│ │ 📤 Contrato Social (se PJ)           │ │
+│ └─────────────────────────────────────┘ │
+│                                          │
+│ ┌─────────────────────────────────────┐ │
+│ │ 3️⃣ ACEITE O CONTRATO                 │ │
+│ │ [VER CONTRATO PDF] ──────────────────►│
+│ │ ☐ Li e aceito os termos              │ │
+│ │                                      │ │
+│ │ Assine aqui: ___________________    │ │
+│ │ (Desenhar com o dedo)                │ │
+│ └─────────────────────────────────────┘ │
+│                                          │
+│ [PAGAR E FINALIZAR] ────────────────────►│
+│                                          │
+│ 🟢 WhatsApp fixo                         │
+└─────────────────────────────────────────┘
+                 ↓
+┌─────────────────────────────────────────┐
+│ TELA 4: PAGAMENTO STRIPE                 │
+│                                          │
+│ (Stripe Checkout abre em modal/popup)    │
+│                                          │
+│ Cliente paga → Stripe confirma           │
+└────────────────┬────────────────────────┘
+                 ↓
+┌─────────────────────────────────────────┐
+│ TELA 5: SUCESSO! ✅                      │
+│                                          │
+│ "Pagamento confirmado!"                  │
+│                                          │
+│ "Seu contrato será assinado pela        │
+│  Top Class e enviado em até 24h."       │
+│                                          │
+│ Status: 🟡 Aguardando assinatura Top Class│
+│                                          │
+│ [BAIXAR RECIBO] [FALAR NO WHATSAPP]     │
+│                                          │
+│ 🟢 WhatsApp fixo                         │
+└─────────────────────────────────────────┘
+
+🔧 COMO FUNCIONA POR TRÁS (SIMPLES)
+Quando o cliente clica "PAGAR E FINALIZAR":
+javascript
+// 1. Frontend envia TUDO de uma vez:
+{
+  dados: { nome, cpf, email, tel, endereco },
+  documentos: [arquivo1, arquivo2, arquivo3],
+  assinatura: imagemDaAssinatura,
+  plano: "pro"
+}
+
+// 2. Edge Function processa:
+async function processar() {
+  // a) Salva dados no Supabase
+  const cliente = await criarCliente(dados);
+  
+  // b) Upload docs para Supabase Storage
+  //    OU envia para Google Drive via API
+  const urlsDocs = await salvarDocumentos(documentos);
+  
+  // c) Gera contrato PDF com dados preenchidos
+  //    Usando biblioteca PDF (pdfkit/puppeteer)
+  const contratoUrl = await gerarContratoPDF({
+    ...dados,
+    assinatura: assinatura,
+    plano: plano
+  });
+  
+  // d) Cria Checkout Session no Stripe
+  const session = await stripe.checkout.sessions.create({
+    customer_email: dados.email,
+    line_items: [{ price: plano.stripe_price_id }],
+    mode: 'subscription',
+    success_url: '/sucesso',
+    metadata: { cliente_id: cliente.id }
+  });
+  
+  // e) Retorna URL do Stripe
+  return { checkout_url: session.url };
+}
+Quando Stripe confirma pagamento:
+javascript
+// Webhook Stripe → Edge Function
+async function webhookStripe(event) {
+  if (event.type === 'invoice.payment_succeeded') {
+    const cliente_id = event.metadata.cliente_id;
+    
+    // 1. Marca cliente como "pago"
+    await supabase
+      .from('clientes')
+      .update({ status: 'pago', pago_em: now() })
+      .eq('id', cliente_id);
+    
+    // 2. Notifica time Top Class
+    await enviarEmail({
+      to: 'admin@topclass.com',
+      subject: 'Novo cliente pago - assinar contrato',
+      body: `Cliente ${cliente.nome} pagou. 
+             Contrato: ${contratoUrl}
+             Assine em: [LINK DO CLICKSIGN]`
+    });
+    
+    // 3. Envia email pro cliente
+    await enviarEmail({
+      to: cliente.email,
+      subject: 'Pagamento confirmado!',
+      body: 'Seu contrato será assinado em até 24h.'
+    });
+  }
+}
+```
+
+---
+
+## 📦 O QUE VOCÊ PRECISA (STACK MÍNIMO)
+```
+1. Supabase (banco + storage + edge functions)
+   └─ Tabelas: clientes, contratos, documentos
+   
+2. Stripe (pagamento recorrente)
+   └─ Webhook para confirmação
+
+3. Biblioteca PDF (gerar contrato)
+   └─ pdfkit OU puppeteer OU DocuSeal
+
+4. Email transacional
+   └─ Resend.com (5k emails grátis/mês)
+
+5. (Opcional) Clicksign
+   └─ Só se quiser assinatura Top Class automatizada
+   └─ Se não, admin assina manual no PDF mesmo
+CUSTO TOTAL: ~R$ 120/mês (só Supabase Pro)
+
+🎯 SIMPLICIDADE MÁXIMA
+O que ELIMINA complexidade:
+❌ NÃO precisa de:
+Google Forms separado
+N8N no começo
+Google Drive API
+WhatsApp API
+Múltiplas ferramentas
+✅ SÓ precisa de:
+1 página web (5 telas)
+Supabase (tudo em um)
+Stripe (pagamento)
+Biblioteca PDF (contrato)
+
+💡 DECISÕES CHAVE
+1. Upload de documentos - ONDE?
+OPÇÃO A: Supabase Storage (RECOMENDO para simplicidade)
+typescript
+// Simples assim:
+const { data } = await supabase.storage
+  .from('documentos-clientes')
+  .upload(`${cliente_id}/cnh.pdf`, arquivo);
+✅ Tudo em um lugar
+✅ Sem APIs externas
+✅ 100GB de storage no Pro
+⚠️ Se estourar, migra depois
+OPÇÃO B: Google Drive
+Mais complexo
+Precisa API do Google
+Deixa para Fase 2
+MEU VOTO: Supabase Storage no MVP.
+
+2. Assinatura do contrato - COMO?
+OPÇÃO A: Canvas HTML5 (ULTRA SIMPLES)
+tsx
+<canvas 
+  onMouseMove={desenharAssinatura}
+  // Cliente desenha com dedo
+/>
+// Salva como PNG
+// Insere no PDF
+✅ Zero custo
+✅ Zero integração
+⚠️ Não é "assinatura digital certificada"
+✅ Mas FUNCIONA para começar
+OPÇÃO B: Clicksign/ZapSign
+R$ 49-69/mês
+Mais robusto
+Juridicamente mais forte
+MEU VOTO: Canvas no MVP → Clicksign depois.
+
+3. Geração do contrato - COMO?
+OPÇÃO MAIS SIMPLES:
+typescript
+import PDFDocument from 'pdfkit';
+
+function gerarContrato(dados) {
+  const doc = new PDFDocument();
+  
+  doc.fontSize(20).text('CONTRATO DE CESSÃO DE USO', {align: 'center'});
+  doc.moveDown();
+  doc.fontSize(12).text(`Contratante: ${dados.nome}`);
+  doc.text(`CPF/CNPJ: ${dados.cpf_cnpj}`);
+  doc.text(`Plano: ${dados.plano}`);
+  // ... resto do contrato
+  
+  // Inserir assinatura do cliente
+  doc.image(dados.assinatura, 100, 500, { width: 200 });
+  
+  doc.end();
+  return doc; // Upload para Storage
+}
+```
+
+**Alternativa:** Template HTML → Puppeteer → PDF
+
+---
+
+## 🚀 CRONOGRAMA REALISTA
+
+### **Semana 1: Backend**
+- ✅ Criar tabelas Supabase
+- ✅ Edge Function de cadastro
+- ✅ Integração Stripe Checkout
+- ✅ Webhook Stripe
+- ✅ Geração de PDF
+
+### **Semana 2: Frontend**
+- ✅ 5 telas mobile-first
+- ✅ Upload de arquivos
+- ✅ Canvas de assinatura
+- ✅ Integração Stripe
+- ✅ WhatsApp button
+
+### **Semana 3: Testes + Deploy**
+- ✅ Testes com 2-3 contadores
+- ✅ Ajustes
+- ✅ Go-live!
+
+---
+
+## ✅ MINHA RECOMENDAÇÃO FINAL
+```
+FASE 1 (MVP - 3 semanas):
+├─ 1 página web (5 telas)
+├─ Upload direto Supabase Storage
+├─ Assinatura canvas (dedo)
+├─ PDF gerado automaticamente
+├─ Stripe Checkout
+└─ WhatsApp button manual
+
+CUSTO: R$ 120/mês (Supabase Pro)
+
+FASE 2 (depois de validar):
+├─ Clicksign para assinatura robusta
+├─ N8N para automações avançadas
+├─ WhatsApp API
+└─ Dashboard contador completo
+```
+
+## 🎯 CONCORDO COM ESSE FLUXO?
+
+**SIM!** É perfeito para MVP porque:
+- ✅ Cliente faz TUDO em uma jornada
+- ✅ Sem sair do app
+- ✅ Paga primeiro (Stripe valida cartão)
+- ✅ Top Class assina depois (condicionado ao $$$)
+- ✅ Juridicamente ok
+- ✅ Tecnicamente simples
+- ✅ Escalável
+
+**Única mudança que eu faria:**
+
+Colocar **Stripe ANTES da assinatura** assim:
+```
+Dados → Docs → VER CONTRATO → PAGAR → ASSINAR → Sucesso
+Motivo: Cliente já viu o contrato, já sabe o que vai assinar, paga, e aí assina confirmando tudo.
+
+
+Conversa com GPT
+
+
+Contador parceiro ja cadastrado no sistema, envia um link de referral para um novo cliente indicado - esse link deve ser estruturado para versão mobile first como todo o app - a pagina desse link contem texto rápido, breve e claro sobre o processo de contratação - Explicação sobre os planos com conexão com Stripe para pagamento - local para upload dos documentos e uma copia do contrato que ele irá receber assinado após realizado o pagamento. contrato este com o qual, ele ou o contador darão entrada na prefeitura para obter alvará de funcionamento - Neste ponto do contrato, precisamos de ferramenta ou uma forma capaz de capturar os dados e a assinatura do cliente e de preenche-los no contrato automaticamente. bem como, com os da Topclass - Apos isso a fase do envio do contrato assinado pela Topclass que fica condicionado ao efetivo pagamento pelo cliente. A fatura ou o link de pagamento sera gerado no Stripe em algum local desse processo , nao sei melhor antes ou depois do fluxo, sugira algo. Necessário que haja um componente tipo uma bolinha com símbolo de whatsapp disponível para todas as paginas para poder entrar em contato. GPT, Agora eu quero que você organize esse fluxo da maneira mais simples e objetiva e direta possível. Eu quero que fique muito claro, para até uma criança entender. E veja se você concorda, se tem alguma sugestão a respeito desse fluxo.
+O ChatGPT disse:
+Pensou por 23s
+Beleza, vamos organizar isso como se eu estivesse explicando pra uma criança — mas com cabeça de dono.
+FLUXO SIMPLES FEITO PELO GPT
+🧭 Visão geral em 7 passos (história simples)
+O contador manda um link especial pro cliente.
+O cliente abre esse link no celular.
+Ele entende rapidinho o que é a Top Class e escolhe um plano.
+Ele envia os documentos pelo próprio link.
+Ele preenche os dados que vão para o contrato e assina digitalmente.
+Ele paga pelo Stripe.
+Depois que o pagamento cai, a Top Class assina também e envia o contrato pronto para usar na prefeitura.
+Em todas as telas, tem uma bolinha de WhatsApp no canto para falar com alguém da equipe.
+
+🧱 Que telas são necessárias (versão mobile first)
+🟦 TELA 1 – Página do link de indicação
+Objetivo: explicar em 30 segundos o que vai acontecer.
+Conteúdo:
+Logo Top Class
+Texto MUITO curto:
+“Você foi indicado por um contador parceiro da Top Class para usar nosso endereço comercial e conseguir seu Alvará de Funcionamento.
+Em poucos passos você:
+escolhe o plano,
+envia seus documentos,
+assina o contrato,
+paga e recebe o contrato pronto para levar à prefeitura.”
+Botão grande: “COMEÇAR AGORA”
+Sempre visível: bolinha de WhatsApp no canto inferior direito.
+
+🟦 TELA 2 – Escolha do plano + Stripe preparado
+Objetivo: o cliente entender o plano e selecionar.
+Elementos:
+Cartões dos planos, bem simples:
+Nome do plano
+Preço mensal
+3–4 benefícios chave
+Cliente toca em um plano → fica selecionado.
+Botão: “CONTINUAR (ENVIAR DOCUMENTOS)”
+👉 Stripe aqui ainda não cobra, só guarda qual plano será usado para montar o checkout depois.
+WhatsApp bolinha continua visível.
+
+🟦 TELA 3 – Dados básicos + upload de documentos
+Objetivo: pegar tudo que é essencial para montar contrato e processo.
+Campos (exemplo, tudo em layout de celular):
+Tipo: PF ou PJ
+Nome completo / Razão social
+CPF ou CNPJ
+E-mail
+Telefone / WhatsApp
+Endereço residencial (se precisar agora)
+Uploads:
+Botões de upload com texto claro:
+“Enviar foto da CNH ou RG”
+“Enviar comprovante de residência”
+“Enviar contrato social (se for empresa)”
+👉 Aqui o app apenas recebe os arquivos e associa ao cadastro do cliente.
+(Se for MVP enxuto, podemos trocar upload por link de formulário ou pedir envio direto no WhatsApp. Eu falo disso nas sugestões.)
+Botão ao fim da tela: “CONTINUAR (CONTRATO)”
+WhatsApp bolinha sempre ali.
+
+🟦 TELA 4 – Pré-visualização + dados finais + assinatura do cliente
+Objetivo: montar a base do contrato + o cliente concordar e assinar.
+Fluxo:
+O sistema monta um resumo do contrato, com:
+Nome do cliente / empresa
+Endereço da Top Class
+Plano e valor
+Prazo básico (ex: 12 meses, renovação automática, etc.)
+Campos extras, se faltar algo:
+Nome completo para assinatura
+Documento (CPF/CNPJ)
+Campo de confirmação tipo:
+“Confirmo que li e concordo com os termos do contrato.”
+Assinatura digital simples
+Ou campo de “Assinar com o dedo” (desenhar assinatura)
+Ou “Aceito digitalmente” (para MVP, já resolve)
+Quando o cliente confirma e assina:
+Sistema marca este contrato como “assinado pelo cliente”, mas ainda não assinado pela Top Class.
+Botão: “IR PARA PAGAMENTO”
+
+🟦 TELA 5 – Pagamento (Stripe Checkout)
+Objetivo: cobrar de forma segura e automática.
+Aqui entra o Stripe:
+O app envia para o Stripe:
+Plano escolhido
+Valor
+Identificador do cliente
+O cliente é redirecionado para o Stripe Checkout (página padrão do Stripe, mobile friendly).
+Ele coloca cartão, paga.
+Stripe confirma o pagamento e chama um webhook no backend para marcar como pago.
+Depois do pagamento:
+Cliente volta para uma tela de confirmação no app.
+
+🟦 TELA 6 – Confirmação + próximos passos
+Texto simples:
+“Pagamento confirmado!
+Agora a Top Class vai assinar o seu contrato e enviar uma cópia final para você e/ou para seu contador.
+Esse é o documento que será usado na prefeitura para liberar seu Alvará de Funcionamento.”
+Elementos:
+Mensagem de sucesso.
+Número de protocolo ou código do contrato.
+Informação do prazo (ex: “Você receberá o contrato assinado em até X horas úteis”).
+Botão: “Ver status do meu contrato” (no futuro → área do cliente).
+Bolinha de WhatsApp (para tirar dúvidas).
+
+🧠 Onde entra a assinatura da Top Class?
+Minha recomendação:
+O cliente assina primeiro (Tela 4).
+Só depois do pagamento confirmado (Stripe OK) a Top Class assina.
+Tecnicamente:
+Webhook do Stripe recebe o “pagamento aprovado”.
+Backend marca:
+contrato como aprovado_para_assinatura_topclass
+Usuário interno da Top Class (ou processo automático):
+Assina digitalmente o PDF (com ferramenta de assinatura ou rotina própria).
+Marca como contrato_assinado_pelas_duas_partes.
+Envia por e-mail/WhatsApp e deixa disponível no app (URL).
+
+💬 WhatsApp – regra simples
+Um componente fixo (bolinha com ícone do WhatsApp) aparece em TODAS as telas.
+Ao clicar:
+Abre conversa com número oficial da Top Class já com mensagem pré-pronta:
+“Olá, acessei o link de indicação do meu contador e preciso de ajuda.”
+Isso diminui abandono e dá segurança ao cliente.
+
+🧩 Você perguntou: “você concorda com esse fluxo?”
+Resposta direta:
+Sim, o fluxo faz sentido como visão final de produto.
+Mas, como teu sócio chato, eu faria assim:
+✅ Para o MVP (rápido e barato)
+Mantinha todas as telas, mas:
+Tiraria o upload interno de documentos → usaria:
+Link para Google Forms ou
+Mensagem pronta direcionando para envio via WhatsApp.
+A assinatura do cliente poderia ser:
+Aceite simples + assinatura via ferramenta externa (Clicksign/sem integração pesada no início).
+👉 Isso evita complicação técnica de upload, storage, assinatura digital e compliance, e foca em botar o funil de indicação + pagamento para rodar.
+🚀 Versão 1.1 / 1.2
+Aí sim você:
+Implementa upload nativo.
+Implementa assinatura dentro do app.
+Centraliza tudo em uma área do cliente e do contador.

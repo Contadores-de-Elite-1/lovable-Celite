@@ -1,73 +1,160 @@
-# Welcome to your Lovable project
+# Lovable Celite
 
-## Project info
+**Sistema de Comissões MLM/MMN para o Programa Contadores de Elite**
 
-**URL**: https://lovable.dev/projects/ec352023-a482-4d12-99c5-aac2bf71f1db
+Este projeto foi criado usando Lovable + Supabase + Stripe para automatizar comissões e transformar contadores em consultores de elite.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## 🚀 Início Rápido
 
-**Use Lovable**
+### **Para Desenvolvedores:**
+1. Leia **FRAMEWORK_LOVABLE_CELITE.md** (20 min - guia essencial)
+2. Consulte **docs/BASE_DADOS_CONSULTA.md** (índice de toda documentação)
+3. Revise **docs/17 bonificacoes_Regras do programa** (regras de negócio)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/ec352023-a482-4d12-99c5-aac2bf71f1db) and start prompting.
+### **Para Product/Design:**
+1. Leia **docs/AVATAR** (persona completa - ESSENCIAL)
+2. Consulte **FRAMEWORK_LOVABLE_CELITE.md** (visão geral)
+3. Revise **docs/FRAMEWORK_COMPLETO.md** (contexto profundo)
 
-Changes made via Lovable will be committed automatically to this repo.
+### **Para Stakeholders:**
+1. Leia **FRAMEWORK_LOVABLE_CELITE.md** (overview completo)
+2. Consulte **docs/FRAMEWORK_COMPLETO.md** (estratégia + métricas)
 
-**Use your preferred IDE**
+---
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 📚 Documentação Principal
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+| Documento | Descrição | Quando Usar |
+|-----------|-----------|-------------|
+| **FRAMEWORK_LOVABLE_CELITE.md** | Guia rápido, direto ao ponto (~500 linhas) | Referência diária |
+| **docs/FRAMEWORK_COMPLETO.md** | Documentação exaustiva (4.372 linhas) | Estratégia, onboarding |
+| **docs/BASE_DADOS_CONSULTA.md** | Índice mestre de todos os documentos | Encontrar qualquer informação |
+| **docs/AVATAR** | Psicografia profunda do cliente (Carlos) | UX, copy, decisões produto |
+| **docs/17 bonificacoes_Regras do programa** | Regras completas comissões/bônus | Implementar lógica negócio |
 
-Follow these steps:
+---
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## 🎯 O Que É Este Projeto?
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+**NÃO é**: Apenas um sistema de comissões MLM  
+**É**: Ecossistema de transformação para contadores
 
-# Step 3: Install the necessary dependencies.
-npm i
+**Meta #1**: **"Meus filhos terão orgulho de mim"**
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+Se o sistema não entregar isso, fracassou.
+
+---
+
+## 🛠️ Stack Técnica
+
+- **Frontend**: Vite + React 18 + TypeScript + Shadcn/UI + Tailwind
+- **Backend**: Supabase (PostgreSQL + Edge Functions + Auth + RLS)
+- **Pagamentos**: Stripe (principal) + ASAAS (fallback)
+- **Deploy**: Netlify (frontend) + Supabase Cloud (backend)
+
+---
+
+## 🚦 Como Começar
+
+### **1. Setup Ambiente**
+```bash
+# Instalar dependências
+pnpm install
+
+# Configurar variáveis de ambiente
+cp .env.example .env.local
+# Preencher: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, STRIPE_PUBLIC_KEY
+
+# Iniciar dev server
+pnpm dev  # Roda na porta 8080
 ```
 
-**Edit a file directly in GitHub**
+### **2. Setup Supabase**
+```bash
+# Login Supabase
+npx supabase login
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+# Link projeto
+npx supabase link --project-ref SEU_PROJECT_REF
 
-**Use GitHub Codespaces**
+# Aplicar migrations
+npx supabase db push
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### **3. Testar Edge Functions**
+```bash
+# Testar localmente
+npx supabase functions serve
 
-## What technologies are used for this project?
+# Deploy
+npx supabase functions deploy calcular-comissoes
+npx supabase functions deploy webhook-stripe
+```
 
-This project is built with:
+---
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 📊 Funcionalidades Principais
 
-## How can I deploy this project?
+1. **Sistema de Comissões** (7 tipos automáticos)
+2. **Níveis de Contador** (Bronze → Prata → Ouro → Diamante)
+3. **Lead Diamante** (reconhecimento supremo)
+4. **Sistema TIER** (performance + penalidades)
+5. **Links Rastreáveis** (`/i/:token`, `/r/:token`)
+6. **Gamificação** (XP, conquistas, ranking)
+7. **Alertas Proativos** (Firebase push notifications)
+8. **Simulador de Crescimento** (projeção 12 meses)
 
-Simply open [Lovable](https://lovable.dev/projects/ec352023-a482-4d12-99c5-aac2bf71f1db) and click on Share -> Publish.
+---
 
-## Can I connect a custom domain to my Lovable project?
+## 🎯 Métricas de Sucesso
 
-Yes, you can!
+**Técnicas (Mês 6):**
+- MRR: R$ 50K | 80 contadores | 400 clientes
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+**Emocionais (Mês 6):** ⭐ **MAIS IMPORTANTE**
+- 80% relatam: **"Família tem orgulho"**
+- 10% atingem: **Diamante** (reconhecimento supremo)
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+---
+
+## 📞 Suporte & Links
+
+- **Documentação Completa**: `docs/BASE_DADOS_CONSULTA.md`
+- **Lovable Project**: https://lovable.dev/projects/ec352023-a482-4d12-99c5-aac2bf71f1db
+
+---
+
+## 💎 Filosofia do Projeto
+
+**50% técnico + 50% emocional = 100% transformação**
+
+Cada decisão técnica serve a um propósito emocional:
+- Webhook rápido → Reduz medo
+- Dashboard bonito → Combate vergonha
+- Lead Diamante → STATUS (orgulho dos filhos)
+
+---
+
+## 🔧 Desenvolvimento Local
+
+**Use Lovable**: Visit [Lovable Project](https://lovable.dev/projects/ec352023-a482-4d12-99c5-aac2bf71f1db)
+
+**Use sua IDE favorita**:
+```bash
+git clone <YOUR_GIT_URL>
+cd <YOUR_PROJECT_NAME>
+pnpm install  # Usamos pnpm exclusivamente
+pnpm dev      # Roda na porta 8080
+```
+
+**Tecnologias**: Vite, TypeScript, React, Shadcn-UI, Tailwind CSS, Supabase
+
+---
+
+**Autor**: Claude Sonnet 4.5 (Anthropic)  
+**Data**: Novembro 2025  
+**Licença**: Proprietária - Top Class Escritório Virtual
+
+Para mais informações sobre o Lovable, visite [https://lovable.dev](https://lovable.dev).

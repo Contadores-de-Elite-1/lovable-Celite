@@ -1,0 +1,537 @@
+Framework - Do Zero ao App
+1 - Visão Estratégica
+👉 Porque essa etapa é importante?
+
+Aqui definimos a fundação estratégica do projeto, alinhando propósito, problema real e público-alvo antes de qualquer linha de criação.
+É nesse momento que você deixa de apenas “ter uma ideia” e começa a transformá-la em uma solução com direção clara.
+Ao identificar a dor que será resolvida, os tipos de usuários e as funcionalidades essenciais, essa etapa evita retrabalho, direciona escolhas técnicas e facilita o uso inteligente da IA ao longo do processo.
+💡 Obs: Serão usados dados de um Case de exemplo para facilitar o preenchimento, pode alterar o documento como preferir.
+☑️ Checklist
+
+<aside> <img src="/icons/report_orange.svg" alt="/icons/report_orange.svg" width="40px" />
+Ferramentas para ajudar nessa etapa: Utilize ChatGPT ou plataformas similares apoio nesse processo.
+</aside>
+<aside> <img src="/icons/report_gray.svg" alt="/icons/report_gray.svg" width="40px" />
+Problema identificado
+As empresas que utilizam a Inteligência Artificial enfrentam dois problemas críticos ao tentar escalar o uso internamente:
+Segurança e Vazamento de Dados: Ao usar ferramentas públicas (como ChatGPT/Claude), o contexto corporativo e a propriedade intelectual podem ser usados no treinamento desses modelos. Há um risco real de vazamento de dados confidenciais.
+Custo Descontrolado e Descentralizado: A compra dispersa de assinaturas ou chaves de API por colaborador ou departamento gera um custo de IA imprevisível e sem auditoria, dificultando a alocação de orçamento e a justificativa do ROI (Retorno sobre o Investimento). </aside>
+<aside> <img src="/icons/emoji-winking_gray.svg" alt="/icons/emoji-winking_gray.svg" width="40px" />
+Solução
+Criar o ControlAI, uma Plataforma de IA Privada e Segura (SaaS Multi-tenant) que transforma a IA de um custo descentralizado em um ativo corporativo gerenciável. A solução será construída sob a stack Cursor/Vite/Supabase e incluirá:
+Controle de Acesso Segregado (RLS): Garantir que o ambiente de cada empresa (Tenant) seja isolado dos demais.
+Modelo Híbrido (BYOK - Bring Your Own Key): Permitir que a empresa use sua própria chave API de LLM (OpenAI/Claude), pagando à plataforma apenas pela segurança e gestão.
+Gestão de Contexto: Um Dashboard para o Admin da Empresa configurar as regras (system prompts) da IA para toda a sua equipe.
+</aside>
+<aside> <img src="/icons/123_gray.svg" alt="/icons/123_gray.svg" width="40px" />
+Funcionalidades Principais
+Segurança e Isolamento (RLS)
+Configuração do RLS no Supabase para garantir a segregação de dados entre Tenants (Empresas).
+Módulo de Assinaturas
+Integração com Stripe para gerenciar planos de assinatura, checkout e Webhooks. Implementação do Gating de Recursos (liberação do Chat IA mediante pagamento).
+Painel de Chat (LLM)
+Interface de conversa que injeta o contexto da empresa (System Prompt) antes de enviar a requisição à LLM. Rastreamento de uso de tokens e mensagens.
+Admin Dashboard (Tenant)
+Interface para a Inserção da Chave API (BYOK) e configuração do System Prompt. Gerenciamento de perfis e roles (admin, user) de colaboradores.
+Dashboard Master (Plataforma)
+Painel gerencial restrito ao role: master. Visão de MRR (Receita Recorrente), empresas ativas e logs de auditoria.
+Gerenciamento de Agentes IA
+CRUD completo para o Admin Tenant criar e configurar agentes IA nichados para diferentes departamentos. </aside>
+<aside> <img src="/icons/friends_gray.svg" alt="/icons/friends_gray.svg" width="40px" />
+Persona e Tipos de Usuários
+O projeto exige a definição clara dos papéis e permissões para a implementação de segurança.
+Admin Master (Dono da Plataforma)
+
+ Foco em monitoramento do negócio SaaS e auditoria.
+
+ role: master. Acesso a dados agregados de todas as empresas.
+
+
+Admin Tenant (Gestor da Empresa)
+
+ Responsável pela gestão interna da empresa cliente. Foco em gestão de custos (BYOK) e contexto da IA.
+
+ role: admin. Acesso total aos dados da sua própria empresa.
+
+
+Colaborador
+
+ Usuário final que utiliza o Chat IA para produtividade.
+
+ role: user. Acesso apenas às suas próprias conversas e aos agentes da sua empresa.
+
+
+</aside>
+<aside> <img src="/icons/hammer_gray.svg" alt="/icons/hammer_gray.svg" width="40px" />
+Ferramentas e Custos Geral
+A proposta de valor é construir um SaaS vendável com a máxima eficiência de custos e ferramentas de ponta. Desenho Geral do Projeto e Ferramentas
+
+ A proposta é fazer um desenho como esse para termos uma visão geral
+
+
+
+Ferramentas
+Lovable para Prototipagem - Plano Free
+Cursor para Desenvolvimento e Refatoração - Plano Pro U$ 20,00
+Frontend/Hospedagem - Netlify Pro (U$0-U$20/mês) Plano Gratuito (Inicial)
+Backend/DB/Auth - Plano Pro (U$0-U$20/mês) Plano Gratuito (Inicial)
+Monetização - Stripe (Pagamentos e Webhooks)
+Comunicação - Brevo (E-mails Transacionais) - Plano Gratuito (Inicial)
+IA/LLM - OpenAI/Claude (BYOK) - Custo Zero para a Plataforma (o cliente paga)
+Custo Estimado de Manutenção Mensal (MVP): U$25 a U$50, dependendo do crescimento do uso do Supabase e das ferramentas.
+Total Aproximado
+Investimento Inicial R$200
+Manutenção Mensal R$320/mês
+</aside>
+📍Outras Observações importantes
+
+Decisão Arquitetural: O projeto será construído em Vite/React. A segurança será garantida primariamente via Supabase RLS.
+Escopo de Segurança: O foco da segurança está na segregação de dados (RLS) e no controle de acesso (Roles), não em testes de penetração complexos.
+Prazos Estipulados (SaaS): A velocidade do Vibe Coding é crítica. A migração do protótipo (Módulo 3.3) deve ser concluída em uma única sessão para demonstrar a eficiência da IA.
+
+2 - Insights do Mercado
+👉 Porque essa etapa é importante?
+
+Esta etapa é importante porque impede que o você desenvolva sua solução no escuro. É aqui que será investigado o que já existe, aprende com projetos semelhantes, identifica boas práticas, gaps do mercado e diferenciais competitivos.
+Ao analisar referências, levantar benchmarks e estudar o comportamento de soluções já validadas, você ganha repertório para tomar decisões mais inteligentes e inovadoras.
+💡 Obs: Serão usados dados de um Case de exemplo para facilitar o preenchimento, pode alterar o documento como preferir.
+☑️ Checklist
+
+<aside> <img src="/icons/activity_gray.svg" alt="/icons/activity_gray.svg" width="40px" />
+Benchmark do Mercado
+Pesquisa de Plataformas do mercado que ofereçam soluções semelhantes.
+<aside> <img src="/icons/report_orange.svg" alt="/icons/report_orange.svg" width="40px" />
+Ferramentas para ajudar nessa etapa: Utilize ChatGPT ou plataformas similares para suporte na Pesquisa
+</aside>
+LiteLLM
+
+ https://www.litellm.ai/
+
+ Oferece a governança de custos mais granular e estrutural. Permite definir e impor orçamentos financeiros (USD) em múltiplos níveis: Global, por Equipe (team_id), e por Colaborador Individual (user_id). Requer infraestrutura própria (PostgreSQL para rastreamento de gastos) .
+
+
+Portkey
+
+ https://portkey.ai/docs/integrations/libraries/langflow
+
+ Agilidade e Observabilidade. Permite o gerenciamento seguro de chaves mestras e a emissão de Chaves Virtuais. Possibilita o rateio de custos ao capturar o ID do usuário final (parâmetro user) ou metadados personalizados (e.g., department: "engineering") anexados à requisição. Oferece dashboards prontos para monitoramento em tempo real.
+
+
+LLMetrics
+
+ https://www.llmetric.ai/
+
+ Foco Específico em User-Level FinOps. É um LLM-specific API gateway projetado para que empresas monitorem e controlem o uso e custo em nível de usuário/grupo. O sistema gera chaves de API derivadas para cada usuário, facilitando a atribuição de custos e a imposição de limites de acesso e orçamento por grupo.
+
+<aside> <img src="/icons/report_orange.svg" alt="/icons/report_orange.svg" width="40px" />
+</aside>
+Referências de Desgner
+
+
+
+
+ https://dribbble.com/shots/20943992-Redesign-ChatGPT
+
+
+</aside>
+📍Outras Observações importantes
+
+Ponto Chave: O ControlAI não é uma LLM (como OpenAI ou Claude). Ele é a camada inteligente de SEGURANÇA e CONTROLE entre essas LLMs e a sua empresa.
+Nosso Lema: "A plataforma que permite usar a potência da OpenAI/Claude com a SEGURANÇA e CONTEXTO da sua corporação."
+Canais de Entrega: Nosso produto é uma aplicação web moderna (Vite/React), acessível em qualquer navegador. Comunicações importantes (bem-vindo, pagamentos) são feitas por e-mail para garantir que você receba tudo de forma confiável.
+Concorrência: Não disputamos com a IA, mas com outras plataformas que tentam integrar IA de forma menos segura ou adaptável. Nosso diferencial é a segurança multi-tenant e o controle personalizado.
+
+3 - Arquitetura Técnica
+👉 Porque essa etapa é importante?
+
+Esta etapa é essencial porque transforma a ideia em um plano técnico concreto, conectando visão estratégica com execução prática. Você irá definir a stack de ferramentas NoCode e IA que usará, mapeia os processos e fluxos da solução, organiza visualmente as telas com wireframes e estrutura o banco de dados necessário.
+Além disso, tudo é documentado em um PRD (Product Requirements Document), garantindo clareza para si mesmo e para qualquer pessoa que participe do projeto. Essa etapa dá forma, lógica e coesão à solução, evitando improvisos e permitindo uma construção muito mais fluida, escalável e profissional.
+💡 Obs: Serão usados dados de um Case de exemplo para facilitar o preenchimento, pode alterar o documento como preferir.
+☑️ Checklist
+
+<aside> <img src="/icons/stairs_gray.svg" alt="/icons/stairs_gray.svg" width="40px" />
+Mapeamento de Processos
+Mapear os processos é uma etapa obrigatória antes antes de automatizar ou criar Agente de IA.
+<aside> <img src="/icons/report_orange.svg" alt="/icons/report_orange.svg" width="40px" />
+Ferramentas para ajudar nessa etapa: Utilize Miro, FigJam, ou Whimsical para mapear processos visuais
+</aside>
+Onboarding e Criação de Tenant
+
+ Garantir que cada empresa tenha seu ambiente isolado e a Role correta.
+
+
+Novo usuário acessa /register
+Sistema: Cria a entrada na tabela auth.users e na tabela perfis
+Sistema: Cria a nova entrada na tabela empresas (Tenant).
+Sistema: Vincula o perfil.empresa_id e atribui role: admin ao primeiro usuário.
+Sistema: Aciona o fluxo de e-mail de boas-vindas (Brevo).
+Gating do Chat (BYOK + Assinatura)
+
+ O Chat IA deve verificar se 1) a empresa paga e 2) inseriu a Chave API.
+
+
+Usuário clica em 'Página de Chat' (/chat)
+Sistema (Frontend): Verifica se empresa.is_active é true.
+Sistema (Frontend): Verifica se empresa.chave_api_llm está preenchida.
+Sistema (Back-end): Se faltar qualquer requisito, redireciona o admin para o Admin Dashboard (Tenant) com o alerta "Finalize sua configuração (Assinatura/BYOK)".
+Gestão de Agentes IA (Admin Tenant)
+
+ Permitir que a Empresa crie suas próprias IAs de contexto específico.
+
+
+Admin Tenant acessa Gerenciamento de Agentes
+Sistema: RLS garante que ele veja apenas agentes com seu empresa_id
+Admin Tenant cria novo agente: nome instrucoes (System Prompt).
+Sistema: Salva na tabela agentes_ia com o empresa_id correspondente.
+Rastreamento de Uso (Limitando Custos)
+
+ Auditar e controlar os recursos consumidos por empresa.
+
+
+Usuário envia mensagem no Chat IA.
+Sistema (Edge Function/API): Antes de chamar a LLM, consulta uso_recursos para verificar o limite_mensagens_mes.
+Sistema (Edge Function/API): Se o limite for excedido, nega a chamada e envia erro ao frontend.
+Sistema (Edge Function/API): Após a resposta da LLM, atualiza os campos conversas.tokens_usados e uso_recursos.tokens_consumidos.
+</aside>
+<aside> <img src="/icons/database_gray.svg" alt="/icons/database_gray.svg" width="40px" />
+Modelagem de Dados
+A modelagem de dados já está avançada no PRD, mas o foco é reforçar a lógica de Relacionamentos e RLS.
+<aside> <img src="/icons/report_orange.svg" alt="/icons/report_orange.svg" width="40px" />
+Ferramentas para ajudar nessa etapa: Utilize o ChatGPT ou plataformas similares.
+</aside>
+1 - Tabelas
+
+
+agentes_ia
+
+ Armazena os dados de Agentes IA customizados por empresa
+
+
+auditoria
+
+ Guarda os Logs de ações administrativas
+
+
+conversas
+
+ Controla o Histórico de conversas de chat
+
+
+empresas
+
+ Armazena os dados das Empresas (tenants) da plataforma
+
+
+perfis
+
+ Armazena os dados de Perfis de usuários
+
+
+planos
+
+ Armazena os Planos de assinatura que a plataforma oferece
+
+
+uso_recursos
+
+ Controle de limites de uso por empresa e mês
+
+
+2 - Relacionamentos
+
+ Relacionamentos do Tenant (Empresas)
+
+
+Empresa → Perfis: O relacionamento é Um para Muitos (1:N). Uma única empresa pode ter Múltiplos Colaboradores (perfis) associados através do campo perfis.empresa_id.
+Empresa → Agentes IA: O relacionamento é Um para Muitos (1:N). Uma empresa pode criar e possuir Múltiplos Agentes IA customizados.
+Empresa → Conversas: O relacionamento é Um para Muitos (1:N). Uma empresa gera Múltiplas Conversas de chat, todas rastreadas pelo campo conversas.empresa_id.
+Empresa → Uso de Recursos: O relacionamento é Um para Muitos (1:N). Uma empresa possui Múltiplos Registros de Uso de Recursos (rastreamento mensal de tokens e mensagens).
+Empresa → Auditoria: O relacionamento é Um para Muitos (1:N). Uma empresa gera Múltiplos Logs de Auditoria de suas ações administrativas.
+Empresa → Planos: O relacionamento é Muitos para Um (N:1). Múltiplas empresas podem contratar o Mesmo Plano; a chave estrangeira (plano_id) reside na tabela empresas.
+Relacionamentos do Usuário (Perfis)
+
+
+Perfil → Conversas: O relacionamento é Um para Muitos (1:N). Um Perfil (Colaborador) pode gerar Múltiplas Conversas.
+Perfil → Agentes IA: O relacionamento é Um para Muitos (1:N). Um Perfil é registrado como o criador (created_by) de Múltiplos Agentes IA.
+Perfil → Auditoria: O relacionamento é Um para Muitos (1:N). Um Perfil é o autor (user_id) de Múltiplos Logs de Auditoria.
+Auth.users → Perfis: O relacionamento é Um para Um (1:1). O usuário do Supabase Auth (auth.users) tem Exatamente Um Perfil estendido na tabela perfis, onde a perfis.id é uma chave primária e estrangeira.
+Relacionamentos de Funcionalidade e Rastreamento
+
+
+Agente IA → Conversas: O relacionamento é Um para Muitos (1:N). Um Agente IA pode ser usado em Múltiplas Conversas.
+Planos → Empresas: O relacionamento é Um para Muitos (1:N). Um Plano pode ser contratado por Múltiplas Empresas.
+3 - Diagrama
+
+ https://claude.ai/public/artifacts/c3821a45-4e37-4ce3-8a00-361598463b5b
+
+
+4 - Schema de Da
+
+ Tabela: planos
+
+
+id: int8 (PK)
+nome: String ('Free', 'Básico', 'Empresa', 'Master')
+preco_mensal: Decimal(10,2)
+max_usuarios: Integer
+max_agentes: Integer
+limite_mensagens_mes: Integer
+stripe_price_id: String (UNIQUE)
+Demais campos: features, is_active, cor, created_at, updated_at.
+Tabela: empresas (Tenants)
+
+
+id: int8 (PK)
+nome: String (NOT NULL)
+plano_id: int8 (FK → planos)
+chave_api_llm: String (ENCRYPTED)
+contexto_ia: JSONB
+stripe_customer_id: String (UNIQUE)
+Demais campos: email, telefone, endereco, status, data_adesao, proxima_cobranca, is_active, created_at, updated_at.
+Tabela: perfis (Colaboradores/Usuários)
+
+
+id: int8 (PK, FK → auth.users)
+empresa_id: int8 (FK → empresas - ESSENCIAL para RLS)
+role: Enum (master, admin, user)
+Demais campos: email, nome_completo, telefone, cargo, status, ultimo_acesso, avatar_url, created_at, updated_at.
+Tabela: agentes_ia
+
+
+id: int8 (PK)
+empresa_id: int8 (FK → empresas - RLS)
+nome: String (NOT NULL)
+instrucoes: Text (System prompt)
+icone_url: String
+Demais campos: descricao, is_active, is_popular, cor, created_by, created_at, updated_at.
+Tabela: conversas (Histórico de Chats)
+
+
+id: int8 (PK)
+conversation_uuid: UUID (UNIQUE - Rastreamento)
+empresa_id: int8 (FK → empresas - RLS)
+user_id: int8 (FK → perfis)
+agente_id: int8 (FK → agentes_ia)
+mensagens: JSONB
+Demais campos: titulo, tokens_usados, status, contexto_atual, created_at, updated_at.
+Tabela: uso_recursos (Controle de Limites)
+
+
+id: int8 (PK)
+empresa_id: int8 (FK → empresas - RLS)
+mes_referencia: DATE (YYYY-MM-01)
+mensagens_enviadas: Integer DEFAULT 0
+tokens_consumidos: Integer DEFAULT 0
+Demais campos: agentes_ativos, usuarios_ativos, created_at, updated_at.
+Tabela: auditoria (Logs de Ações Administrativas)
+
+
+id: int8 (PK)
+user_id: int8 (Quem executou a ação)
+acao: String
+entidade_tipo: String
+entidade_id: int8
+Demais campos:
+
+ empresa_id, detalhes, ip_address, user_agent, created_at.
+
+
+</aside>
+<aside> <img src="/icons/document_gray.svg" alt="/icons/document_gray.svg" width="40px" />
+Integrações API - Comunicação com outros sistemas
+Coloque aqui pontos importantes da documentação API dos projetos
+https://stripe.com/br
+https://app.brevo.com/
+https://supabase.com/
+https://chatgpt.com/
+</aside>
+<aside> <img src="/icons/cursor-click_gray.svg" alt="/icons/cursor-click_gray.svg" width="40px" />
+Wireframe e Fluxo de Telas
+Caso o seu projeto possua uma Interface, é importante desenhar quais telas e o que terá em cada tela. Você pode começar no papel e depois ir para alguma plataforma.
+<aside> <img src="/icons/report_orange.svg" alt="/icons/report_orange.svg" width="40px" />
+Ferramentas para ajudar nessa etapa: Utilize o UX Pilot, UI Wizard ou plataformas similares.
+</aside>
+Tela Dashboard Master:
+Objetivo: Auditoria do Negócio SaaS.
+Elementos: Cards com: MRR (Receita Mensal Recorrente), Empresas Ativas, Total de Tokens Consumidos (geral). Gráficos de barra: Conversas/Dia (por empresa).
+Tela Admin Dashboard (Tenant):
+Objetivo: Gestão interna da Chave BYOK e Contexto.
+Elementos: Formulário para inserção da Chave API. Editor de texto para System Prompt. Tabela CRUD para perfis de colaboradores. </aside>
+📁 Documento PRD (Product Requirements Document)
+
+https://docs.google.com/document/d/1WS7SgkVadQzjzq3Zjmyhr8f2hXm98RPB33wOTShHyl4/edit?usp=sharing
+Documento de Requisitos do Produto (PRD) – Versão Final
+Nome do Projeto: ControlAI
+1. Visão Geral (Overview)
+O projeto é a construção de uma Plataforma de Inteligência Artificial Privada (SaaS Multi-tenant), denominada ControlAI, para ser o MVP (Produto Mínimo Viável) do curso "Do 0 ao App".
+Esta plataforma permitirá que empresas (Tenants) se inscrevam, gerenciem seus colaboradores e utilizem modelos de LLM (como OpenAI/Claude) sob um contexto seguro e privado.
+Pilares do Produto:
+Segurança Multi-tenant (RLS): Garantia de segregação estrita de dados entre empresas.
+Modelo de Assinatura Híbrido (BYOK - Bring Your Own Key): A plataforma cobra uma taxa de serviço (Plataforma + Segurança), enquanto a empresa cliente fornece e gerencia seus próprios custos de token de LLM.
+Gestão Completa: Incluindo painéis de controle separados para o Admin Master da Plataforma (o Dono) e para os Administradores de cada Empresa (Admin Tenant).
+2. Metas
+Implementar Multi-tenancy Segura: Garantir a segregação estrita de dados entre tenants usando Row-Level Security (RLS) do Supabase.
+Monetização BYOK: Implementar o Stripe para a Taxa de Plataforma SaaS, exigindo que o cliente insira sua própria Chave API de LLM para liberar o recurso.
+Gestão de Plataforma Master: Criar um Dashboard dedicado para o Admin Master (Dono) para auditoria e monitoramento do negócio SaaS.
+Foco na Conversão: Criar uma Landing Page e uma Página de Vendas/Pricing robustas para otimizar a aquisição de clientes.
+Segurança de Dados: Garantir criptografia de dados sensíveis (chaves API) e conformidade com boas práticas de segurança.
+Comunicação Automatizada: Implementar e-mails transacionais para eventos importantes (boas-vindas, alertas, etc).
+3. Stack Tecnológica e Integrações
+Framework: React & Vite (Base do Protótipo Lovable).
+Roteamento: React Router DOM (Roteamento Client-Side).
+Desenvolvimento: Cursor e VSCode.
+Banco de Dados: Supabase (PostgreSQL, Auth, RLS, Storage).
+Pagamentos: Stripe (Assinaturas SaaS, Webhooks).
+E-mails: Brevo (E-mails Transacionais).
+IA/LLM: OpenAI/Claude (Via Chave BYOK) e AI SDK.
+Hosting/CI/CD: Netlify(Configurado para Build Vite).
+UI/Design: Shadcn UI.
+4. Páginas e Funcionalidades Essenciais
+Landing Page / Página de Vendas: Apresentação do SaaS e Pricing. CTA de conversão (link para Stripe Checkout).
+Auth (Login/Cadastro): Permite cadastro de novas empresas (criação de Tenant) e login seguro.
+Dashboard do Colaborador: Página de usuário. Acesso liberado por Assinatura Ativa + Chave BYOK Válida.
+Página de Chat (Protegida/LLM): Interface principal de interação com a LLM. Injeta o contexto_ia configurado pela empresa.
+Admin Dashboard (Tenant/Empresa): Acesso restrito ao role: admin. Funções: 1) Inserir Chave API (BYOK), 2) Configurar Contexto da IA (System Prompt), 3) Gerenciar Colaboradores (CRUD).
+Dashboard Master (Plataforma): Acesso restrito ao role: master. Funções: Monitoramento de Assinaturas (Stripe), Visão Geral de Todas as Empresas (Tenants), Auditoria de Logs e Uso.
+Módulo de Faturamento: Link para o Portal do Cliente do Stripe para gerenciamento de planos e dados de pagamento.
+Gerenciamento de Agentes IA (Admin Tenant): CRUD completo de Agentes IA customizados. Configuração de system prompts específicos.
+Seleção de Agentes (Colaborador): Interface para escolha do agente antes de iniciar conversa.
+Controle de Limites de Uso: Sistema de tracking automático de uso (mensagens, tokens, agentes) por tenant. Validação contra limites do plano.
+Sistema de Auditoria: Log detalhado de todas as ações administrativas (master e admin).
+
+5. Modelo de Dados (Data Model)
+Convenções: Todas as chaves primárias (id) são do tipo int8 (Bigint - Autonumeração). Timestamps: TIMESTAMPTZ.
+Tabela: planos
+id: int8 (PK)
+nome: String ('Free', 'Básico', 'Empresa', 'Master')
+preco_mensal: Decimal(10,2)
+max_usuarios: Integer
+max_agentes: Integer
+limite_mensagens_mes: Integer
+stripe_price_id: String (UNIQUE)
+Demais campos: features, is_active, cor, created_at, updated_at.
+Tabela: empresas (Tenants)
+id: int8 (PK)
+nome: String (NOT NULL)
+plano_id: int8 (FK → planos)
+chave_api_llm: String (ENCRYPTED)
+contexto_ia: JSONB
+stripe_customer_id: String (UNIQUE)
+Demais campos: email, telefone, endereco, status, data_adesao, proxima_cobranca, is_active, created_at, updated_at.
+Tabela: perfis (Colaboradores/Usuários)
+id: int8 (PK, FK → auth.users)
+empresa_id: int8 (FK → empresas - ESSENCIAL para RLS)
+role: Enum (master, admin, user)
+Demais campos: email, nome_completo, telefone, cargo, status, ultimo_acesso, avatar_url, created_at, updated_at.
+Tabela: agentes_ia
+id: int8 (PK)
+empresa_id: int8 (FK → empresas - RLS)
+nome: String (NOT NULL)
+instrucoes: Text (System prompt)
+icone_url: String
+Demais campos: descricao, is_active, is_popular, cor, created_by, created_at, updated_at.
+Tabela: conversas (Histórico de Chats)
+id: int8 (PK)
+conversation_uuid: UUID (UNIQUE - Rastreamento)
+empresa_id: int8 (FK → empresas - RLS)
+user_id: int8 (FK → perfis)
+agente_id: int8 (FK → agentes_ia)
+mensagens: JSONB
+Demais campos: titulo, tokens_usados, status, contexto_atual, created_at, updated_at.
+Tabela: uso_recursos (Controle de Limites)
+id: int8 (PK)
+empresa_id: int8 (FK → empresas - RLS)
+mes_referencia: DATE (YYYY-MM-01)
+mensagens_enviadas: Integer DEFAULT 0
+tokens_consumidos: Integer DEFAULT 0
+Demais campos: agentes_ativos, usuarios_ativos, created_at, updated_at.
+Tabela: auditoria (Logs de Ações Administrativas)
+id: int8 (PK)
+user_id: int8 (Quem executou a ação)
+acao: String
+entidade_tipo: String
+entidade_id: int8
+Demais campos: empresa_id, detalhes, ip_address, user_agent, created_at.
+6. Segurança e Compliance
+Requisitos de Segurança
+Criptografia de Dados Sensíveis: Chaves API devem ser criptografadas (pgcrypto/Supabase Vault).
+Row-Level Security (RLS): Sempre habilitado em todas as tabelas com empresa_id.
+Auditoria e Logs: Todas as ações administrativas devem ser logadas.
+Rate Limiting: Implementar limitação de taxa (100 requests/minuto por empresa).
+Validação de Entrada: Sanitização e validação de todos os inputs.
+Compliance
+LGPD (Lei Geral de Proteção de Dados).
+PCI DSS (via Stripe).
+SOC 2 Type II (via Supabase e Netlify).
+📍Outras Observações importantes
+
+Anote aqui outros pontos importantes do projeto
+
+4 - Criação Interativa
+👉 Porque essa etapa é importante?
+
+Este é o momento de transformar o planejamento em realidade: aqui colocamos a mão na massa e começamos a construir a solução. Com base em toda a arquitetura definida, desenvolva as telas, fluxos, integrações, banco de dados e automações, usando ferramentas NoCode e apoio da IA para acelerar e refinar o processo. É onde o projeto ganha vida.
+💡 Obs: Serão usados dados de um Case de exemplo para facilitar o preenchimento, pode alterar o documento como preferir.
+☑️ Checklist
+
+<aside> <img src="/icons/checklist_gray.svg" alt="/icons/checklist_gray.svg" width="40px" />
+Checklist de Criação + Testes
+1. Fundações e Protótipo (Módulos 1, 2, 3)
+[ ] Clonar e instalar o Protótipo Lovable (Vite/React) como nossa base inicial.
+[ ] Configurar GitHub e Netlify para o Deploy inicial.
+[ ] Refinar o Design System (Cores, Fontes, Glow Effects) no globals.css para preservar o pixel-perfect do Lovable.
+[ ] Refatorar a estrutura do código gerado pelo Lovable para um padrão limpo de Componentes React (Client-Side Pura).
+2. Back-end e Segurança (Módulos 4, 5)
+[ ] Conexão inicial do Supabase e Setup do MCP.
+[ ] Criar tabelas e relacionamentos (planos, empresas, perfis, etc.).
+[ ] Criar páginas de Login/Cadastro (/auth).
+[ ] Configurar RLS em todas as tabelas com empresa_id (Pilar de segurança Multi-tenant).
+[ ] Fluxo de Commits e Feature Branches.
+3. Funções Core e Agentes (Módulos 6, 7, 8, 9, 10)
+[ ] Criar layouts de Dashboard (Colaborador, Admin, Master).
+[ ] Desenvolver a interface de Inserção da Chave API (BYOK) e Configuração do Contexto de IA.
+[ ] Criar o CRUD completo para Gerenciamento de Agentes IA customizados.
+[ ] Implementar a interface de Chat e a conexão com AI SDK.
+[ ] Implementar a lógica de Gating (liberação do Chat) para verificar Assinatura Ativa + Chave BYOK.
+[ ] Desenvolver a Página de Vendas/Pricing e as rotas públicas (Módulo 7).
+[ ] Setup do Brevo e integração do e-mail de Boas-Vindas no cadastro.
+4. Monetização e Controle Master (Módulos 11, 12)
+[ ] Criar Catálogo de Produtos e planos de assinatura no Stripe.
+[ ] Criar e implantar Edge Function no Supabase para receber Webhooks do Stripe.
+[ ] Criar o Painel Gerencial Master (role: master) com métricas de negócio (MRR, Clientes).
+[ ] Implementar as tabelas de Auditoria e Uso de Recursos (uso_recursos).
+[ ] Integrar sessões do Customer Portal para gerenciamento de faturamento.
+</aside>
+<aside> <img src="/icons/lock-keyhole_gray.svg" alt="/icons/lock-keyhole_gray.svg" width="40px" />
+Segurança
+[ ] Configurar regras de RLS em todas as tabelas sensíveis (conversas, agentes_ia, uso_recursos).
+[ ] Garantir que a chave_api_llm seja criptografada e nunca acessada pelo Frontend.
+[ ] Restringir acesso aos Dashboards por Roles (master, admin).
+[ ] Não deixar nenhuma credencial sensível exposta em Edge Functions (usar Supabase Secrets). </aside>
+
+5 - Lançamento e PDCA
+👉 Porque essa etapa é importante?
+
+A etapa de Lançamento e PDCA é essencial porque é quando o projeto finalmente entra em uso real e começa a gerar aprendizado prático. Ao lançar o MVP, você coloca sua solução em contato com os primeiros usuários reais, o que permite validar hipóteses, descobrir pontos de fricção e identificar oportunidades de melhoria.
+Sem esse ciclo de feedback, é impossível evoluir de forma estratégica. O uso do método PDCA (Planejar, Executar, Checar, Agir) garante que cada melhoria seja baseada em dados concretos e que o produto avance de forma contínua, segura e inteligente.
+☑️ Checklist
+
+<aside> <img src="/icons/checklist_gray.svg" alt="/icons/checklist_gray.svg" width="40px" />
+1. P de Planejar (Checklist Pré-Lançamento)
+[ ] Segurança: Checklist de Segurança Pré-Deployment (Validação de zod, sanitização, RLS).
+[ ] Performance: Implementação e Teste de Limitação de Taxa (Rate-Limiting) com Upstash para proteger API e custos.
+[ ] Infraestrutura Prod: Configuração do Servidor Supabase de Produção e migração do Schema (Clonagem Dev → Prod).
+[ ] Monetização Prod: Configuração do Stripe para Produção (Live Keys e migração de produtos/planos).
+2. D de Executar (O Deployment Final)
+[ ] Deployment: Entender os Deployments do Vercel e o fluxo de Pull Request (Preview → Production).
+[ ] Lançamento: Configuração de um Domínio Personalizado (Módulo 14.3). Push Final: Enviando para Produção (Atribuição de variáveis de ambiente de Produção no Vercel e deploy final).
+3. C de Checar (Métricas e Auditoria)
+[ ] Negócios/Monetização: Monitorar MRR, Churn Rate, Clientes Ativos. (Dados puxados do Stripe para o Dashboard Master).
+[ ] Uso de Recursos: Monitorar Tokens Consumidos e Mensagens por Usuário/Mês (Tabela uso_recursos e Dashboard Master).
+[ ] Segurança/Saúde: Auditar Logs de Auditoria de Ações Master/Admin e Logs de Edge Functions (Supabase).
+[ ] Engajamento: Medir Taxa de Conversão (Trial → Pago) no Dashboard Master.
+4. A de Agir (Iteração e Melhoria Contínua)
+[ ] Identificação de Fricção (Agir): Se o Churn Rate for alto, a ação pode ser investigar os logs do Chat IA (conversas) ou o gating do Stripe para identificar o ponto de falha.
+[ ] Planejamento de Melhoria (Planejar): Usar a Estratégia de Prompt Baseada em Papéis para forçar a IA a planejar o código de um novo recurso.
+[ ] Execução da Melhoria (Executar): O ciclo de Vibe Coding é reativado para construir a nova feature. </aside>
+

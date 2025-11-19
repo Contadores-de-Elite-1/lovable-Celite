@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "context7": {
+      "command": "node",
+      "args": [
+        "/opt/homebrew/lib/node_modules/@upstash/context7-mcp/dist/index.js"
+      ]
+    },
+    "supabase": {
+      "url": "https://mcp.supabase.com/mcp",
+      "args": [
+        "--project-ref=zytxwdgzjqrcmbnpgofj"
+      ],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "sbp_6686f3876e21886bf88f3edaac12d498c2a772d7"
+      }
+    }
+  }
+}

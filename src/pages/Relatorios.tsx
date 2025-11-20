@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,6 +36,7 @@ import {
 } from '@/lib/csv';
 
 const Relatorios = () => {
+  useScrollToTop();
   const { user } = useAuth();
   const [dateStart, setDateStart] = useState('');
   const [dateEnd, setDateEnd] = useState('');

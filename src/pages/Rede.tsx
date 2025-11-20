@@ -1,42 +1,33 @@
-import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Users, TrendingUp, Award, Network, ExternalLink, DollarSign } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Users, TrendingUp, DollarSign, Award } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { formatCurrency } from '@/lib/commission';
 
-interface NetworkMember {
+interface ContadorRede {
   id: string;
+  user_id: string;
   nome: string;
   nivel: string;
   status: string;
   clientes_ativos: number;
-  xp: number;
-  children?: NetworkMember[];
+  created_at: string;
+  total_comissoes_geradas: number;
 }
 
-interface NetworkStats {
-  totalIndicacoes: number;
-  indicacoesAativas: number;
-  profundidade: number;
-  taxaConversao: number;
-}
-
-const Rede = () => {
+const MinhaRede = () => {
+  useScrollToTop();
   const { user } = useAuth();
-  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
 
-  // Fetch current user's contador info
-  const { data: currentContador } = useQuery({
-    queryKey: ['my-contador', user?.id],
+  // Buscar dados do contador logado
+  const { data: contadorLogado } = useQuery({
+    queryKey: ['contador-logado', user?.id],
     queryFn: async () => {
       const { data } = await supabase
         .from('contadores')
-        .select('*')
+        .select('id, user_id')
         .eq('user_id', user?.id)
         .single();
       return data;
@@ -44,132 +35,103 @@ const Rede = () => {
     enabled: !!user,
   });
 
-  // Fetch all direct children
-  const { data: directChildren = [] } = useQuery({
-    queryKey: ['network-children', currentContador?.id],
+  // Buscar contadores indicados (rede direta)
+  const { data: redeIndicados, isLoading } = useQuery({
+    queryKey: ['rede-indicados', contadorLogado?.id],
     queryFn: async () => {
-      if (!currentContador?.id) return [];
-      const { data } = await supabase
-        .from('rede_contadores')
+      if (!contadorLogado?.id) return [];
+
+      // Buscar contadores onde sponsor_id = meu id
+      const { data: indicados } = await supabase
+        .from('contadores')
         .select(`
-          child_id,
-          nivel_rede,
-          contadores!inner (
-            id,
-            nivel,
-            status,
-            clientes_ativos,
-            xp,
-            profiles (nome)
-          )
+          id,
+          user_id,
+          nivel,
+          status,
+          clientes_ativos,
+          created_at
         `)
-        .eq('sponsor_id', currentContador.id)
+        .eq('sponsor_id', contadorLogado.id)
         .order('created_at', { ascending: false });
 
-      return (data || []).map((item: {
-        contadores: {
-          id: string;
-          nivel: string;
-          status: string;
-          clientes_ativos: number;
-          xp: number;
-          profiles?: { nome: string };
-        };
-        nivel_rede: number;
-      }) => ({
-        id: item.contadores.id,
-        nome: item.contadores.profiles?.nome || 'Sem nome',
-        nivel: item.contadores.nivel || 'bronze',
-        status: item.contadores.status || 'ativo',
-        clientes_ativos: item.contadores.clientes_ativos || 0,
-        xp: item.contadores.xp || 0,
-        nivel_rede: item.nivel_rede,
-      }));
+      if (!indicados) return [];
+
+      // Para cada indicado, buscar nome do usuário e comissões
+      const indicadosComDados = await Promise.all(
+        indicados.map(async (indicado) => {
+          // Buscar nome do usuário
+          const { data: userData } = await supabase.auth.admin.getUserById(indicado.user_id);
+          const nome = userData?.user?.user_metadata?.nome || 'Sem nome';
+
+          // Buscar total de comissões geradas (override que você recebeu desse indicado)
+          const { data: comissoes } = await supabase
+            .from('comissoes')
+            .select('valor')
+            .eq('contador_id', contadorLogado.id)
+            .eq('tipo_comissao', 'override');
+
+          const totalComissoes = comissoes?.reduce((sum, c) => sum + Number(c.valor), 0) || 0;
+
+          return {
+            ...indicado,
+            nome,
+            total_comissoes_geradas: totalComissoes,
+          };
+        })
+      );
+
+      return indicadosComDados as ContadorRede[];
     },
-    enabled: !!currentContador?.id,
+    enabled: !!contadorLogado?.id,
   });
 
-  // Fetch network stats
+  // Buscar estatísticas gerais da rede
   const { data: stats } = useQuery({
-    queryKey: ['network-stats', currentContador?.id],
+    queryKey: ['rede-stats', contadorLogado?.id],
     queryFn: async () => {
-      if (!currentContador?.id) return null;
+      if (!contadorLogado?.id) return null;
 
-      // Total referrals
-      const { data: allReferrals } = await supabase
-        .from('rede_contadores')
-        .select('id')
-        .eq('sponsor_id', currentContador.id);
+      // Total de indicados ativos
+      const { count: totalIndicados } = await supabase
+        .from('contadores')
+        .select('*', { count: 'exact', head: true })
+        .eq('sponsor_id', contadorLogado.id)
+        .eq('status', 'ativo');
 
-      // Active referrals (status = 'ativo')
-      const { data: activeReferrals } = await supabase
-        .from('rede_contadores')
-        .select('contadores(status)')
-        .eq('sponsor_id', currentContador.id);
+      // Total de clientes na rede (dos indicados)
+      const { data: indicados } = await supabase
+        .from('contadores')
+        .select('id, clientes_ativos')
+        .eq('sponsor_id', contadorLogado.id);
 
-      const totalIndicacoes = allReferrals?.length || 0;
-      const activeCount = activeReferrals?.filter(
-        (r: { contadores?: { status: string } }) => r.contadores?.status === 'ativo'
-      ).length || 0;
+      const totalClientesRede = indicados?.reduce((sum, c) => sum + (c.clientes_ativos || 0), 0) || 0;
 
-      // Calculate network depth (max nivel_rede)
-      const { data: depthData } = await supabase
-        .from('rede_contadores')
-        .select('nivel_rede')
-        .eq('sponsor_id', currentContador.id)
-        .order('nivel_rede', { ascending: false })
-        .limit(1);
+      // Total de comissões override recebidas
+      const { data: comissoesOverride } = await supabase
+        .from('comissoes')
+        .select('valor')
+        .eq('contador_id', contadorLogado.id)
+        .eq('tipo_comissao', 'override')
+        .eq('status_comissao', 'paga');
 
-      const profundidade = depthData?.[0]?.nivel_rede || 1;
-
-      // Calculate conversion rate
-      const taxaConversao =
-        totalIndicacoes > 0
-          ? Math.round((activeCount / totalIndicacoes) * 100)
-          : 0;
+      const totalOverride = comissoesOverride?.reduce((sum, c) => sum + Number(c.valor), 0) || 0;
 
       return {
-        totalIndicacoes,
-        indicacoesAativas: activeCount,
-        profundidade,
-        taxaConversao,
+        totalIndicados: totalIndicados || 0,
+        totalClientesRede,
+        totalOverride,
       };
     },
-    enabled: !!currentContador?.id,
+    enabled: !!contadorLogado?.id,
   });
 
-  const toggleExpanded = (id: string) => {
-    const newExpanded = new Set(expandedNodes);
-    if (newExpanded.has(id)) {
-      newExpanded.delete(id);
-    } else {
-      newExpanded.add(id);
-    }
-    setExpandedNodes(newExpanded);
-  };
-
-  const getNivelColor = (nivel: string) => {
-    const colors: Record<string, string> = {
-      bronze: 'bg-amber-100 text-amber-800',
-      prata: 'bg-gray-100 text-gray-800',
-      ouro: 'bg-yellow-100 text-yellow-800',
-      diamante: 'bg-blue-100 text-blue-800',
-    };
-    return colors[nivel] || 'bg-gray-100 text-gray-800';
-  };
-
-  const getStatusColor = (status: string) => {
-    return status === 'ativo'
-      ? 'bg-green-100 text-green-800'
-      : 'bg-red-100 text-red-800';
-  };
-
-  if (!currentContador) {
+  if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Carregando rede...</p>
+          <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Carregando sua rede...</p>
         </div>
       </div>
     );
@@ -177,255 +139,206 @@ const Rede = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-blue-900 to-blue-800 text-white p-6">
+      {/* HEADER */}
+      <header className="bg-gradient-to-r from-[#0C1A2A] to-[#0F2940] text-white p-4 md:p-6">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-2xl md:text-3xl font-serif font-bold text-yellow-400">Minha Rede</h1>
-          <p className="text-blue-100 text-sm mt-1">Visualize e gerencie sua rede de indicações</p>
+          <h1 className="text-xl md:text-3xl font-serif font-bold text-[#D4AF37]">
+            Minha Rede
+          </h1>
+          <p className="text-gray-300 text-xs md:text-sm mt-1">
+            Visualize seus indicados e comissões de override (segundo nível)
+          </p>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto p-4 pb-8">
+      <main className="max-w-7xl mx-auto p-4 pb-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
           className="space-y-6"
         >
-          {/* KPI Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="bg-white border-0 shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-gray-700">
-                  Total de Indicações
-                </CardTitle>
-                <Users className="h-5 w-5 text-blue-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-serif font-bold text-blue-900">
-                  {stats?.totalIndicacoes || 0}
+          {/* ESTATÍSTICAS DA REDE */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+            <Card className="bg-gradient-to-br from-[#0C1A2A]/5 to-[#0F2940]/10 border-[#0C1A2A]/20">
+              <CardContent className="p-4 md:p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs md:text-sm text-[#0C1A2A] font-medium">Contadores na Rede</p>
+                    <p className="text-2xl md:text-3xl font-bold text-[#0C1A2A] mt-1">
+                      {stats?.totalIndicados || 0}
+                    </p>
+                    <p className="text-xs text-gray-600 mt-1">
+                      Você é sponsor
+                    </p>
+                  </div>
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-[#0C1A2A] rounded-full flex items-center justify-center">
+                    <Users className="w-5 h-5 md:w-6 md:h-6 text-[#D4AF37]" />
+                  </div>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Contadores indicados</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-white border-0 shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-gray-700">
-                  Indicações Ativas
-                </CardTitle>
-                <TrendingUp className="h-5 w-5 text-green-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-serif font-bold text-green-600">
-                  {stats?.indicacoesAativas || 0}
+            <Card className="bg-gradient-to-br from-[#D4AF37]/5 to-[#D4AF37]/10 border-[#D4AF37]/30">
+              <CardContent className="p-4 md:p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs md:text-sm text-[#0C1A2A] font-medium">Clientes da Rede</p>
+                    <p className="text-2xl md:text-3xl font-bold text-[#0C1A2A] mt-1">
+                      {stats?.totalClientesRede || 0}
+                    </p>
+                    <p className="text-xs text-gray-600 mt-1">
+                      Total na rede
+                    </p>
+                  </div>
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-[#D4AF37] rounded-full flex items-center justify-center">
+                    <TrendingUp className="w-5 h-5 md:w-6 md:h-6 text-[#0C1A2A]" />
+                  </div>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Com status ativo</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-white border-0 shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-gray-700">
-                  Nível da Rede
-                </CardTitle>
-                <Award className="h-5 w-5 text-purple-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-serif font-bold text-blue-900">
-                  {stats?.profundidade || 1}
+            <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+              <CardContent className="p-4 md:p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs md:text-sm text-green-700 font-medium">Override Recebido</p>
+                    <p className="text-2xl md:text-3xl font-bold text-green-900 mt-1">
+                      R$ {stats?.totalOverride?.toFixed(2) || '0.00'}
+                    </p>
+                    <p className="text-xs text-green-600 mt-1">
+                      5% da rede
+                    </p>
+                  </div>
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-green-600 rounded-full flex items-center justify-center">
+                    <DollarSign className="w-5 h-5 md:w-6 md:h-6 text-white" />
+                  </div>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Níveis de profundidade</p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white border-0 shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-gray-700">
-                  Taxa de Conversão
-                </CardTitle>
-                <Network className="h-5 w-5 text-orange-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-serif font-bold text-blue-900">
-                  {stats?.taxaConversao || 0}%
-                </div>
-                <p className="text-xs text-gray-500 mt-1">Indicações convertidas</p>
               </CardContent>
             </Card>
           </div>
 
-          {/* Network Visualization */}
-          <Card className="bg-white border-0 shadow-sm">
-            <CardHeader>
-              <CardTitle className="font-serif text-blue-900">Estrutura da Rede</CardTitle>
-              <CardDescription>
-                Seus contadores indicados (até 5 níveis de profundidade)
-              </CardDescription>
+          {/* LISTA DE INDICADOS */}
+          <Card>
+            <CardHeader className="border-b bg-gradient-to-r from-[#0C1A2A]/5 to-[#D4AF37]/5 p-4 md:p-6">
+              <CardTitle className="font-serif text-[#0C1A2A] flex items-center gap-2 text-base md:text-lg">
+                <Users className="w-4 h-4 md:w-5 md:h-5 text-[#D4AF37]" />
+                Seus Indicados (Nível 1)
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              {directChildren.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-                  <Network className="h-12 w-12 mb-4 opacity-30" />
-                  <p className="text-sm">Comece a indicar contadores para construir sua rede</p>
+            <CardContent className="p-4 md:p-6">
+              {!redeIndicados || redeIndicados.length === 0 ? (
+                <div className="text-center py-8 md:py-12">
+                  <div className="w-12 h-12 md:w-16 md:h-16 bg-[#0C1A2A]/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Users className="w-6 h-6 md:w-8 md:h-8 text-[#D4AF37]" />
+                  </div>
+                  <h3 className="text-base md:text-lg font-semibold text-[#0C1A2A] mb-2">
+                    Nenhum indicado ainda
+                  </h3>
+                  <p className="text-xs md:text-sm text-gray-600 max-w-md mx-auto px-4">
+                    Comece a indicar outros contadores usando seu link único. Quando eles venderem,
+                    você recebe 5% de comissão (override)!
+                  </p>
                 </div>
               ) : (
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {/* Root node */}
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200 rounded-lg p-4 mb-4"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <p className="font-serif font-bold text-blue-900 text-lg">
-                          {currentContador.profiles?.nome || 'Você'}
-                        </p>
-                        <div className="flex gap-2 mt-2">
-                          <Badge className={getNivelColor(currentContador.nivel || 'bronze')}>
-                            {(currentContador.nivel || 'bronze').charAt(0).toUpperCase() +
-                              (currentContador.nivel || 'bronze').slice(1)}
-                          </Badge>
-                          <Badge className="bg-blue-100 text-blue-800">
-                            {currentContador.clientes_ativos || 0} clientes
-                          </Badge>
+                <div className="space-y-4">
+                  {redeIndicados.map((indicado, index) => (
+                    <motion.div
+                      key={indicado.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="border border-[#0C1A2A]/10 rounded-lg p-3 md:p-4 hover:shadow-md transition-shadow hover:border-[#D4AF37]/30"
+                    >
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-[#0C1A2A] to-[#0F2940] rounded-full flex items-center justify-center text-[#D4AF37] font-bold text-base md:text-lg flex-shrink-0">
+                            {indicado.nome.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-[#0C1A2A] text-sm md:text-base">{indicado.nome}</h4>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              <span className="text-xs bg-[#D4AF37]/10 text-[#0C1A2A] px-2 py-0.5 rounded-full border border-[#D4AF37]/20">
+                                {indicado.nivel}
+                              </span>
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                indicado.status === 'ativo' 
+                                  ? 'bg-green-100 text-green-700 border border-green-200' 
+                                  : 'bg-gray-100 text-gray-700 border border-gray-200'
+                              }`}>
+                                {indicado.status}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-around md:justify-end md:gap-4 lg:gap-6 text-xs md:text-sm">
+                          <div className="text-center">
+                            <p className="text-gray-500 text-xs">Clientes</p>
+                            <p className="font-semibold text-[#0C1A2A] text-sm md:text-base">{indicado.clientes_ativos || 0}</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-gray-500 text-xs">Override</p>
+                            <p className="font-semibold text-green-600 text-sm md:text-base">
+                              R$ {indicado.total_comissoes_geradas.toFixed(2)}
+                            </p>
+                          </div>
+                          <div className="text-center hidden md:block">
+                            <p className="text-gray-500 text-xs">Desde</p>
+                            <p className="font-semibold text-[#0C1A2A]">
+                              {new Date(indicado.created_at).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </motion.div>
-
-                  {/* Children tree */}
-                  <div className="ml-4 border-l-2 border-gray-200 pl-4 space-y-2">
-                    {directChildren.map((child, index) => (
-                      <motion.div
-                        key={child.id}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        className="relative"
-                      >
-                        <div className="absolute -left-6 top-4 w-4 h-0.5 bg-gray-300"></div>
-
-                        <button
-                          onClick={() => toggleExpanded(child.id)}
-                          className="w-full text-left bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md transition-all hover:border-blue-300"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-gray-900 truncate">
-                                {child.nome}
-                              </p>
-                              <div className="flex gap-2 mt-2 flex-wrap">
-                                <Badge className={getNivelColor(child.nivel)}>
-                                  {child.nivel.charAt(0).toUpperCase() + child.nivel.slice(1)}
-                                </Badge>
-                                <Badge className={getStatusColor(child.status)}>
-                                  {child.status === 'ativo' ? 'Ativo' : 'Inativo'}
-                                </Badge>
-                                <Badge variant="outline" className="text-xs">
-                                  {child.clientes_ativos} clientes
-                                </Badge>
-                                <Badge variant="outline" className="text-xs">
-                                  Nível {child.nivel_rede}
-                                </Badge>
-                              </div>
-                            </div>
-                            {expandedNodes.has(child.id) ? (
-                              <span className="text-gray-400 ml-2">▼</span>
-                            ) : (
-                              <span className="text-gray-400 ml-2">▶</span>
-                            )}
-                          </div>
-                        </button>
-
-                        {/* Expanded info */}
-                        {expandedNodes.has(child.id) && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="mt-2 ml-4 p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm space-y-2"
-                          >
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">Status:</span>
-                              <span className="font-medium text-gray-900">
-                                {child.status === 'ativo' ? '✓ Ativo' : '✗ Inativo'}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">Clientes:</span>
-                              <span className="font-medium text-gray-900">
-                                {child.clientes_ativos}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">Experiência:</span>
-                              <span className="font-medium text-gray-900">{child.xp} XP</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">Profundidade:</span>
-                              <span className="font-medium text-gray-900">Nível {child.nivel_rede}</span>
-                            </div>
-                          </motion.div>
-                        )}
-                      </motion.div>
-                    ))}
-                  </div>
+                    </motion.div>
+                  ))}
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Quick Actions */}
-          {directChildren.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Card className="bg-white border-0 shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-base font-serif text-blue-900">
-                    Links de Indicação
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Compartilhe seu link para indicar novos contadores
-                  </p>
-                  <Button
-                    onClick={() => window.location.href = '/links'}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg py-2"
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Gerenciar Links
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white border-0 shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-base font-serif text-blue-900">
-                    Bônus de Rede
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Veja suas comissões e bônus de rede na seção de Comissões
-                  </p>
-                  <Button
-                    onClick={() => window.location.href = '/comissoes'}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg py-2"
-                  >
-                    <DollarSign className="h-4 w-4 mr-2" />
-                    Ver Comissões
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          )}
+          {/* INFO SOBRE SISTEMA DE REDE */}
+          <Card className="bg-gradient-to-r from-[#0C1A2A]/5 to-[#D4AF37]/5 border-[#D4AF37]/20">
+            <CardContent className="p-4 md:p-6">
+              <div className="flex flex-col md:flex-row items-start gap-3 md:gap-4">
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-[#0C1A2A] rounded-full flex items-center justify-center flex-shrink-0">
+                  <Award className="w-5 h-5 md:w-6 md:h-6 text-[#D4AF37]" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-[#0C1A2A] mb-2 md:mb-3 text-sm md:text-base">
+                    Como Funciona o Sistema de Rede (Override)
+                  </h3>
+                  <ul className="text-xs md:text-sm text-gray-700 space-y-2">
+                    <li className="flex items-start gap-2">
+                      <span className="text-[#D4AF37] mt-0.5">✓</span>
+                      <span><strong>Indique contadores:</strong> Compartilhe seu link único com outros contadores</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-[#D4AF37] mt-0.5">✓</span>
+                      <span><strong>Você vira Sponsor:</strong> Quando eles se cadastrarem, você é o sponsor deles</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-[#D4AF37] mt-0.5">✓</span>
+                      <span><strong>Receba 5% Override:</strong> Sempre que seus indicados venderem, você recebe 5% automático</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-[#D4AF37] mt-0.5">✓</span>
+                      <span><strong>Renda Passiva:</strong> Quanto mais sua rede cresce, mais você ganha</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-[#D4AF37] mt-0.5">✓</span>
+                      <span><strong>Exemplo:</strong> Seu indicado vende R$ 130/mês → Você recebe R$ 6,25/mês de override</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </motion.div>
       </main>
     </div>
   );
 };
 
-export default Rede;
+export default MinhaRede;
+

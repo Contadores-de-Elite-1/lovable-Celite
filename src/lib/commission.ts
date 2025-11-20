@@ -1,4 +1,4 @@
-// Commission calculation utilities
+// Utilitarios para calculo de comissoes
 
 export interface CommissionInput {
   valor: number;

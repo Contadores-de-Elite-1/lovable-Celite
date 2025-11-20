@@ -88,7 +88,7 @@ const Index = () => {
           </div>
 
           <p className="text-sm text-gray-500 mt-16">
-            Powered by <span className="text-brand-gold font-medium">Top Class Escritório Virtual</span> • Aracaju/SE
+            Lovable-Celite © 2025
           </p>
         </motion.div>
       </div>

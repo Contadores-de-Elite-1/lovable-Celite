@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { ReferralTracker } from "@/components/ReferralTracker";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileHeader } from "@/components/MobileHeader";
 import Index from "./pages/Index";
@@ -15,6 +16,7 @@ import Dashboard from "./pages/Dashboard";
 import Comissoes from "./pages/Comissoes";
 import LinksIndicacao from "./pages/LinksIndicacao";
 import Simulador from "./pages/Simulador";
+import Calculadora from "./pages/Calculadora";
 import Educacao from "./pages/Educacao";
 import Materiais from "./pages/Materiais";
 import Assistente from "./pages/Assistente";
@@ -27,6 +29,8 @@ import Perfil from "./pages/Perfil";
 import Rede from "./pages/Rede";
 import Relatorios from "./pages/Relatorios";
 import NotFound from "./pages/NotFound";
+import OnboardingApp from "./onboarding";
+import ContadorOnboarding from "./pages/ContadorOnboarding";
 
 const queryClient = new QueryClient();
 
@@ -37,11 +41,14 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <ReferralTracker />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/auth/reset-password" element={<ResetPassword />} />
+            <Route path="/onboarding/:linkContador" element={<OnboardingApp />} />
+            <Route path="/onboarding-contador" element={<ContadorOnboarding />} />
             <Route
               path="/*"
               element={
@@ -57,6 +64,7 @@ const App = () => (
                           <Route path="/comissoes" element={<Comissoes />} />
                           <Route path="/saques" element={<Saques />} />
                           <Route path="/links" element={<LinksIndicacao />} />
+                          <Route path="/calculadora" element={<Calculadora />} />
                           <Route path="/simulador" element={<Simulador />} />
                           <Route path="/rede" element={<Rede />} />
                           <Route path="/educacao" element={<Educacao />} />

@@ -1,48 +1,51 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.47.10';
 import { crypto } from 'https://deno.land/std@0.224.0/crypto/mod.ts';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Determina se esta em modo de desenvolvimento
+const isDevelopment = Deno.env.get('ENVIRONMENT') === 'development' || 
+                      Deno.env.get('DENO_DEPLOYMENT_ID') === undefined;
+
 async function validateAsaasSignature(
   payload: string,
   signature: string | null,
-  secret: string | null,
-  headers: Headers
+  secret: string | null
 ): Promise<boolean> {
-  // Log all relevant headers for debugging
-  console.log('[WEBHOOK DEBUG] ═══════════════════════════════════════');
-  console.log('[WEBHOOK DEBUG] Received webhook - analyzing...');
-  console.log(`[WEBHOOK DEBUG] Payload size: ${payload.length} bytes`);
-  console.log(`[WEBHOOK DEBUG] Signature provided: ${signature ? 'YES' : 'NO'}`);
-  console.log(`[WEBHOOK DEBUG] Secret configured: ${secret ? 'YES' : 'NO'}`);
-
-  // Log all headers that might contain signature
-  console.log('[WEBHOOK DEBUG] Headers with "signature", "token", or "asaas":');
-  for (const [key, value] of headers.entries()) {
-    if (key.toLowerCase().includes('signature') || key.toLowerCase().includes('token') || key.toLowerCase().includes('asaas')) {
-      console.log(`   ${key}: ${value.substring(0, 30)}...`);
-    }
-  }
-
+  // Em desenvolvimento: apenas avisa, mas permite
+  // Em producao: REJEITA se nao houver secret ou assinatura
+  
   if (!secret) {
-    console.warn('⚠️  ASAAS_WEBHOOK_SECRET not configured');
-    // Fall back to allowing if no secret is set
-    console.log('[WEBHOOK DEBUG] Allowing webhook due to missing secret (development)');
-    return true;
+    console.error('[WEBHOOK] ASAAS_WEBHOOK_SECRET not configured');
+    
+    if (isDevelopment) {
+      console.warn('[WEBHOOK] DEVELOPMENT MODE - Allowing webhook without secret');
+      return true;
+    }
+    
+    // Em producao: REJEITA
+    console.error('[WEBHOOK] PRODUCTION MODE - Rejecting webhook without secret');
+    return false;
   }
 
   if (!signature) {
-    console.log('⚠️  No signature in x-asaas-webhook-signature header');
-    // If we have a secret but no signature, this is suspicious
-    console.warn('[WEBHOOK DEBUG] Signature expected but not found!');
-    // For now, allow it for testing
-    return true;
+    console.error('[WEBHOOK] No signature in x-asaas-webhook-signature header');
+    
+    if (isDevelopment) {
+      console.warn('[WEBHOOK] DEVELOPMENT MODE - Allowing webhook without signature');
+      return true;
+    }
+    
+    // Em producao: REJEITA
+    console.error('[WEBHOOK] PRODUCTION MODE - Rejecting webhook without signature');
+    return false;
   }
 
-  // Asaas signs with MD5(payload + secret)
+  // Valida assinatura MD5(payload + secret)
   try {
     const encoder = new TextEncoder();
     const data = encoder.encode(payload + secret);
@@ -50,20 +53,23 @@ async function validateAsaasSignature(
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const expectedSignature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
-    console.log(`[SIGNATURE DEBUG]`);
-    console.log(`  Received: ${signature}`);
-    console.log(`  Expected: ${expectedSignature}`);
-    console.log(`  Match: ${expectedSignature === signature.toLowerCase() ? 'YES ✅' : 'NO ❌'}`);
-
     const isValid = expectedSignature === signature.toLowerCase();
-    console.log('[WEBHOOK DEBUG] ═══════════════════════════════════════\n');
+    
+    if (!isValid) {
+      console.error('[WEBHOOK] Invalid signature', {
+        received: signature.substring(0, 10) + '...',
+        expected: expectedSignature.substring(0, 10) + '...',
+        match: false
+      });
+    }
+    
     return isValid;
+    
   } catch (error) {
-    console.error('[WEBHOOK ERROR] Error validating signature:', error);
-    console.log('[WEBHOOK DEBUG] ═══════════════════════════════════════\n');
-    // For testing, allow it even if validation fails
-    console.warn('⚠️  Allowing webhook despite validation error (development)');
-    return true;
+    console.error('[WEBHOOK] Error validating signature:', error);
+    
+    // Em caso de erro na validacao: SEMPRE REJEITA (dev e prod)
+    return false;
   }
 }
 
@@ -81,6 +87,24 @@ interface AsaasWebhookPayload {
     subscription?: string;
   };
 }
+
+// Schema Zod para validacao robusta do payload
+const PaymentSchema = z.object({
+  id: z.string().min(1, 'Payment ID e obrigatorio'),
+  customer: z.string().min(1, 'Customer ID e obrigatorio'),
+  value: z.number().positive('Valor deve ser positivo'),
+  netValue: z.number().positive('Valor liquido deve ser positivo'),
+  dateCreated: z.string().regex(/^\d{4}-\d{2}-\d{2}/, 'Data invalida (esperado YYYY-MM-DD)'),
+  confirmedDate: z.string().optional(),
+  status: z.string(),
+  billingType: z.string(),
+  subscription: z.string().optional()
+});
+
+const WebhookPayloadSchema = z.object({
+  event: z.string(),
+  payment: PaymentSchema.optional()
+});
 
 function validarValorMonetario(valor: unknown, nome: string): number {
   if (typeof valor !== 'number' || valor <= 0) {
@@ -124,7 +148,25 @@ Deno.serve(async (req) => {
       payloadRaw = await req.text();
       payload = JSON.parse(payloadRaw);
     } catch {
-      throw new Error('JSON inválido no payload');
+      throw new Error('JSON invalido no payload');
+    }
+
+    // Valida payload com Zod
+    try {
+      WebhookPayloadSchema.parse(payload);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const errorMessages = error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ');
+        console.error('[WEBHOOK] Payload validation failed:', errorMessages);
+        return new Response(JSON.stringify({ 
+          error: 'Payload invalido', 
+          details: errorMessages 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        });
+      }
+      throw error;
     }
 
     // Validate webhook signature - check multiple possible header names
@@ -132,25 +174,24 @@ Deno.serve(async (req) => {
       || req.headers.get('asaas-access-token')
       || req.headers.get('x-asaas-signature');
 
-    console.log('[WEBHOOK] Attempting to validate signature...');
+    console.log('[WEBHOOK] Validating signature...');
     const isValidSignature = await validateAsaasSignature(
       payloadRaw,
       asaasSignature,
-      asaasWebhookSecret,
-      req.headers
+      asaasWebhookSecret
     );
 
     if (!isValidSignature) {
-      console.error('❌ Webhook signature validation FAILED');
-      console.error(`   But allowing anyway for TESTING purposes`);
-      // For now, don't reject - just log the failure for debugging
-      // return new Response(JSON.stringify({ error: 'Assinatura inválida' }), {
-      //   headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      //   status: 401,
-      // });
+      console.error('[WEBHOOK] Signature validation FAILED - Rejecting webhook');
+      return new Response(JSON.stringify({ error: 'Assinatura invalida' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 403,
+      });
     }
+    
+    console.log('[WEBHOOK] Signature validated successfully');
 
-    console.log('✅ Webhook Asaas recebido:', payload.event || 'SEM EVENTO');
+    console.log('[WEBHOOK] Asaas webhook received:', payload.event || 'NO_EVENT');
 
     const eventosRelevantes = [
       'PAYMENT_CONFIRMED',
@@ -164,7 +205,7 @@ Deno.serve(async (req) => {
     const evento = payload.event || 'PAYMENT_CONFIRMED';
 
     if (!eventosRelevantes.includes(evento) && payload.event) {
-      console.log('⚠️ Evento não reconhecido:', payload.event);
+      console.log('[WEBHOOK] Unrecognized event:', payload.event);
       // Se tem evento mas não reconhecemos, ignora
       // Mas se é payment, tenta processar de qualquer forma
       if (!payload.payment) {
@@ -354,7 +395,7 @@ Deno.serve(async (req) => {
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     const errorStack = error instanceof Error ? error.stack : '';
 
-    console.error('❌ ERRO NO WEBHOOK ASAAS');
+    console.error('[WEBHOOK] ERROR processing webhook');
     console.error('   Mensagem:', errorMessage);
     console.error('   Stack:', errorStack);
 

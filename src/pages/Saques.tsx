@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,6 +21,7 @@ interface SaqueRecord {
 }
 
 const Saques = () => {
+  useScrollToTop();
   const { user } = useAuth();
   const [expandedSaque, setExpandedSaque] = useState<string | null>(null);
 

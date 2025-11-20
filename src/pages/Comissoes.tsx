@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,13 +26,19 @@ import { filterByMultipleCriteria } from '@/lib/filters';
 import { convertToCSV, downloadCSV, generateCSVFilename } from '@/lib/csv';
 
 const Comissoes = () => {
+  useScrollToTop();
   const { user } = useAuth();
   const [periodo, setPeriodo] = useState('mes-atual'); // mantido para compatibilidade futura
   const [dateStart, setDateStart] = useState('');
   const [dateEnd, setDateEnd] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [tipoFilter, setTipoFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [isProcessingSaque, setIsProcessingSaque] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  
+  const ITEMS_PER_PAGE = 20;
 
   // Get contador info
   const { data: contador } = useQuery({
@@ -87,29 +94,53 @@ const Comissoes = () => {
   const comissoes = useMemo(() => {
     if (!allComissoes) return [];
 
-    const filterData = allComissoes.map((c) => ({
-      competencia: c.competencia,
-      status_comissao: c.status_comissao,
-    }));
+    let filtered = [...allComissoes];
 
-    return filterByMultipleCriteria(filterData, {
-      startDate: dateStart || undefined,
-      endDate: dateEnd || undefined,
-      status: statusFilter !== 'all' ? statusFilter : undefined,
-    })
-      .map((filtered) => {
-        return allComissoes.find((c) => c.competencia === filtered.competencia);
-      })
-      .filter(Boolean) as typeof allComissoes;
-  }, [allComissoes, dateStart, dateEnd, statusFilter]);
+    // Filtro por data
+    if (dateStart) {
+      filtered = filtered.filter((c) => c.competencia >= dateStart);
+    }
+    if (dateEnd) {
+      filtered = filtered.filter((c) => c.competencia <= dateEnd);
+    }
+
+    // Filtro por status
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter((c) => c.status_comissao === statusFilter);
+    }
+
+    // Filtro por tipo
+    if (tipoFilter !== 'all') {
+      filtered = filtered.filter((c) => c.tipo_comissao === tipoFilter);
+    }
+
+    // Filtro por busca de cliente
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((c) => 
+        c.clientes?.nome?.toLowerCase().includes(query) ||
+        c.clientes?.cnpj?.toLowerCase().includes(query)
+      );
+    }
+
+    return filtered;
+  }, [allComissoes, dateStart, dateEnd, statusFilter, tipoFilter, searchQuery]);
+
+  // Paginacao
+  const totalPages = Math.ceil((comissoes?.length || 0) / ITEMS_PER_PAGE);
+  const paginatedComissoes = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    const end = start + ITEMS_PER_PAGE;
+    return comissoes.slice(start, end);
+  }, [comissoes, currentPage]);
 
   const diretas =
-    comissoes?.filter(
+    paginatedComissoes?.filter(
       (c) => c.tipo_comissao === 'ativacao' || c.tipo_comissao === 'recorrente'
     ) || [];
-  const overrides = comissoes?.filter((c) => c.tipo_comissao === 'override') || [];
+  const overrides = paginatedComissoes?.filter((c) => c.tipo_comissao === 'override') || [];
   const bonus =
-    comissoes?.filter(
+    paginatedComissoes?.filter(
       (c) =>
         c.tipo_comissao === 'bonus_progressao' ||
         c.tipo_comissao === 'bonus_volume' ||
@@ -424,7 +455,24 @@ const Comissoes = () => {
               <CardTitle className="text-base font-serif text-[#0C1A2A]">Filtros</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Busca por Cliente */}
+              <div className="mb-4">
+                <Label className="text-sm font-medium text-gray-700 block mb-2">
+                  Buscar Cliente
+                </Label>
+                <Input
+                  type="text"
+                  placeholder="Nome ou CNPJ do cliente..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1); // Reset para primeira pagina
+                  }}
+                  className="border-gray-300 bg-white"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-gray-700 block mb-2">
                     Data Inicial
@@ -432,7 +480,10 @@ const Comissoes = () => {
                   <Input
                     type="date"
                     value={dateStart}
-                    onChange={(e) => setDateStart(e.target.value)}
+                    onChange={(e) => {
+                      setDateStart(e.target.value);
+                      setCurrentPage(1);
+                    }}
                     className="border-gray-300 bg-white"
                   />
                 </div>
@@ -444,16 +495,43 @@ const Comissoes = () => {
                   <Input
                     type="date"
                     value={dateEnd}
-                    onChange={(e) => setDateEnd(e.target.value)}
+                    onChange={(e) => {
+                      setDateEnd(e.target.value);
+                      setCurrentPage(1);
+                    }}
                     className="border-gray-300 bg-white"
                   />
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 block mb-2">Tipo</Label>
+                  <select
+                    value={tipoFilter}
+                    onChange={(e) => {
+                      setTipoFilter(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366F1] text-sm bg-white"
+                  >
+                    <option value="all">Todos</option>
+                    <option value="ativacao">Ativação</option>
+                    <option value="recorrente">Recorrente</option>
+                    <option value="override">Override</option>
+                    <option value="bonus_progressao">Bônus Progressão</option>
+                    <option value="bonus_volume">Bônus Volume</option>
+                    <option value="bonus_ltv">Bônus LTV</option>
+                    <option value="bonus_contador">Bônus Contador</option>
+                  </select>
                 </div>
 
                 <div>
                   <Label className="text-sm font-medium text-gray-700 block mb-2">Status</Label>
                   <select
                     value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
+                    onChange={(e) => {
+                      setStatusFilter(e.target.value);
+                      setCurrentPage(1);
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366F1] text-sm bg-white"
                   >
                     <option value="all">Todos</option>
@@ -470,6 +548,9 @@ const Comissoes = () => {
                       setDateStart('');
                       setDateEnd('');
                       setStatusFilter('all');
+                      setTipoFilter('all');
+                      setSearchQuery('');
+                      setCurrentPage(1);
                     }}
                     variant="outline"
                     className="w-full border-gray-300 text-gray-700 hover:bg-gray-100"
@@ -594,6 +675,35 @@ const Comissoes = () => {
                   <ComissoesTable data={bonus} />
                 </TabsContent>
               </Tabs>
+
+              {/* Paginacao */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-6 pt-4 border-t">
+                  <div className="text-sm text-gray-600">
+                    Página {currentPage} de {totalPages} ({comissoes.length} comissões)
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="disabled:opacity-50"
+                    >
+                      Anterior
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="disabled:opacity-50"
+                    >
+                      Próxima
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>

@@ -29,8 +29,8 @@ Deno.serve(async (req) => {
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
   try {
-    console.log('🎯 [LTV] Iniciando verificação de Bônus LTV por Grupo...');
-    console.log('🎯 [LTV] ATENÇÃO: Esta é a ÚNICA forma de calcular Bônus LTV no sistema');
+    console.log('[LTV] Iniciando verificacao de Bonus LTV por Grupo...');
+    console.log('[LTV] ATENCAO: Esta e a UNICA forma de calcular Bonus LTV no sistema');
 
     const hoje = new Date();
     
@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
     // Competência para pagamento (mês atual)
     const competencia = `${hoje.toISOString().slice(0, 7)}-01`;
 
-    console.log(`📅 [LTV] Processando grupos ativados em ${mesGrupo} (entre ${inicioPeriodo} e ${fimPeriodo})`);
+    console.log(`[LTV] Processando grupos ativados em ${mesGrupo} (entre ${inicioPeriodo} e ${fimPeriodo})`);
 
     // 1. BUSCAR TODOS OS CONTADORES QUE TIVERAM ATIVAÇÕES NESSE MÊS
     const { data: contadoresComGrupos, error: erroContadores } = await supabase
@@ -65,11 +65,11 @@ Deno.serve(async (req) => {
     // Obter lista única de contadores
     const contadoresUnicos = [...new Set(contadoresComGrupos?.map(c => c.contador_id) || [])];
 
-    console.log(`👥 [LTV] ${contadoresUnicos.length} contadores com clientes ativados em ${mesGrupo}`);
+    console.log(`[LTV] ${contadoresUnicos.length} contadores com clientes ativados em ${mesGrupo}`);
 
     if (contadoresUnicos.length === 0) {
-      console.log('ℹ️ [LTV] Nenhum contador elegível encontrado para este período');
-      console.log('ℹ️ [LTV] Isso é NORMAL se não houve ativações há 13 meses');
+      console.log('[LTV] Nenhum contador elegível encontrado para este período');
+      console.log('[LTV] Isso é NORMAL se não houve ativações há 13 meses');
       return new Response(
         JSON.stringify({
           success: true,
@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
 
     // 2. PROCESSAR CADA CONTADOR
     for (const contadorId of contadoresUnicos) {
-      console.log(`\n🔍 [LTV] ========== Processando contador: ${contadorId} ==========`);
+      console.log(`\n[LTV] ========== Processando contador: ${contadorId} ==========`);
 
       // Verificar se já recebeu bônus LTV para esse grupo específico
       const { data: bonusExistente } = await supabase
@@ -98,8 +98,8 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (bonusExistente) {
-        console.log(`⏭️ [LTV] Contador já recebeu LTV para grupo ${mesGrupo}`);
-        console.log(`⏭️ [LTV] Pulando para evitar duplicação (bonus_id: ${bonusExistente.id})`);
+        console.log(`[LTV] Contador já recebeu LTV para grupo ${mesGrupo}`);
+        console.log(`[LTV] Pulando para evitar duplicação (bonus_id: ${bonusExistente.id})`);
         continue;
       }
 
@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
         .lt('data_ativacao', fimPeriodo);
 
       if (erroClientes || !clientesGrupo || clientesGrupo.length === 0) {
-        console.log(`❌ [LTV] Erro ao buscar clientes do grupo ou grupo vazio`);
+        console.log(`[LTV] Erro ao buscar clientes do grupo ou grupo vazio`);
         continue;
       }
 
@@ -121,11 +121,11 @@ Deno.serve(async (req) => {
       const totalInicial = clientesGrupo.length;
       const totalAtivos = clientesAtivos.length;
 
-      console.log(`📊 [LTV] Grupo ${mesGrupo}: ${totalAtivos}/${totalInicial} clientes ativos`);
+      console.log(`[LTV] Grupo ${mesGrupo}: ${totalAtivos}/${totalInicial} clientes ativos`);
 
       // 5. VERIFICAR ELEGIBILIDADE (mínimo 5 clientes ativos)
       if (totalAtivos < 5) {
-        console.log(`⚠️ [LTV] NÃO ELEGÍVEL: menos de 5 clientes ativos (${totalAtivos})`);
+        console.log(`[LTV] NÃO ELEGÍVEL: menos de 5 clientes ativos (${totalAtivos})`);
         continue;
       }
 
@@ -153,9 +153,9 @@ Deno.serve(async (req) => {
       const somaValores = clientesParaCalculo.reduce((sum, c) => sum + (c.valor_mensal || 0), 0);
       const valorBonus = somaValores * percentualLTV;
 
-      console.log(`💰 [LTV] Clientes para cálculo: ${clientesParaCalculo.length} (máximo 15)`);
-      console.log(`💰 [LTV] Soma mensalidades grupo ativo: R$ ${somaValores.toFixed(2)}`);
-      console.log(`🎁 [LTV] Bônus LTV calculado (${bonificacaoNumero}): ${(percentualLTV * 100)}% = R$ ${valorBonus.toFixed(2)}`);
+      console.log(`[LTV] Clientes para cálculo: ${clientesParaCalculo.length} (máximo 15)`);
+      console.log(`[LTV] Soma mensalidades grupo ativo: R$ ${somaValores.toFixed(2)}`);
+      console.log(`[LTV] Bônus LTV calculado (${bonificacaoNumero}): ${(percentualLTV * 100)}% = R$ ${valorBonus.toFixed(2)}`);
 
       // 8. CRIAR REGISTRO NO HISTÓRICO DE BÔNUS
       const observacao = `LTV 12 meses - Grupo: ${mesGrupo} - ${totalAtivos}/${totalInicial} clientes ativos (${descricaoNivel}) - Bonificação #${bonificacaoNumero}`;
@@ -175,11 +175,11 @@ Deno.serve(async (req) => {
         .single();
 
       if (erroBonus) {
-        console.error(`❌ [LTV] Erro ao criar bônus no bonus_historico:`, erroBonus);
+        console.error(`[LTV] Erro ao criar bônus no bonus_historico:`, erroBonus);
         continue;
       }
       
-      console.log(`✅ [LTV] Bônus criado no bonus_historico (ID: ${bonus.id})`);
+      console.log(`[LTV] Bônus criado no bonus_historico (ID: ${bonus.id})`);
 
       // 9. CRIAR COMISSÃO VINCULADA
       const { error: erroComissao } = await supabase.from('comissoes').insert({
@@ -193,9 +193,9 @@ Deno.serve(async (req) => {
       });
       
       if (erroComissao) {
-        console.error(`❌ [LTV] Erro ao criar comissão:`, erroComissao);
+        console.error(`[LTV] Erro ao criar comissão:`, erroComissao);
       } else {
-        console.log(`✅ [LTV] Comissão criada na tabela comissoes`);
+        console.log(`[LTV] Comissão criada na tabela comissoes`);
       }
 
       bonusCriados.push({
@@ -210,7 +210,7 @@ Deno.serve(async (req) => {
         faixa: descricaoNivel
       });
 
-      console.log(`✅ [LTV] ========== Bônus #${bonificacaoNumero} processado: R$ ${valorBonus.toFixed(2)} ==========`);
+      console.log(`[LTV] ========== Bônus #${bonificacaoNumero} processado: R$ ${valorBonus.toFixed(2)} ==========`);
     }
 
     // 10. LOG DE AUDITORIA
@@ -229,13 +229,13 @@ Deno.serve(async (req) => {
 
     const totalDistribuido = bonusCriados.reduce((sum, b) => sum + b.valor, 0);
     
-    console.log(`\n🎉 [LTV] ========================================`);
-    console.log(`🎉 [LTV] Processamento CONCLUÍDO com sucesso!`);
-    console.log(`🎉 [LTV] Mês alvo processado: ${mesGrupo}`);
-    console.log(`🎉 [LTV] Contadores processados: ${contadoresUnicos.length}`);
-    console.log(`🎉 [LTV] Bônus LTV criados: ${bonusCriados.length}`);
-    console.log(`🎉 [LTV] Total distribuído: R$ ${totalDistribuido.toFixed(2)}`);
-    console.log(`🎉 [LTV] ========================================`);
+    console.log(`\n[LTV] ========================================`);
+    console.log(`[LTV] Processamento CONCLUÍDO com sucesso!`);
+    console.log(`[LTV] Mês alvo processado: ${mesGrupo}`);
+    console.log(`[LTV] Contadores processados: ${contadoresUnicos.length}`);
+    console.log(`[LTV] Bônus LTV criados: ${bonusCriados.length}`);
+    console.log(`[LTV] Total distribuído: R$ ${totalDistribuido.toFixed(2)}`);
+    console.log(`[LTV] ========================================`);
 
     return new Response(
       JSON.stringify({
@@ -254,7 +254,7 @@ Deno.serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error('❌ Erro ao processar Bônus LTV por Grupo:', error);
+    console.error('Erro ao processar Bônus LTV por Grupo:', error);
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     return new Response(
       JSON.stringify({ error: errorMessage }),

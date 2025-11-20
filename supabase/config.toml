@@ -14,3 +14,9 @@ verify_jwt = false
 
 [functions.aprovar-comissoes]
 verify_jwt = false
+
+[functions.fechar-competencia]
+verify_jwt = false
+
+[functions.processar-pagamentos]
+verify_jwt = false

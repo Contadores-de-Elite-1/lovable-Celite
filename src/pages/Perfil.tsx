@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useScrollToTop } from "@/hooks/useScrollToTop";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ interface ProfileData {
 }
 
 const Perfil = () => {
+  useScrollToTop();
   const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<Partial<ProfileData>>({

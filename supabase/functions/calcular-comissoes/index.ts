@@ -212,23 +212,34 @@ function calculateProgressBonus(
 }
 
 /**
- * Calcula bônus de volume (a cada 5 clientes: 5, 10, 15, 20, 25...).
- * Validado contra jornada de Flávio Augusto (42 páginas).
+ * Calcula bonus de volume recorrente (APENAS para Diamante 15+).
+ * Regra: R$ 100 a cada 5 clientes APOS atingir Diamante.
+ * 
+ * Exemplos:
+ * - 15 clientes: Bonus Progressao (nao Volume)
+ * - 20 clientes: R$ 100 (5 a mais que 15)
+ * - 25 clientes: R$ 200 (10 a mais que 15)
+ * - 30 clientes: R$ 300 (15 a mais que 15)
  */
 function calculateVolumeBonus(
   accountantId: string,
   activeClients: number,
   competencia: string,
 ): BonusRecord | null {
-  if (activeClients >= 5 && activeClients % 5 === 0) {
+  // Bonus Volume e APENAS para Diamante (15+)
+  if (activeClients > 15 && (activeClients - 15) % 5 === 0) {
+    const clientesAlemDiamante = activeClients - 15;
+    const multiplicador = clientesAlemDiamante / 5;
+    const valorTotal = multiplicador * 100;
+    
     return {
       contador_id: accountantId,
       tipo_bonus: "bonus_volume",
       marco_atingido: activeClients,
-      valor: 100,
+      valor: valorTotal,
       competencia,
       status: "pendente",
-      observacao: `Bônus Volume - ${activeClients} clientes`,
+      observacao: `Bonus Volume Recorrente - ${activeClients} clientes (${clientesAlemDiamante} alem de Diamante)`,
     };
   }
 

@@ -171,7 +171,7 @@ const ResetPassword = () => {
         </Card>
 
         <p className="text-center text-brand-offwhite/60 text-sm mt-6">
-          Powered by <span className="text-secondary">Top Class Escritório Virtual</span>
+          Lovable-Celite © 2025
         </p>
       </motion.div>
     </div>

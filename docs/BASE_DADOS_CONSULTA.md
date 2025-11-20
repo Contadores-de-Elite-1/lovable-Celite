@@ -197,7 +197,26 @@ Este é o **índice mestre** de toda a documentação do Lovable-Celite. Use-o p
   - Matriz de testes
   - Breakdown de custos
 
-#### **4.7 Overview do Codebase**
+#### **4.7 Plano Épico de Revisão de Código** ⭐ **NOVO - CRÍTICO**
+- **Arquivo**: `/docs/PLANO_EPICO_REVISAO_CODIGO.md`
+- **Linhas**: ~1.200
+- **Conteúdo**: Plano completo de revisão e correção do código
+- **Quando usar**: Antes de iniciar qualquer desenvolvimento
+- **Seções principais**:
+  - Análise do código atual (métricas)
+  - Discrepâncias identificadas (10 problemas críticos)
+  - 5 épicos estruturados:
+    - Épico 0: Fundamentos (1-2 semanas)
+    - Épico 1: Segurança (1-2 semanas)
+    - Épico 2: Comissões (2-3 semanas)
+    - Épico 3: Frontend (1-2 semanas)
+    - Épico 4: Backend (1 semana)
+    - Épico 5: Testes (1-2 semanas)
+  - User Stories detalhadas (30+ tarefas)
+  - Exemplos de código (antes/depois)
+  - Métricas de sucesso
+
+#### **4.8 Overview do Codebase**
 - **Arquivo**: `/CODEBASE_OVERVIEW.md`
 - **Conteúdo**: Estrutura do código frontend
 - **Quando usar**: Onboarding dev, refactoring, code review
@@ -444,4 +463,35 @@ Se uma feature, decisão técnica ou mudança de design **NÃO contribui** para 
 **Autor**: Claude Sonnet 4.5 (Anthropic)  
 **Data**: Novembro 2025  
 **Versão**: 1.0
+
+
+---
+
+## 💰 5. COMISSOES E BONIFICACOES
+
+| Documento | Descricao | Status |
+|-----------|-----------|--------|
+| [ANALISE_17_BONIFICACOES.md](ANALISE_17_BONIFICACOES.md) | Analise inicial das 17 bonificacoes | ✅ Completo |
+| [ANALISE_17_BONIFICACOES_FINAL.md](ANALISE_17_BONIFICACOES_FINAL.md) | Analise final pos-correcao | ✅ Completo |
+| [RELATORIO_EPICO_2.md](RELATORIO_EPICO_2.md) | Relatorio Epico 2: Calculo Comissoes | ✅ Completo |
+| [SISTEMA_AUDITORIA.md](SISTEMA_AUDITORIA.md) | Sistema completo de auditoria | ✅ Completo |
+
+---
+
+## 🛡️ 6. SEGURANCA E VALIDACAO
+
+| Documento | Descricao | Status |
+|-----------|-----------|--------|
+| [RELATORIO_EPICO_1.md](RELATORIO_EPICO_1.md) | Relatorio Epico 1: Seguranca | ✅ Completo |
+
+---
+
+
+## 🎨 7. FRONT-END (PORTAL)
+
+| Documento | Descricao | Status |
+|-----------|-----------|--------|
+| [RELATORIO_EPICO_3_PARCIAL.md](RELATORIO_EPICO_3_PARCIAL.md) | Relatorio Epico 3: Front-end (US3.1 completa) | ⚠️ Parcial |
+
+---
 

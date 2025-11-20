@@ -19,6 +19,11 @@ export default {
         'brand-gold': '#D4AF37',
         'brand-offwhite': '#F8F9FA',
         'brand-burgundy': '#8B3A3A',
+        // Cores da logo Contadores de Elite
+        'elite-navy': '#0C1A2A',
+        'elite-gold': '#D4AF37',
+        'elite-navy-mid': '#1a2f47',
+        'elite-gold-dark': '#B8941F',
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +11,7 @@ import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 
 const Materiais = () => {
+  useScrollToTop();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoriaFilter, setCategoriaFilter] = useState<string | null>(null);
 

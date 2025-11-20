@@ -1,4 +1,5 @@
 import { useAuth } from '@/hooks/useAuth';
+import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +10,7 @@ import { GraduationCap, Clock, Award, Play } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Educacao = () => {
+  useScrollToTop();
   const { user } = useAuth();
 
   const { data: contador } = useQuery({

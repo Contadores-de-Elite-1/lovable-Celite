@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
@@ -6,6 +7,7 @@ import { motion } from 'framer-motion';
 import { TrendingUp, Users, DollarSign } from 'lucide-react';
 
 const Simulador = () => {
+  useScrollToTop();
   const [clientesMes, setClientesMes] = useState(5);
   const [contadoresMes, setContadoresMes] = useState(2);
   const [clientesPorContador, setClientesPorContador] = useState(3);

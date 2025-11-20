@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,7 @@ interface Message {
 }
 
 const Assistente = () => {
+  useScrollToTop();
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([
     {

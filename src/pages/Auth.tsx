@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 import { Crown, ArrowLeft, Mail } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { getReferralToken, clearReferralToken } from '@/hooks/useReferralTracking';
 
 const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -33,6 +34,40 @@ const Auth = () => {
 
       if (error) throw error;
 
+      // Se é cadastro, vincular referral
+      if (isSignUp) {
+        const referralToken = getReferralToken();
+        if (referralToken) {
+          // Aguardar um pouco para o trigger criar o contador
+          setTimeout(async () => {
+            try {
+              const { data: user } = await supabase.auth.getUser();
+              if (user?.user?.id) {
+                // Buscar contador indicador pelo token
+                const { data: sponsor } = await supabase
+                  .rpc('get_contador_by_referral_token', { token: referralToken })
+                  .single();
+                
+                if (sponsor) {
+                  // Atualizar contador recém-criado com sponsor_id
+                  await supabase
+                    .from('contadores')
+                    .update({ sponsor_id: sponsor.contador_id })
+                    .eq('user_id', user.user.id);
+                  
+                  console.log(`[Referral] Contador vinculado ao sponsor: ${sponsor.contador_nome}`);
+                  
+                  // Limpar token após uso
+                  clearReferralToken();
+                }
+              }
+            } catch (err) {
+              console.error('[Referral] Erro ao vincular sponsor:', err);
+            }
+          }, 2000);
+        }
+      }
+
       toast({
         title: isSignUp ? 'Conta criada!' : 'Bem-vindo!',
         description: isSignUp 
@@ -41,7 +76,25 @@ const Auth = () => {
       });
 
       if (!isSignUp) {
-        navigate('/dashboard');
+        // Verificar se é primeiro login
+        const { data: user } = await supabase.auth.getUser();
+        
+        if (user?.user?.id) {
+          const { data: contador } = await supabase
+            .from('contadores')
+            .select('primeiro_acesso')
+            .eq('user_id', user.user.id)
+            .single();
+
+          // Se primeiro acesso, redireciona para onboarding
+          if (contador?.primeiro_acesso === true) {
+            navigate('/onboarding-contador');
+          } else {
+            navigate('/dashboard');
+          }
+        } else {
+          navigate('/dashboard');
+        }
       }
     } catch (error) {
       toast({
@@ -104,19 +157,24 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#0C1A2A] via-[#1a2f47] to-[#0C1A2A] flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
         className="w-full max-w-md"
       >
-        <Card className="bg-white/95 backdrop-blur-sm border-secondary/20">
+        <Card className="bg-white/95 backdrop-blur-sm border-[#D4AF37]/30 shadow-2xl">
           <CardHeader className="text-center space-y-4">
-            <div className="mx-auto w-16 h-16 bg-secondary/10 rounded-full flex items-center justify-center">
-              <Crown className="w-8 h-8 text-secondary" />
+            {/* Logo Contadores de Elite */}
+            <div className="mx-auto w-32 h-32 bg-white rounded-full p-4 shadow-lg border-4 border-[#D4AF37]/20 flex items-center justify-center">
+              <img
+                src="/images/logo-contadores-elite.jpeg"
+                alt="Contadores de Elite"
+                className="w-full h-full object-contain"
+              />
             </div>
-            <CardTitle className="text-3xl font-serif text-primary">
+            <CardTitle className="text-3xl font-serif" style={{ color: '#0C1A2A' }}>
               Contadores de Elite
             </CardTitle>
             <CardDescription>
@@ -278,8 +336,8 @@ const Auth = () => {
           </CardContent>
         </Card>
 
-        <p className="text-center text-gray-500 text-sm mt-6">
-          Powered by <span className="text-brand-gold font-medium">Top Class Escritório Virtual</span>
+        <p className="text-center text-[#D4AF37] text-sm mt-6 font-medium">
+          Lovable-Celite © 2025
         </p>
       </motion.div>
     </div>

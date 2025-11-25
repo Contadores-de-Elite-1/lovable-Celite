@@ -193,3 +193,5 @@ WHERE c.status = 'ativo';
 
 COMMENT ON VIEW v_dashboard_rede IS 'Dashboard de rede para contadores: indicados, clientes e comissões (diretas + override)';
 
+
+

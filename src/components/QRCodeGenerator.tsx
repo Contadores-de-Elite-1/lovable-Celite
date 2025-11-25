@@ -73,3 +73,5 @@ export const QRCodeGenerator = ({ url, size = 256 }: QRCodeGeneratorProps) => {
   );
 };
 
+
+

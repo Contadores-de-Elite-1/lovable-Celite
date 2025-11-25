@@ -174,3 +174,5 @@ http://localhost:8080/onboarding/teste
 **Onboarding:** Navegação livre sem validações  
 **Logo:** Aparece apenas onde deve (onboarding contador)
 
+
+

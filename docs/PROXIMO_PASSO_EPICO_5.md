@@ -322,3 +322,5 @@ Quer que eu:
 2. Crie um plano detalhado antes?
 3. Revise documentação com você?
 
+
+

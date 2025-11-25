@@ -126,3 +126,5 @@ $$;
 
 COMMENT ON FUNCTION get_network_depth(UUID) IS 'Calcula a profundidade (níveis acima) de um contador na rede';
 
+
+

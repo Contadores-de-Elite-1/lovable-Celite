@@ -364,3 +364,5 @@ SELECT * FROM calcular_comissoes_com_override(
 **Versão**: 1.0  
 **Desenvolvido por**: Claude Sonnet 4.5 + Pedro Guilherme (ADMIN MASTER BLASTER)
 
+
+

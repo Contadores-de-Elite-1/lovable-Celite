@@ -164,3 +164,5 @@ Depois de adicionar as credenciais:
 
 **Precisando de ajuda?** Posso criar o arquivo `.env.local` para você com as variáveis vazias se preferir.
 
+
+

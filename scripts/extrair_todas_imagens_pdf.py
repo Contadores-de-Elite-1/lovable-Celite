@@ -98,3 +98,5 @@ def extrair_todas_imagens():
 if __name__ == '__main__':
     extrair_todas_imagens()
 
+
+

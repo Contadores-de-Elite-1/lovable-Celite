@@ -229,3 +229,5 @@ Após adicionar as fotos:
 
 **Precisa de ajuda para extrair as fotos ou integrar no app?** 🚀
 
+
+

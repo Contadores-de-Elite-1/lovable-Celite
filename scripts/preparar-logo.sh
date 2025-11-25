@@ -88,3 +88,5 @@ echo ""
 echo "   Formato recomendado: PNG ou JPG"
 echo "   Tamanho recomendado: 512x512px (ou proporcional)"
 
+
+

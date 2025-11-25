@@ -197,3 +197,5 @@ bg-gradient-to-b from-[#0C1A2A] to-[#0F2847]
 
 **Está pronto para adicionar a logo ao projeto?** 🚀
 
+
+

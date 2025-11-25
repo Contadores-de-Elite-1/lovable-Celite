@@ -21,3 +21,5 @@ $$;
 -- Comentário da função
 COMMENT ON FUNCTION make_me_admin() IS 'Adiciona role admin ao usuário logado. Executar via SQL Editor: SELECT make_me_admin();';
 
+
+

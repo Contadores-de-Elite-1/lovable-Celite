@@ -175,3 +175,5 @@ public/images/espaco/
 **Componente:** Design completo implementado  
 **Integração:** Galeria na tela de planos
 
+
+

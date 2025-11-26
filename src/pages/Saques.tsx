@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,7 +20,6 @@ interface SaqueRecord {
 }
 
 const Saques = () => {
-  useScrollToTop();
   const { user } = useAuth();
   const [expandedSaque, setExpandedSaque] = useState<string | null>(null);
 
@@ -108,20 +106,9 @@ const Saques = () => {
     return dias;
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F5F6F8]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Carregando saques...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-[#F5F6F8] text-[#0C1A2A]">
-      {/* Header com fundo escuro e conteúdo em tons de cinza (igual Comissões) */}
+      {/* Header - renderiza IMEDIATAMENTE */}
       <header className="bg-gradient-to-r from-[#0C1A2A] to-[#1C2F4A] text-gray-200 px-4 py-6 md:px-8">
         <div className="max-w-7xl mx-auto">
           <p className="text-xs uppercase tracking-[0.18em] text-gray-400">
@@ -138,6 +125,14 @@ const Saques = () => {
 
       {/* Main */}
       <main className="max-w-7xl mx-auto p-4 pb-8">
+        {isLoading || !contador ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600 font-medium">Carregando saques...</p>
+            </div>
+          </div>
+        ) : (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
           {/* Summary Cards – 2x2 sempre que couber */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -364,6 +359,7 @@ const Saques = () => {
             </motion.div>
           )}
         </motion.div>
+        )}
       </main>
     </div>
   );

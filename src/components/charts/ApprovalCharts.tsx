@@ -18,16 +18,13 @@ import { ChartConfig } from '@/components/ui/chart';
 
 interface CommissionData {
   id: string;
-  status_comissao: string;
-  tipo_comissao: string;
+  status: string;
+  tipo: string;
   valor: number;
   created_at: string;
   competencia: string;
-  contador?: {
-    profiles?: {
-      nome: string;
-    };
-  };
+  contador_nome?: string;
+  contador_email?: string;
 }
 
 interface StatusTrendChartProps {
@@ -121,7 +118,7 @@ export const StatusTrendChart = ({ data, isLoading }: StatusTrendChartProps) => 
       }
 
       const entry = grouped.get(key)!;
-      const status = commission.status_comissao as keyof typeof entry;
+      const status = commission.status as keyof typeof entry;
       if (status in entry) {
         entry[status]++;
       }
@@ -249,7 +246,7 @@ export const CommissionTypeChart = ({ data, isLoading }: CommissionTypeChartProp
     const grouped = new Map<string, number>();
 
     data.forEach((commission) => {
-      const type = commission.tipo_comissao || 'desconhecido';
+      const type = commission.tipo || 'desconhecido';
       const current = grouped.get(type) || 0;
       grouped.set(type, current + Number(commission.valor));
     });
@@ -376,7 +373,7 @@ export const TopContadoresChart = ({ data, isLoading }: TopContadoresChartProps)
     const grouped = new Map<string, number>();
 
     data.forEach((commission) => {
-      const name = commission.contador?.profiles?.nome || 'Desconhecido';
+      const name = commission.contador_nome || 'Desconhecido';
       const current = grouped.get(name) || 0;
       grouped.set(name, current + Number(commission.valor));
     });

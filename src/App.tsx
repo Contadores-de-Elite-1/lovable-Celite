@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,33 +7,46 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { ReferralTracker } from "@/components/ReferralTracker";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileHeader } from "@/components/MobileHeader";
+
+// Páginas públicas carregadas normalmente (críticas para primeira impressão)
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
-import ResetPassword from "./pages/ResetPassword";
-import Dashboard from "./pages/Dashboard";
-import Comissoes from "./pages/Comissoes";
-import LinksIndicacao from "./pages/LinksIndicacao";
-import Simulador from "./pages/Simulador";
-import Calculadora from "./pages/Calculadora";
-import Educacao from "./pages/Educacao";
-import Materiais from "./pages/Materiais";
-import Assistente from "./pages/Assistente";
-import AuthSecurityDashboard from "./pages/AuthSecurityDashboard";
-import AuditoriaComissoes from "./pages/AuditoriaComissoes";
-import AdminApprovalsPage from "./pages/AdminApprovalsPage";
-import AdminWithdrawals from "./pages/AdminWithdrawals";
-import Saques from "./pages/Saques";
-import Perfil from "./pages/Perfil";
-import Rede from "./pages/Rede";
-import Relatorios from "./pages/Relatorios";
-import NotFound from "./pages/NotFound";
-import OnboardingApp from "./onboarding";
-import ContadorOnboarding from "./pages/ContadorOnboarding";
+
+// Lazy load de todas as outras páginas
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Comissoes = lazy(() => import("./pages/Comissoes"));
+const LinksIndicacao = lazy(() => import("./pages/LinksIndicacao"));
+const Simulador = lazy(() => import("./pages/Simulador"));
+const Calculadora = lazy(() => import("./pages/Calculadora"));
+const Educacao = lazy(() => import("./pages/Educacao"));
+const Materiais = lazy(() => import("./pages/Materiais"));
+const Assistente = lazy(() => import("./pages/Assistente"));
+const AuthSecurityDashboard = lazy(() => import("./pages/AuthSecurityDashboard"));
+const AuditoriaComissoes = lazy(() => import("./pages/AuditoriaComissoes"));
+const AdminApprovalsPage = lazy(() => import("./pages/AdminApprovalsPage"));
+const AdminWithdrawals = lazy(() => import("./pages/AdminWithdrawals"));
+const Saques = lazy(() => import("./pages/Saques"));
+const Perfil = lazy(() => import("./pages/Perfil"));
+const Rede = lazy(() => import("./pages/Rede"));
+const Relatorios = lazy(() => import("./pages/Relatorios"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const OnboardingApp = lazy(() => import("./onboarding"));
+const ContadorOnboarding = lazy(() => import("./pages/ContadorOnboarding"));
 
 const queryClient = new QueryClient();
+
+// Componente de loading para Suspense
+const PageLoader = () => (
+  <div className="flex min-h-screen items-center justify-center bg-elite-navy">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-elite-gold mx-auto mb-4"></div>
+      <p className="text-elite-gold font-medium">Carregando...</p>
+    </div>
+  </div>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -41,14 +55,14 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <ReferralTracker />
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/auth/reset-password" element={<ResetPassword />} />
-            <Route path="/onboarding/:linkContador" element={<OnboardingApp />} />
-            <Route path="/onboarding-contador" element={<ContadorOnboarding />} />
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/auth/reset-password" element={<ResetPassword />} />
+              <Route path="/onboarding/:linkContador" element={<OnboardingApp />} />
+              <Route path="/onboarding-contador" element={<ContadorOnboarding />} />
             <Route
               path="/*"
               element={
@@ -85,7 +99,8 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-          </Routes>
+            </Routes>
+          </Suspense>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

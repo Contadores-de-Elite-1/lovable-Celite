@@ -47,24 +47,24 @@ export const filterByDateRange = (
 };
 
 export const filterByStatus = (
-  items: { status_comissao: string }[],
+  items: { status: string }[],
   status: string
-): { status_comissao: string }[] => {
+): { status: string }[] => {
   if (!items || !status) return items;
   if (status.toLowerCase() === 'all' || status === '') return items;
 
-  return items.filter((item) => item.status_comissao === status);
+  return items.filter((item) => item.status === status);
 };
 
 export const filterByMultipleCriteria = (
   items: {
     competencia: string;
-    status_comissao: string;
+    status: string;
   }[],
   filter: FilterInput
 ): {
   competencia: string;
-  status_comissao: string;
+  status: string;
 }[] => {
   if (!items) return [];
 

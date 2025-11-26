@@ -5,8 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { motion } from 'framer-motion';
-import { Crown, ArrowLeft, Mail } from 'lucide-react';
+import { ArrowLeft, Mail } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { getReferralToken, clearReferralToken } from '@/hooks/useReferralTracking';
 
@@ -158,20 +157,22 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0C1A2A] via-[#1a2f47] to-[#0C1A2A] flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="w-full max-w-md"
-      >
+      <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-500">
         <Card className="bg-white/95 backdrop-blur-sm border-[#D4AF37]/30 shadow-2xl">
           <CardHeader className="text-center space-y-4">
             {/* Logo Contadores de Elite */}
-            <div className="mx-auto w-32 h-32 bg-white rounded-full p-4 shadow-lg border-4 border-[#D4AF37]/20 flex items-center justify-center">
+            <div className="mx-auto w-40 h-40 flex items-center justify-center">
               <img
-                src="/images/logo-contadores-elite.jpeg"
+                src="/images/logo-contadores-elite.webp"
                 alt="Contadores de Elite"
-                className="w-full h-full object-contain"
+                className="w-full h-full object-contain drop-shadow-[0_0_12px_rgba(212,175,55,0.3)] rounded-full border-2 border-[#D4AF37]/30 bg-white/10 p-2"
+                decoding="async"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  if (!target.src.includes('logo-topclass.png')) {
+                    target.src = '/images/logo-topclass.png';
+                  }
+                }}
               />
             </div>
             <CardTitle className="text-3xl font-serif" style={{ color: '#0C1A2A' }}>
@@ -339,7 +340,7 @@ const Auth = () => {
         <p className="text-center text-[#D4AF37] text-sm mt-6 font-medium">
           Lovable-Celite © 2025
         </p>
-      </motion.div>
+      </div>
     </div>
   );
 };

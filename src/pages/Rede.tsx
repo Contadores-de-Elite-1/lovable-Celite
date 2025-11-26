@@ -69,7 +69,7 @@ const MinhaRede = () => {
             .from('comissoes')
             .select('valor')
             .eq('contador_id', contadorLogado.id)
-            .eq('tipo_comissao', 'override');
+            .eq('tipo', 'override');
 
           const totalComissoes = comissoes?.reduce((sum, c) => sum + Number(c.valor), 0) || 0;
 
@@ -112,8 +112,8 @@ const MinhaRede = () => {
         .from('comissoes')
         .select('valor')
         .eq('contador_id', contadorLogado.id)
-        .eq('tipo_comissao', 'override')
-        .eq('status_comissao', 'paga');
+        .eq('tipo', 'override')
+        .eq('status', 'paga');
 
       const totalOverride = comissoesOverride?.reduce((sum, c) => sum + Number(c.valor), 0) || 0;
 
@@ -128,24 +128,24 @@ const MinhaRede = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F5F6F8] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Carregando sua rede...</p>
+          <div className="w-12 h-12 border-4 border-[#D4AF37] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-[#0C1A2A]">Carregando sua rede...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F5F6F8]">
       {/* HEADER */}
-      <header className="bg-gradient-to-r from-[#0C1A2A] to-[#0F2940] text-white p-4 md:p-6">
+      <header className="bg-gradient-to-r from-[#0C1A2A] to-[#1a2f47] text-white p-6 border-b border-[#D4AF37]/30">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-xl md:text-3xl font-serif font-bold text-[#D4AF37]">
+          <h1 className="text-2xl md:text-3xl font-serif font-bold text-[#D4AF37]">
             Minha Rede
           </h1>
-          <p className="text-gray-300 text-xs md:text-sm mt-1">
+          <p className="text-white/80 text-sm mt-1">
             Visualize seus indicados e comissões de override (segundo nível)
           </p>
         </div>
@@ -158,59 +158,59 @@ const MinhaRede = () => {
           className="space-y-6"
         >
           {/* ESTATÍSTICAS DA REDE */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-            <Card className="bg-gradient-to-br from-[#0C1A2A]/5 to-[#0F2940]/10 border-[#0C1A2A]/20">
-              <CardContent className="p-4 md:p-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="bg-white border-[#D4AF37]/30 shadow-md">
+              <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs md:text-sm text-[#0C1A2A] font-medium">Contadores na Rede</p>
-                    <p className="text-2xl md:text-3xl font-bold text-[#0C1A2A] mt-1">
+                    <p className="text-sm text-[#0C1A2A] font-medium">Contadores na Rede</p>
+                    <p className="text-3xl font-bold text-[#D4AF37] mt-1">
                       {stats?.totalIndicados || 0}
                     </p>
-                    <p className="text-xs text-gray-600 mt-1">
+                    <p className="text-xs text-[#0C1A2A]/70 mt-1">
                       Você é sponsor
                     </p>
                   </div>
-                  <div className="w-10 h-10 md:w-12 md:h-12 bg-[#0C1A2A] rounded-full flex items-center justify-center">
-                    <Users className="w-5 h-5 md:w-6 md:h-6 text-[#D4AF37]" />
+                  <div className="w-12 h-12 bg-[#0C1A2A] rounded-full flex items-center justify-center">
+                    <Users className="w-6 h-6 text-[#D4AF37]" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-[#D4AF37]/5 to-[#D4AF37]/10 border-[#D4AF37]/30">
-              <CardContent className="p-4 md:p-6">
+            <Card className="bg-white border-[#D4AF37]/30 shadow-md">
+              <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs md:text-sm text-[#0C1A2A] font-medium">Clientes da Rede</p>
-                    <p className="text-2xl md:text-3xl font-bold text-[#0C1A2A] mt-1">
+                    <p className="text-sm text-[#0C1A2A] font-medium">Clientes da Rede</p>
+                    <p className="text-3xl font-bold text-[#D4AF37] mt-1">
                       {stats?.totalClientesRede || 0}
                     </p>
-                    <p className="text-xs text-gray-600 mt-1">
+                    <p className="text-xs text-[#0C1A2A]/70 mt-1">
                       Total na rede
                     </p>
                   </div>
-                  <div className="w-10 h-10 md:w-12 md:h-12 bg-[#D4AF37] rounded-full flex items-center justify-center">
-                    <TrendingUp className="w-5 h-5 md:w-6 md:h-6 text-[#0C1A2A]" />
+                  <div className="w-12 h-12 bg-[#0C1A2A] rounded-full flex items-center justify-center">
+                    <TrendingUp className="w-6 h-6 text-[#D4AF37]" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
-              <CardContent className="p-4 md:p-6">
+            <Card className="bg-white border-[#D4AF37]/30 shadow-md">
+              <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs md:text-sm text-green-700 font-medium">Override Recebido</p>
-                    <p className="text-2xl md:text-3xl font-bold text-green-900 mt-1">
+                    <p className="text-sm text-[#0C1A2A] font-medium">Override Recebido</p>
+                    <p className="text-3xl font-bold text-[#D4AF37] mt-1">
                       R$ {stats?.totalOverride?.toFixed(2) || '0.00'}
                     </p>
-                    <p className="text-xs text-green-600 mt-1">
+                    <p className="text-xs text-[#0C1A2A]/70 mt-1">
                       5% da rede
                     </p>
                   </div>
-                  <div className="w-10 h-10 md:w-12 md:h-12 bg-green-600 rounded-full flex items-center justify-center">
-                    <DollarSign className="w-5 h-5 md:w-6 md:h-6 text-white" />
+                  <div className="w-12 h-12 bg-[#0C1A2A] rounded-full flex items-center justify-center">
+                    <DollarSign className="w-6 h-6 text-[#D4AF37]" />
                   </div>
                 </div>
               </CardContent>
@@ -218,23 +218,23 @@ const MinhaRede = () => {
           </div>
 
           {/* LISTA DE INDICADOS */}
-          <Card>
-            <CardHeader className="border-b bg-gradient-to-r from-[#0C1A2A]/5 to-[#D4AF37]/5 p-4 md:p-6">
-              <CardTitle className="font-serif text-[#0C1A2A] flex items-center gap-2 text-base md:text-lg">
-                <Users className="w-4 h-4 md:w-5 md:h-5 text-[#D4AF37]" />
+          <Card className="border-[#D4AF37]/20">
+            <CardHeader className="border-b border-[#D4AF37]/30 bg-gradient-to-r from-[#0C1A2A]/5 to-[#1a2f47]/5">
+              <CardTitle className="font-serif text-[#0C1A2A] flex items-center gap-2">
+                <Users className="w-5 h-5 text-[#D4AF37]" />
                 Seus Indicados (Nível 1)
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 md:p-6">
+            <CardContent className="p-6">
               {!redeIndicados || redeIndicados.length === 0 ? (
-                <div className="text-center py-8 md:py-12">
-                  <div className="w-12 h-12 md:w-16 md:h-16 bg-[#0C1A2A]/5 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Users className="w-6 h-6 md:w-8 md:h-8 text-[#D4AF37]" />
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Users className="w-8 h-8 text-gray-400" />
                   </div>
-                  <h3 className="text-base md:text-lg font-semibold text-[#0C1A2A] mb-2">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
                     Nenhum indicado ainda
                   </h3>
-                  <p className="text-xs md:text-sm text-gray-600 max-w-md mx-auto px-4">
+                  <p className="text-sm text-gray-600 max-w-md mx-auto">
                     Comece a indicar outros contadores usando seu link único. Quando eles venderem,
                     você recebe 5% de comissão (override)!
                   </p>
@@ -247,23 +247,23 @@ const MinhaRede = () => {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.1 }}
-                      className="border border-[#0C1A2A]/10 rounded-lg p-3 md:p-4 hover:shadow-md transition-shadow hover:border-[#D4AF37]/30"
+                      className="border border-[#D4AF37]/20 rounded-lg p-4 hover:shadow-md hover:border-[#D4AF37]/40 transition-all bg-white"
                     >
-                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-[#0C1A2A] to-[#0F2940] rounded-full flex items-center justify-center text-[#D4AF37] font-bold text-base md:text-lg flex-shrink-0">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-gradient-to-br from-[#0C1A2A] to-[#1a2f47] rounded-full flex items-center justify-center text-[#D4AF37] font-bold text-lg border-2 border-[#D4AF37]/30">
                             {indicado.nome.charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <h4 className="font-semibold text-[#0C1A2A] text-sm md:text-base">{indicado.nome}</h4>
-                            <div className="flex items-center gap-2 mt-1 flex-wrap">
-                              <span className="text-xs bg-[#D4AF37]/10 text-[#0C1A2A] px-2 py-0.5 rounded-full border border-[#D4AF37]/20">
+                            <h4 className="font-semibold text-[#0C1A2A]">{indicado.nome}</h4>
+                            <div className="flex items-center gap-3 mt-1">
+                              <span className="text-xs bg-[#D4AF37]/20 text-[#0C1A2A] px-2 py-1 rounded-full border border-[#D4AF37]/30">
                                 {indicado.nivel}
                               </span>
-                              <span className={`text-xs px-2 py-0.5 rounded-full ${
+                              <span className={`text-xs px-2 py-1 rounded-full ${
                                 indicado.status === 'ativo' 
-                                  ? 'bg-green-100 text-green-700 border border-green-200' 
-                                  : 'bg-gray-100 text-gray-700 border border-gray-200'
+                                  ? 'bg-green-100 text-green-700' 
+                                  : 'bg-gray-100 text-gray-700'
                               }`}>
                                 {indicado.status}
                               </span>
@@ -271,21 +271,21 @@ const MinhaRede = () => {
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-around md:justify-end md:gap-4 lg:gap-6 text-xs md:text-sm">
+                        <div className="flex items-center gap-6 text-sm">
                           <div className="text-center">
                             <p className="text-gray-500 text-xs">Clientes</p>
-                            <p className="font-semibold text-[#0C1A2A] text-sm md:text-base">{indicado.clientes_ativos || 0}</p>
+                            <p className="font-semibold text-gray-900">{indicado.clientes_ativos || 0}</p>
                           </div>
                           <div className="text-center">
-                            <p className="text-gray-500 text-xs">Override</p>
-                            <p className="font-semibold text-green-600 text-sm md:text-base">
+                            <p className="text-[#0C1A2A]/70 text-xs">Override Gerado</p>
+                            <p className="font-semibold text-[#D4AF37]">
                               R$ {indicado.total_comissoes_geradas.toFixed(2)}
                             </p>
                           </div>
-                          <div className="text-center hidden md:block">
-                            <p className="text-gray-500 text-xs">Desde</p>
-                            <p className="font-semibold text-[#0C1A2A]">
-                              {new Date(indicado.created_at).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })}
+                          <div className="text-center">
+                            <p className="text-gray-500 text-xs">Membro desde</p>
+                            <p className="font-semibold text-gray-900">
+                              {new Date(indicado.created_at).toLocaleDateString('pt-BR')}
                             </p>
                           </div>
                         </div>
@@ -298,37 +298,22 @@ const MinhaRede = () => {
           </Card>
 
           {/* INFO SOBRE SISTEMA DE REDE */}
-          <Card className="bg-gradient-to-r from-[#0C1A2A]/5 to-[#D4AF37]/5 border-[#D4AF37]/20">
-            <CardContent className="p-4 md:p-6">
-              <div className="flex flex-col md:flex-row items-start gap-3 md:gap-4">
-                <div className="w-10 h-10 md:w-12 md:h-12 bg-[#0C1A2A] rounded-full flex items-center justify-center flex-shrink-0">
-                  <Award className="w-5 h-5 md:w-6 md:h-6 text-[#D4AF37]" />
+          <Card className="bg-gradient-to-r from-[#0C1A2A]/5 to-[#1a2f47]/5 border-[#D4AF37]/30">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-[#0C1A2A] rounded-full flex items-center justify-center flex-shrink-0 border-2 border-[#D4AF37]/30">
+                  <Award className="w-6 h-6 text-[#D4AF37]" />
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-[#0C1A2A] mb-2 md:mb-3 text-sm md:text-base">
+                <div>
+                  <h3 className="font-semibold text-[#0C1A2A] mb-2">
                     Como Funciona o Sistema de Rede (Override)
                   </h3>
-                  <ul className="text-xs md:text-sm text-gray-700 space-y-2">
-                    <li className="flex items-start gap-2">
-                      <span className="text-[#D4AF37] mt-0.5">✓</span>
-                      <span><strong>Indique contadores:</strong> Compartilhe seu link único com outros contadores</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-[#D4AF37] mt-0.5">✓</span>
-                      <span><strong>Você vira Sponsor:</strong> Quando eles se cadastrarem, você é o sponsor deles</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-[#D4AF37] mt-0.5">✓</span>
-                      <span><strong>Receba 5% Override:</strong> Sempre que seus indicados venderem, você recebe 5% automático</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-[#D4AF37] mt-0.5">✓</span>
-                      <span><strong>Renda Passiva:</strong> Quanto mais sua rede cresce, mais você ganha</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-[#D4AF37] mt-0.5">✓</span>
-                      <span><strong>Exemplo:</strong> Seu indicado vende R$ 130/mês → Você recebe R$ 6,25/mês de override</span>
-                    </li>
+                  <ul className="text-sm text-[#0C1A2A]/80 space-y-2">
+                    <li>✅ <strong>Indique contadores:</strong> Compartilhe seu link único com outros contadores</li>
+                    <li>✅ <strong>Você vira Sponsor:</strong> Quando eles se cadastrarem, você é o sponsor deles</li>
+                    <li>✅ <strong>Receba 5% Override:</strong> Sempre que seus indicados venderem, você recebe 5% automático</li>
+                    <li>✅ <strong>Renda Passiva:</strong> Quanto mais sua rede cresce, mais você ganha</li>
+                    <li>✅ <strong>Exemplo:</strong> Seu indicado vende R$ 130/mês → Você recebe R$ 6,25/mês de override</li>
                   </ul>
                 </div>
               </div>

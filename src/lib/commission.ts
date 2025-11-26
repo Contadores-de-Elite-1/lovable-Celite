@@ -2,8 +2,8 @@
 
 export interface CommissionInput {
   valor: number;
-  tipo_comissao: string;
-  status_comissao: string;
+  tipo: string;
+  status: string;
   competencia: string;
 }
 
@@ -27,7 +27,7 @@ export const calculatePaidCommissions = (
 ): number => {
   if (!commissions || commissions.length === 0) return 0;
   return commissions
-    .filter((c) => c.status_comissao === 'paga')
+    .filter((c) => c.status === 'paga')
     .reduce((sum, c) => sum + Number(c.valor), 0);
 };
 
@@ -86,8 +86,8 @@ export const validateCommissionData = (commission: unknown): boolean => {
   const c = commission as Record<string, unknown>;
   return (
     isValidCommissionValue(c.valor) &&
-    typeof c.tipo_comissao === 'string' &&
-    typeof c.status_comissao === 'string' &&
+    typeof c.tipo === 'string' &&
+    typeof c.status === 'string' &&
     typeof c.competencia === 'string'
   );
 };

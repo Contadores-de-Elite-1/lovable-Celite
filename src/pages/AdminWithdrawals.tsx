@@ -64,39 +64,25 @@ const AdminWithdrawals = () => {
   const { data: withdrawals = [], isLoading, refetch } = useQuery({
     queryKey: ['pending-withdrawals'],
     queryFn: async () => {
+      // Usar view que já faz JOIN correto com auth.users
       const { data } = await supabase
-        .from('solicitacoes_saque')
-        .select(`
-          id,
-          contador_id,
-          valor_solicitado,
-          status,
-          metodo_pagamento,
-          dados_bancarios,
-          solicitado_em,
-          processada_em,
-          observacao,
-          contadores (
-            nome,
-            email
-          )
-        `)
-        .eq('status', 'pendente')
+        .from('vw_solicitacoes_saque_pendentes')
+        .select('*')
         .order('solicitado_em', { ascending: true });
 
       return (data || []).map((row: any) => ({
         id: row.id,
         contador_id: row.contador_id,
-        contador_nome: row.contadores?.nome,
-        contador_email: row.contadores?.email,
+        contador_nome: row.contador_nome || 'Sem nome',
+        contador_email: row.contador_email || 'Sem email',
         valor_solicitado: row.valor_solicitado,
         status: row.status,
         metodo_pagamento: row.metodo_pagamento,
-        chave_pix: row.dados_bancarios?.chave_pix,
-        titular_conta: row.dados_bancarios?.titular_conta,
-        banco: row.dados_bancarios?.banco,
-        agencia: row.dados_bancarios?.agencia,
-        conta: row.dados_bancarios?.conta,
+        chave_pix: row.chave_pix,
+        titular_conta: row.titular_conta,
+        banco: row.banco,
+        agencia: row.agencia,
+        conta: row.conta,
         solicitado_em: row.solicitado_em,
         processada_em: row.processada_em,
         observacao: row.observacao,

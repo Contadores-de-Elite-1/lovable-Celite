@@ -281,9 +281,16 @@ export function AppSidebar() {
           {/* LOGO – ABAIXO DE APROVAÇÕES */}
           <div className="mt-4 mb-6 flex w-full justify-center px-4">
             <img
-              src="/images/logo-contadores-elite.jpeg"
+              src="/images/logo-contadores-elite.webp"
               alt="Contadores de Elite"
               className="h-24 w-auto mx-auto object-contain drop-shadow-[0_0_12px_rgba(212,175,55,0.3)] rounded-full border-2 border-[#D4AF37]/30 bg-white/10 p-2"
+              decoding="async"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                if (!target.src.includes('logo-topclass.png')) {
+                  target.src = '/images/logo-topclass.png';
+                }
+              }}
             />
           </div>
 

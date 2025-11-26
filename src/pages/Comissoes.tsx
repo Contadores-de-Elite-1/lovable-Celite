@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { DollarSign, TrendingUp, Clock, Download, Wallet, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
+import { SkeletonTable, SkeletonStats } from '@/components/SkeletonLoader';
 import {
   Dialog,
   DialogContent,
@@ -26,7 +26,6 @@ import { filterByMultipleCriteria } from '@/lib/filters';
 import { convertToCSV, downloadCSV, generateCSVFilename } from '@/lib/csv';
 
 const Comissoes = () => {
-  useScrollToTop();
   const { user } = useAuth();
   const [periodo, setPeriodo] = useState('mes-atual'); // mantido para compatibilidade futura
   const [dateStart, setDateStart] = useState('');
@@ -76,19 +75,10 @@ const Comissoes = () => {
     enabled: !!contador?.id,
   });
 
-  // Get user profile for payment methods
-  const { data: userProfile } = useQuery({
-    queryKey: ['profile', user?.id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('banco, agencia, conta, tipo_conta, titular_conta, chave_pix')
-        .eq('id', user?.id)
-        .single();
-      return data;
-    },
-    enabled: !!user?.id,
-  });
+  // NOTA: Campos bancários não existem na tabela profiles
+  // Eles devem ser coletados no momento da solicitação de saque ou estar em outra tabela
+  // Removendo a query que causava erro 400
+  const userProfile = null; // Temporariamente desabilitado até implementar corretamente
 
   // Apply filters
   const comissoes = useMemo(() => {
@@ -106,12 +96,12 @@ const Comissoes = () => {
 
     // Filtro por status
     if (statusFilter !== 'all') {
-      filtered = filtered.filter((c) => c.status_comissao === statusFilter);
+      filtered = filtered.filter((c) => c.status === statusFilter);
     }
 
     // Filtro por tipo
     if (tipoFilter !== 'all') {
-      filtered = filtered.filter((c) => c.tipo_comissao === tipoFilter);
+      filtered = filtered.filter((c) => c.tipo === tipoFilter);
     }
 
     // Filtro por busca de cliente
@@ -136,16 +126,16 @@ const Comissoes = () => {
 
   const diretas =
     paginatedComissoes?.filter(
-      (c) => c.tipo_comissao === 'ativacao' || c.tipo_comissao === 'recorrente'
+      (c) => c.tipo === 'ativacao' || c.tipo === 'recorrente'
     ) || [];
-  const overrides = paginatedComissoes?.filter((c) => c.tipo_comissao === 'override') || [];
+  const overrides = paginatedComissoes?.filter((c) => c.tipo === 'override') || [];
   const bonus =
     paginatedComissoes?.filter(
       (c) =>
-        c.tipo_comissao === 'bonus_progressao' ||
-        c.tipo_comissao === 'bonus_volume' ||
-        c.tipo_comissao === 'bonus_ltv' ||
-        c.tipo_comissao === 'bonus_contador'
+        c.tipo === 'bonus_progressao' ||
+        c.tipo === 'bonus_volume' ||
+        c.tipo === 'bonus_ltv' ||
+        c.tipo === 'bonus_contador'
     ) || [];
 
   // Stats (mantido se precisar depois)
@@ -153,8 +143,8 @@ const Comissoes = () => {
     if (!comissoes) return null;
     const commissionData = comissoes.map((c) => ({
       valor: Number(c.valor),
-      tipo_comissao: c.tipo_comissao,
-      status_comissao: c.status_comissao,
+      tipo: c.tipo,
+      status: c.status,
       competencia: c.competencia,
     }));
     return calculateCommissionStats(commissionData);
@@ -164,21 +154,21 @@ const Comissoes = () => {
   const totalProvisionadas = useMemo(() => {
     if (!comissoes) return 0;
     return comissoes
-      .filter((c) => c.status_comissao === 'calculada')
+      .filter((c) => c.status === 'calculada')
       .reduce((acc, c) => acc + Number(c.valor), 0);
   }, [comissoes]);
 
   const totalAprovadas = useMemo(() => {
     if (!comissoes) return 0;
     return comissoes
-      .filter((c) => c.status_comissao === 'aprovada')
+      .filter((c) => c.status === 'aprovada')
       .reduce((acc, c) => acc + Number(c.valor), 0);
   }, [comissoes]);
 
   const totalLiberadas = useMemo(() => {
     if (!comissoes) return 0;
     return comissoes
-      .filter((c) => c.status_comissao === 'paga')
+      .filter((c) => c.status === 'paga')
       .reduce((acc, c) => acc + Number(c.valor), 0);
   }, [comissoes]);
 
@@ -193,10 +183,11 @@ const Comissoes = () => {
       return;
     }
 
-    if (!userProfile?.chave_pix && !userProfile?.conta) {
-      toast.error('Complete seus dados bancários no Perfil antes de solicitar saque');
-      return;
-    }
+    // TODO: Implementar validação de dados bancários quando tabela for criada
+    // if (!userProfile?.chave_pix && !userProfile?.conta) {
+    //   toast.error('Complete seus dados bancários no Perfil antes de solicitar saque');
+    //   return;
+    // }
 
     if (!confirmed) {
       setShowConfirmModal(true);
@@ -206,20 +197,22 @@ const Comissoes = () => {
     setIsProcessingSaque(true);
 
     try {
-      const aprovadas = comissoes.filter((c) => c.status_comissao === 'aprovada');
+      const aprovadas = comissoes.filter((c) => c.status === 'aprovada');
 
+      // TODO: Coletar dados bancários do usuário antes de inserir
       const { error } = await supabase.from('solicitacoes_saque').insert({
         contador_id: contador.id,
         valor_solicitado: totalAprovadas,
         comissoes_ids: aprovadas.map((c) => c.id),
-        metodo_pagamento: userProfile?.chave_pix ? 'pix' : 'transferencia',
+        metodo_pagamento: 'transferencia', // Temporariamente fixo até implementar coleta de dados
         dados_bancarios: {
-          banco: userProfile?.banco,
-          agencia: userProfile?.agencia,
-          conta: userProfile?.conta,
-          tipo_conta: userProfile?.tipo_conta,
-          titular_conta: userProfile?.titular_conta,
-          chave_pix: userProfile?.chave_pix,
+          // Dados bancários devem ser coletados de outra fonte ou formulário
+          banco: null,
+          agencia: null,
+          conta: null,
+          tipo_conta: null,
+          titular_conta: null,
+          chave_pix: null,
         },
       });
 
@@ -270,11 +263,11 @@ const Comissoes = () => {
 
     try {
       const rows = comissoes.map((c) => [
-        c.clientes?.nome || 'N/A',
+        c.clientes?.nome_empresa || 'N/A',
         new Date(c.competencia).toLocaleDateString('pt-BR'),
-        getTipoLabel(c.tipo_comissao),
+        getTipoLabel(c.tipo),
         Number(c.valor).toFixed(2),
-        getStatusBadge(c.status_comissao).label,
+        getStatusBadge(c.status).label,
       ]);
 
       const csv = convertToCSV(rows, ['Cliente', 'Competência', 'Tipo', 'Valor (R$)', 'Status']);
@@ -307,17 +300,17 @@ const Comissoes = () => {
             </TableRow>
           ) : (
             data.map((comissao) => {
-              const statusInfo = getStatusBadge(comissao.status_comissao);
+              const statusInfo = getStatusBadge(comissao.status);
               return (
                 <TableRow key={comissao.id} className="hover:bg-[#F5F6F8]">
                   <TableCell className="font-medium text-gray-900">
-                    {comissao.clientes?.nome || 'N/A'}
+                    {comissao.clientes?.nome_empresa || 'N/A'}
                   </TableCell>
                   <TableCell className="text-gray-700">
                     {new Date(comissao.competencia).toLocaleDateString('pt-BR')}
                   </TableCell>
                   <TableCell className="capitalize text-gray-700">
-                    {getTipoLabel(comissao.tipo_comissao)}
+                    {getTipoLabel(comissao.tipo)}
                   </TableCell>
                   <TableCell className="font-semibold text-blue-900">
                     R$ {Number(comissao.valor).toFixed(2)}
@@ -370,7 +363,7 @@ const Comissoes = () => {
                 <div>
                   <p className="text-xs text-gray-600">Comissões</p>
                   <p className="font-bold text-gray-900">
-                    {comissoes.filter((c) => c.status_comissao === 'aprovada').length}
+                    {comissoes.filter((c) => c.status === 'aprovada').length}
                   </p>
                 </div>
               </div>
@@ -379,7 +372,8 @@ const Comissoes = () => {
             {/* Bank Info */}
             <div className="bg-gray-50 p-4 rounded-lg space-y-2 border border-gray-200">
               <p className="text-sm font-semibold text-gray-900">Dados Bancários</p>
-              {userProfile?.chave_pix && (
+              {/* TODO: Exibir dados bancários quando tabela for criada e dados coletados */}
+              {/* {userProfile?.chave_pix && (
                 <div className="text-sm">
                   <p className="text-xs text-gray-600">PIX</p>
                   <p className="font-mono text-gray-900 break-all">{userProfile.chave_pix}</p>
@@ -400,7 +394,10 @@ const Comissoes = () => {
                     {userProfile.conta && ` / Conta: ${userProfile.conta}`}
                   </p>
                 </div>
-              )}
+              )} */}
+              <div className="text-sm text-gray-600">
+                Os dados bancários serão coletados durante o processo de aprovação.
+              </div>
             </div>
 
             {/* Warning */}

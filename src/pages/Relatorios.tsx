@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FileText, Download, TrendingUp, Calendar, BarChart3 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { SkeletonStats, SkeletonChart } from '@/components/SkeletonLoader';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   BarChart,
   Bar,
@@ -36,7 +36,6 @@ import {
 } from '@/lib/csv';
 
 const Relatorios = () => {
-  useScrollToTop();
   const { user } = useAuth();
   const [dateStart, setDateStart] = useState('');
   const [dateEnd, setDateEnd] = useState('');
@@ -47,16 +46,16 @@ const Relatorios = () => {
       // Buscar contador
       const { data: contador } = await supabase
         .from('contadores')
-        .select('id, nivel, clientes_ativos, xp, profiles(nome)')
+        .select('id, nivel, clientes_ativos, xp')
         .eq('user_id', user?.id)
         .single();
 
       if (!contador) return null;
 
-      // Buscar comissões com filtros opcionais
+      // Buscar comissões com filtros opcionais (LIMITADO para performance)
       let comissoesQuery = supabase
         .from('comissoes')
-        .select('*, clientes(nome), tipo_comissao, valor, competencia, status_comissao, created_at')
+        .select('*, clientes(nome_empresa), tipo, valor, competencia, status, created_at')
         .eq('contador_id', contador.id);
 
       if (dateStart) {
@@ -66,15 +65,16 @@ const Relatorios = () => {
         comissoesQuery = comissoesQuery.lte('competencia', dateEnd);
       }
 
-      const { data: comissoes } = await comissoesQuery.order('competencia', {
-        ascending: false,
-      });
+      const { data: comissoes } = await comissoesQuery
+        .order('competencia', { ascending: false })
+        .limit(500); // Limite para melhor performance
 
-      // Buscar indicações
+      // Buscar indicações (LIMITADO)
       const { data: indicacoes } = await supabase
         .from('indicacoes')
         .select('created_at, status')
-        .eq('contador_id', contador.id);
+        .eq('contador_id', contador.id)
+        .limit(200);
 
       return {
         contador,
@@ -83,6 +83,7 @@ const Relatorios = () => {
       };
     },
     enabled: !!user,
+    staleTime: 1000 * 60 * 5, // Cache por 5 minutos
   });
 
   // Calcular dados dos gráficos
@@ -100,7 +101,7 @@ const Relatorios = () => {
     comissoes.forEach((c: {
       competencia: string;
       valor: number;
-      tipo_comissao: string;
+      tipo: string;
     }) => {
       const date = new Date(c.competencia);
       const monthKey = date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
@@ -117,11 +118,11 @@ const Relatorios = () => {
       const data = monthlyData.get(monthKey)!;
       data.total += Number(c.valor);
 
-      if (c.tipo_comissao === 'recorrente') {
+      if (c.tipo === 'recorrente') {
         data.recorrente += Number(c.valor);
-      } else if (c.tipo_comissao === 'ativacao') {
+      } else if (c.tipo === 'ativacao') {
         data.ativacao += Number(c.valor);
-      } else if (c.tipo_comissao.includes('bonus')) {
+      } else if (c.tipo.includes('bonus')) {
         data.bonus += Number(c.valor);
       }
     });
@@ -139,10 +140,10 @@ const Relatorios = () => {
 
     const typeData = new Map<string, number>();
     comissoes.forEach((c: {
-      tipo_comissao: string;
+      tipo: string;
       valor: number;
     }) => {
-      const type = c.tipo_comissao || 'desconhecido';
+      const type = c.tipo || 'desconhecido';
       typeData.set(type, (typeData.get(type) || 0) + Number(c.valor));
     });
 
@@ -155,10 +156,10 @@ const Relatorios = () => {
 
     const statusData = new Map<string, number>();
     comissoes.forEach((c: {
-      status_comissao: string;
+      status: string;
       valor: number;
     }) => {
-      const status = c.status_comissao || 'desconhecido';
+      const status = c.status || 'desconhecido';
       statusData.set(status, (statusData.get(status) || 0) + Number(c.valor));
     });
 
@@ -186,13 +187,13 @@ const Relatorios = () => {
 
     const commissionData = relatorioData.comissoes.map((c: {
       valor: number;
-      tipo_comissao: string;
-      status_comissao: string;
+      tipo: string;
+      status: string;
       competencia: string;
     }) => ({
       valor: Number(c.valor),
-      tipo_comissao: c.tipo_comissao,
-      status_comissao: c.status_comissao,
+      tipo: c.tipo,
+      status: c.status,
       competencia: c.competencia,
     }));
     const calculatedStats = calculateCommissionStats(commissionData);
@@ -209,21 +210,17 @@ const Relatorios = () => {
     }
 
     try {
-      const rows = relatorioData.comissoes.map((c: {
-        competencia: string;
-        tipo_comissao: string;
-        valor: number;
-        status_comissao: string;
-        clientes?: { nome: string };
-      }) => [
+      const rows = relatorioData.comissoes.map((c: any) => [
         formatDateForCSV(c.competencia),
-        c.tipo_comissao,
-        formatCurrencyForCSV(Number(c.valor)),
-        c.status_comissao,
-        c.clientes?.nome || 'N/A',
-      ]);
+        c.tipo || 'N/A',
+        formatCurrencyForCSV(Number(c.valor || 0)),
+        c.status || 'N/A',
+        (c.clientes && !c.clientes.error && typeof c.clientes === 'object' && 'nome_empresa' in c.clientes) 
+          ? c.clientes.nome_empresa 
+          : 'N/A',
+      ]) as string[][];
 
-      const csv = convertToCSV(rows, ['Data', 'Tipo', 'Valor (R$)', 'Status', 'Cliente']);
+      const csv = convertToCSV(rows as any, ['Data', 'Tipo', 'Valor (R$)', 'Status', 'Cliente']);
       const filename = generateCSVFilename('relatorio_comissoes');
       downloadCSV(csv, filename);
     } catch (error) {
@@ -268,12 +265,7 @@ const Relatorios = () => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto p-4 pb-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="space-y-6"
-        >
+        <div className="space-y-6">
           {/* Filters */}
           <Card className="bg-white border-0 shadow-sm">
             <CardHeader>
@@ -388,10 +380,20 @@ const Relatorios = () => {
 
 
 
-          {/* Charts */}
+          {/* Charts - Só renderiza quando dados prontos */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Monthly Trend */}
-            {chartData?.monthly && chartData.monthly.length > 0 && (
+            {isLoading || !chartData?.monthly || chartData.monthly.length === 0 ? (
+              <Card className="bg-white border-0 shadow-sm">
+                <CardHeader>
+                  <Skeleton className="h-4 w-[200px]" />
+                  <Skeleton className="h-3 w-[300px] mt-2" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-[300px] w-full" />
+                </CardContent>
+              </Card>
+            ) : (
               <Card className="bg-white border-0 shadow-sm">
                 <CardHeader>
                   <CardTitle className="font-serif text-blue-900">Tendência Mensal</CardTitle>
@@ -420,7 +422,17 @@ const Relatorios = () => {
             )}
 
             {/* Commission Type Distribution */}
-            {chartData?.type && chartData.type.length > 0 && (
+            {isLoading || !chartData?.type || chartData.type.length === 0 ? (
+              <Card className="bg-white border-0 shadow-sm">
+                <CardHeader>
+                  <Skeleton className="h-4 w-[200px]" />
+                  <Skeleton className="h-3 w-[300px] mt-2" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-[300px] w-full" />
+                </CardContent>
+              </Card>
+            ) : (
               <Card className="bg-white border-0 shadow-sm">
                 <CardHeader>
                   <CardTitle className="font-serif text-blue-900">Por Tipo</CardTitle>
@@ -442,7 +454,17 @@ const Relatorios = () => {
           </div>
 
           {/* Status Distribution - Pie Chart */}
-          {chartData?.status && chartData.status.length > 0 && (
+          {isLoading || !chartData?.status || chartData.status.length === 0 ? (
+            <Card className="bg-white border-0 shadow-sm">
+              <CardHeader>
+                <Skeleton className="h-4 w-[200px]" />
+                <Skeleton className="h-3 w-[300px] mt-2" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-[300px] w-full" />
+              </CardContent>
+            </Card>
+          ) : (
             <Card className="bg-white border-0 shadow-sm">
               <CardHeader>
                 <CardTitle className="font-serif text-blue-900">Status das Comissões</CardTitle>
@@ -534,7 +556,7 @@ const Relatorios = () => {
               </div>
             </CardContent>
           </Card>
-        </motion.div>
+        </div>
       </main>
     </div>
   );

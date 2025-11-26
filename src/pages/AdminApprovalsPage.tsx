@@ -19,13 +19,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { CheckCircle, XCircle, Clock, AlertTriangle, ChevronRight } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
   StatusTrendChart,
   CommissionTypeChart,
   TopContadoresChart,
 } from '@/components/charts/ApprovalCharts';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface Commission {
   id: string;
@@ -33,14 +33,14 @@ interface Commission {
   contador?: {
     contadores?: {
       user_id: string;
-      profiles?: {
-        nome: string;
-      };
+      nivel?: string;
     };
   };
-  tipo_comissao: string;
+  contador_nome?: string;
+  contador_email?: string;
+  tipo: string;
   valor: number;
-  status_comissao: string;
+  status: string;
   created_at: string;
   competencia: string;
 }
@@ -52,19 +52,19 @@ const AdminApprovalsPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
 
-  // Check admin
+  // Check admin usando RPC (mesma forma que outras páginas)
   const { data: isAdmin, isLoading: isAdminLoading } = useQuery({
     queryKey: ['is-admin', user?.id],
     queryFn: async () => {
       if (!user?.id) return false;
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-      return !!data;
+      const { data } = await supabase.rpc('has_role', {
+        _user_id: user.id,
+        _role: 'admin',
+      });
+      return data as boolean;
     },
     enabled: !!user,
+    staleTime: 1000 * 60 * 5, // Cache por 5 minutos
   });
 
   // Summary
@@ -73,18 +73,18 @@ const AdminApprovalsPage = () => {
     queryFn: async () => {
       const { data: commissions } = await supabase
         .from('comissoes')
-        .select('status_comissao');
+        .select('status');
 
-      const pending = commissions?.filter((c) => c.status_comissao === 'calculada').length || 0;
-      const approved = commissions?.filter((c) => c.status_comissao === 'aprovada').length || 0;
-      const rejected = commissions?.filter((c) => c.status_comissao === 'cancelada').length || 0;
+      const pending = commissions?.filter((c) => c.status === 'calculada').length || 0;
+      const approved = commissions?.filter((c) => c.status === 'aprovada').length || 0;
+      const rejected = commissions?.filter((c) => c.status === 'cancelada').length || 0;
 
       return { pending, approved, rejected };
     },
     enabled: isAdmin === true,
   });
 
-  // All commissions for charts
+  // All commissions for charts (LIMITADO para performance)
   const { data: allCommissions = [], isLoading: isLoadingCharts } = useQuery({
     queryKey: ['approvals-all-for-charts'],
     queryFn: async () => {
@@ -92,11 +92,53 @@ const AdminApprovalsPage = () => {
         .from('comissoes')
         .select(`
           *,
-          contadores (user_id, profiles (nome))
+          contadores!inner (user_id, nivel)
         `)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(500); // Limite para melhor performance
 
-      return data || [];
+      if (!data || data.length === 0) return [];
+
+      // Buscar user_ids únicos
+      const userIds = [...new Set(data.map((c: any) => c.contadores?.user_id).filter(Boolean))];
+      
+      // Buscar contadores pelos user_ids
+      const { data: contadoresInfo } = await supabase
+        .from('contadores')
+        .select('id, user_id')
+        .in('user_id', userIds);
+      
+      // Criar mapa contador_id -> user_id
+      const contadorToUserId = new Map(contadoresInfo?.map((c: any) => [c.id, c.user_id]) || []);
+
+      // Usar RPC list_admin_contadores para buscar nomes
+      const { data: contadoresData } = await supabase.rpc('list_admin_contadores', {
+        p_q: null,
+        p_limit: 1000,
+        p_offset: 0,
+      }).catch(() => ({ data: null }));
+
+      // Criar mapa user_id -> nome/email
+      const nomeMap = new Map<string, { nome: string; email: string }>();
+      
+      if (contadoresData && contadoresInfo) {
+        contadoresData.forEach((c: any) => {
+          const userId = contadorToUserId.get(c.id);
+          if (userId) {
+            nomeMap.set(userId, { nome: c.nome || 'Sem nome', email: c.email || '' });
+          }
+        });
+      }
+
+      // Adicionar nome/email às comissões
+      return data.map((c: any) => {
+        const userInfo = nomeMap.get(c.contadores?.user_id) || { nome: 'Contador ID: ' + (c.contador_id?.slice(0, 8) || 'N/A'), email: '' };
+        return {
+          ...c,
+          contador_nome: userInfo.nome,
+          contador_email: userInfo.email,
+        };
+      });
     },
     enabled: isAdmin === true,
   });
@@ -110,12 +152,52 @@ const AdminApprovalsPage = () => {
         .select(`
           *,
           clientes (nome_empresa),
-          contadores (user_id, profiles (nome))
+          contadores!inner (user_id, nivel)
         `)
-        .eq('status_comissao', filters.status)
+        .eq('status', filters.status)
         .order('created_at', { ascending: false });
 
-      return data || [];
+      if (!data || data.length === 0) return [];
+
+      // Buscar user_ids únicos
+      const userIds = [...new Set(data.map((c: any) => c.contadores?.user_id).filter(Boolean))];
+      
+      // Buscar contadores pelos user_ids
+      const { data: contadoresInfo } = await supabase
+        .from('contadores')
+        .select('id, user_id')
+        .in('user_id', userIds);
+      
+      // Criar mapa contador_id -> user_id
+      const contadorToUserId = new Map(contadoresInfo?.map((c: any) => [c.id, c.user_id]) || []);
+
+      // Usar RPC list_admin_contadores para buscar nomes
+      const { data: contadoresData } = await supabase.rpc('list_admin_contadores', {
+        p_q: null,
+        p_limit: 1000,
+        p_offset: 0,
+      }).catch(() => ({ data: null }));
+
+      // Criar mapa user_id -> nome/email
+      const nomeMap = new Map<string, { nome: string; email: string }>();
+      
+      if (contadoresData && contadoresInfo) {
+        contadoresData.forEach((c: any) => {
+          const userId = contadorToUserId.get(c.id);
+          if (userId) {
+            nomeMap.set(userId, { nome: c.nome || 'Sem nome', email: c.email || '' });
+          }
+        });
+      }
+
+      return data.map((c: any) => {
+        const userInfo = nomeMap.get(c.contadores?.user_id) || { nome: 'Contador ID: ' + (c.contador_id?.slice(0, 8) || 'N/A'), email: '' };
+        return {
+          ...c,
+          contador_nome: userInfo.nome,
+          contador_email: userInfo.email,
+        };
+      });
     },
     enabled: isAdmin === true,
   });
@@ -161,7 +243,8 @@ const AdminApprovalsPage = () => {
     onError: () => toast.error('Erro ao rejeitar comissão'),
   });
 
-  if (isAdminLoading) {
+  // Aguardar carregamento completo ANTES de qualquer decisão
+  if (!user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -172,7 +255,21 @@ const AdminApprovalsPage = () => {
     );
   }
 
-  if (!isAdmin) {
+  // Se ainda está carregando OU isAdmin ainda não foi definido, mostrar loading
+  if (isAdminLoading || isAdmin === undefined) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Verificando permissões...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Só aqui temos certeza: isAdminLoading === false E isAdmin tem valor definido
+  // Só mostrar restrito se TIVER CERTEZA que não é admin
+  if (isAdmin === false) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
         <Card className="w-full max-w-sm border-red-200 bg-white">
@@ -194,7 +291,7 @@ const AdminApprovalsPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      {/* Header - renderiza IMEDIATAMENTE */}
       <header className="sticky top-0 z-10 bg-gradient-to-r from-blue-900 to-blue-800 text-white px-4 pt-6 pb-4">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-2xl md:text-3xl font-serif font-bold text-yellow-400">
@@ -206,57 +303,95 @@ const AdminApprovalsPage = () => {
 
       {/* Main */}
       <main className="max-w-7xl mx-auto p-4 pb-8">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-          {/* Stats - Mobile First */}
+        {isLoadingCharts ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600 font-medium">Carregando dados...</p>
+            </div>
+          </div>
+        ) : (
+        <div className="space-y-4">
+          {/* Stats - Mobile First com Skeleton */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {/* Pending */}
             <Card className="bg-white border-0 shadow-sm overflow-hidden">
               <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-gray-600 text-xs font-medium uppercase tracking-wide">
-                      Pendentes
-                    </p>
-                    <p className="text-3xl font-serif font-bold text-blue-900 mt-2">
-                      {summary?.pending || 0}
-                    </p>
+                {!summary ? (
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <Skeleton className="h-3 w-20 mb-2" />
+                      <Skeleton className="h-8 w-16" />
+                    </div>
+                    <Skeleton className="h-10 w-10 rounded-full" />
                   </div>
-                  <Clock className="h-10 w-10 text-yellow-400 opacity-20" />
-                </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-gray-600 text-xs font-medium uppercase tracking-wide">
+                        Pendentes
+                      </p>
+                      <p className="text-3xl font-serif font-bold text-blue-900 mt-2">
+                        {summary.pending || 0}
+                      </p>
+                    </div>
+                    <Clock className="h-10 w-10 text-yellow-400 opacity-20" />
+                  </div>
+                )}
               </CardContent>
             </Card>
 
             {/* Approved */}
             <Card className="bg-white border-0 shadow-sm overflow-hidden">
               <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-gray-600 text-xs font-medium uppercase tracking-wide">
-                      Aprovadas
-                    </p>
-                    <p className="text-3xl font-serif font-bold text-green-600 mt-2">
-                      {summary?.approved || 0}
-                    </p>
+                {!summary ? (
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <Skeleton className="h-3 w-20 mb-2" />
+                      <Skeleton className="h-8 w-16" />
+                    </div>
+                    <Skeleton className="h-10 w-10 rounded-full" />
                   </div>
-                  <CheckCircle className="h-10 w-10 text-green-400 opacity-20" />
-                </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-gray-600 text-xs font-medium uppercase tracking-wide">
+                        Aprovadas
+                      </p>
+                      <p className="text-3xl font-serif font-bold text-green-600 mt-2">
+                        {summary.approved || 0}
+                      </p>
+                    </div>
+                    <CheckCircle className="h-10 w-10 text-green-400 opacity-20" />
+                  </div>
+                )}
               </CardContent>
             </Card>
 
             {/* Rejected */}
             <Card className="bg-white border-0 shadow-sm overflow-hidden">
               <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-gray-600 text-xs font-medium uppercase tracking-wide">
-                      Rejeitadas
-                    </p>
-                    <p className="text-3xl font-serif font-bold text-red-600 mt-2">
-                      {summary?.rejected || 0}
-                    </p>
+                {!summary ? (
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <Skeleton className="h-3 w-20 mb-2" />
+                      <Skeleton className="h-8 w-16" />
+                    </div>
+                    <Skeleton className="h-10 w-10 rounded-full" />
                   </div>
-                  <XCircle className="h-10 w-10 text-red-400 opacity-20" />
-                </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-gray-600 text-xs font-medium uppercase tracking-wide">
+                        Rejeitadas
+                      </p>
+                      <p className="text-3xl font-serif font-bold text-red-600 mt-2">
+                        {summary.rejected || 0}
+                      </p>
+                    </div>
+                    <XCircle className="h-10 w-10 text-red-400 opacity-20" />
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -319,19 +454,18 @@ const AdminApprovalsPage = () => {
               ) : (
                 <div className="divide-y divide-gray-100">
                   {commissions?.map((commission) => (
-                    <motion.button
+                    <button
                       key={commission.id}
                       onClick={() => {
                         setSelectedItem(commission);
                         setShowModal(true);
                       }}
                       className="w-full text-left p-4 hover:bg-gray-50 transition-colors flex items-center justify-between group"
-                      whileHover={{ x: 4 }}
                     >
                       {/* Info */}
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-gray-900 text-sm truncate">
-                          {commission.contadores?.profiles?.nome || 'N/A'}
+                          {commission.contador_nome || 'N/A'}
                         </p>
                         <p className="text-xs text-gray-500 mt-1">
                           {commission.competencia}
@@ -348,7 +482,7 @@ const AdminApprovalsPage = () => {
                             variant="outline"
                             className="text-xs bg-blue-50 text-blue-700 border-blue-200"
                           >
-                            {commission.tipo_comissao === 'recorrente'
+                            {commission.tipo === 'recorrente'
                               ? 'Recorrente'
                               : 'Comissão'}
                           </Badge>
@@ -357,13 +491,14 @@ const AdminApprovalsPage = () => {
 
                       {/* Arrow */}
                       <ChevronRight className="h-5 w-5 text-gray-300 ml-2 group-hover:text-gray-400" />
-                    </motion.button>
+                    </button>
                   ))}
                 </div>
               )}
             </CardContent>
           </Card>
-        </motion.div>
+        </div>
+        )}
       </main>
 
       {/* Modal */}
@@ -375,7 +510,7 @@ const AdminApprovalsPage = () => {
                 Revisar Comissão
               </DialogTitle>
               <p className="text-sm text-gray-600 mt-1">
-                {selectedItem.contadores?.profiles?.nome}
+                {selectedItem.contador_nome || 'N/A'}
               </p>
             </DialogHeader>
 
@@ -385,7 +520,7 @@ const AdminApprovalsPage = () => {
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-gray-700">Tipo:</span>
                   <span className="font-medium text-gray-900">
-                    {selectedItem.tipo_comissao}
+                    {selectedItem.tipo}
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
@@ -403,7 +538,7 @@ const AdminApprovalsPage = () => {
               </div>
 
               {/* Rejection reason */}
-              {selectedItem.status_comissao !== 'aprovada' && (
+              {selectedItem.status !== 'aprovada' && (
                 <textarea
                   value={rejectionReason}
                   onChange={(e) => setRejectionReason(e.target.value)}
@@ -414,7 +549,7 @@ const AdminApprovalsPage = () => {
               )}
 
               {/* Actions */}
-              {selectedItem.status_comissao === 'calculada' ? (
+              {selectedItem.status === 'calculada' ? (
                 <div className="flex gap-2 pt-2">
                   <Button
                     onClick={() => approveMutation.mutate(selectedItem.id)}
@@ -436,7 +571,7 @@ const AdminApprovalsPage = () => {
               ) : (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
                   <p className="text-sm text-blue-900">
-                    Esta comissão já foi {selectedItem.status_comissao}.
+                    Esta comissão já foi {selectedItem.status}.
                   </p>
                 </div>
               )}

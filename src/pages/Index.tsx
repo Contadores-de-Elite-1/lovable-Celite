@@ -7,7 +7,7 @@ const Index = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gradient-to-br from-elite-navy via-elite-navy-mid to-elite-navy">
       <div className="container mx-auto px-4 py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -15,15 +15,15 @@ const Index = () => {
           transition={{ duration: 0.8 }}
           className="text-center space-y-8"
         >
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-brand-gold/10 rounded-full mb-6">
-            <Crown className="w-10 h-10 text-brand-gold" />
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-elite-gold/20 rounded-full mb-6 border-2 border-elite-gold/30">
+            <Crown className="w-10 h-10 text-elite-gold" />
           </div>
           
-          <h1 className="text-5xl md:text-7xl font-serif font-bold text-brand-navy">
-            Programa <span className="text-brand-gold">Contadores de Elite</span>
+          <h1 className="text-5xl md:text-7xl font-serif font-bold text-white">
+            Programa <span className="text-elite-gold">Contadores de Elite</span>
           </h1>
           
-          <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
+          <p className="text-xl md:text-2xl text-elite-gold-dark max-w-3xl mx-auto">
             Faça parte de um programa exclusivo de indicações com comissões automáticas, 
             bonificações progressivas e acompanhamento em tempo real.
           </p>
@@ -33,11 +33,13 @@ const Index = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="bg-white p-6 rounded-xl border-2 border-gray-200 shadow-sm hover:shadow-md transition-shadow"
+              className="bg-white/95 backdrop-blur-sm p-6 rounded-xl border-2 border-elite-gold/30 shadow-lg hover:shadow-xl hover:border-elite-gold/50 transition-all"
             >
-              <TrendingUp className="w-12 h-12 text-brand-gold mx-auto mb-4" />
-              <h3 className="text-xl font-serif font-bold mb-2 text-brand-navy">Comissões Automáticas</h3>
-              <p className="text-gray-600">
+              <div className="w-12 h-12 bg-elite-navy rounded-full flex items-center justify-center mx-auto mb-4">
+                <TrendingUp className="w-6 h-6 text-elite-gold" />
+              </div>
+              <h3 className="text-xl font-serif font-bold mb-2 text-elite-navy">Comissões Automáticas</h3>
+              <p className="text-elite-navy-mid">
                 Receba de 15% a 20% sobre clientes diretos e 3% a 5% de override na rede
               </p>
             </motion.div>
@@ -46,11 +48,13 @@ const Index = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="bg-white p-6 rounded-xl border-2 border-gray-200 shadow-sm hover:shadow-md transition-shadow"
+              className="bg-white/95 backdrop-blur-sm p-6 rounded-xl border-2 border-elite-gold/30 shadow-lg hover:shadow-xl hover:border-elite-gold/50 transition-all"
             >
-              <Users className="w-12 h-12 text-brand-gold mx-auto mb-4" />
-              <h3 className="text-xl font-serif font-bold mb-2 text-brand-navy">Construa sua Rede</h3>
-              <p className="text-gray-600">
+              <div className="w-12 h-12 bg-elite-navy rounded-full flex items-center justify-center mx-auto mb-4">
+                <Users className="w-6 h-6 text-elite-gold" />
+              </div>
+              <h3 className="text-xl font-serif font-bold mb-2 text-elite-navy">Construa sua Rede</h3>
+              <p className="text-elite-navy-mid">
                 Indique outros contadores e ganhe com a performance da rede
               </p>
             </motion.div>
@@ -59,11 +63,13 @@ const Index = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
-              className="bg-white p-6 rounded-xl border-2 border-gray-200 shadow-sm hover:shadow-md transition-shadow"
+              className="bg-white/95 backdrop-blur-sm p-6 rounded-xl border-2 border-elite-gold/30 shadow-lg hover:shadow-xl hover:border-elite-gold/50 transition-all"
             >
-              <Award className="w-12 h-12 text-brand-gold mx-auto mb-4" />
-              <h3 className="text-xl font-serif font-bold mb-2 text-brand-navy">Bonificações Progressivas</h3>
-              <p className="text-gray-600">
+              <div className="w-12 h-12 bg-elite-navy rounded-full flex items-center justify-center mx-auto mb-4">
+                <Award className="w-6 h-6 text-elite-gold" />
+              </div>
+              <h3 className="text-xl font-serif font-bold mb-2 text-elite-navy">Bonificações Progressivas</h3>
+              <p className="text-elite-navy-mid">
                 Bônus de ativação, progressão e LTV com pagamentos via PIX
               </p>
             </motion.div>
@@ -73,7 +79,7 @@ const Index = () => {
             <Button 
               size="lg"
               onClick={() => navigate('/auth')}
-              className="bg-brand-gold hover:bg-brand-gold/90 text-brand-navy text-lg px-8 py-6 font-semibold"
+              className="bg-elite-gold hover:bg-elite-gold-dark text-elite-navy text-lg px-8 py-6 font-semibold shadow-lg hover:shadow-xl transition-all"
             >
               Começar Agora
             </Button>
@@ -81,13 +87,13 @@ const Index = () => {
               size="lg"
               variant="outline"
               onClick={() => navigate('/dashboard')}
-              className="border-2 border-brand-navy text-brand-navy hover:bg-brand-navy hover:text-white text-lg px-8 py-6 font-semibold"
+              className="border-2 border-elite-gold text-elite-gold hover:bg-elite-gold hover:text-elite-navy text-lg px-8 py-6 font-semibold transition-all"
             >
               Acessar Dashboard
             </Button>
           </div>
 
-          <p className="text-sm text-gray-500 mt-16">
+          <p className="text-sm text-elite-gold-dark/70 mt-16">
             Lovable-Celite © 2025
           </p>
         </motion.div>

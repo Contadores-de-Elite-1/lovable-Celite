@@ -1,7 +1,6 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { supabase } from '@/integrations/supabase/client';
 import {
   CalendarIcon,
@@ -68,7 +67,6 @@ const DashboardSkeleton = () => (
 );
 
 export default function Dashboard() {
-  useScrollToTop();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
@@ -260,14 +258,14 @@ export default function Dashboard() {
 
   const compartilharWhatsApp = () => {
     const linkCompleto = `${window.location.origin}/onboarding/${linkRastreavel}`;
-    const mensagem = `🚀 Transforme sua empresa com serviços profissionais completos!\n\n✅ Soluções modernas e eficientes\n✅ Planos a partir de R$ 110/mês\n✅ Suporte especializado\n\nConheça agora: ${linkCompleto}`;
+    const mensagem = `🚀 Transforme sua empresa com a Top Class Escritório Virtual!\n\n✅ Contabilidade completa e moderna\n✅ Planos a partir de R$ 100/mês\n✅ Suporte especializado\n\nConheça agora: ${linkCompleto}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(mensagem)}`, '_blank');
   };
 
   const compartilharEmail = () => {
     const linkCompleto = `${window.location.origin}/onboarding/${linkRastreavel}`;
-    const assunto = 'Lovable-Celite - Serviços Profissionais';
-    const corpo = `Olá!\n\nConheça nossos serviços profissionais, uma solução completa para sua empresa.\n\nAcesse: ${linkCompleto}\n\nAté breve!`;
+    const assunto = 'Top Class Escritório Virtual - Contabilidade Moderna';
+    const corpo = `Olá!\n\nConheça a Top Class Escritório Virtual, uma solução completa de contabilidade para sua empresa.\n\nAcesse: ${linkCompleto}\n\nAté breve!`;
     window.open(`mailto:?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(corpo)}`);
   };
 
@@ -305,36 +303,19 @@ export default function Dashboard() {
     return tipos[tipo] || tipo;
   };
 
-  if (loading) return <DashboardSkeleton />;
-
-  if (error || !data) {
-    return (
-      <div className="min-h-screen bg-[#F5F6F8] flex items-center justify-center p-4">
-        <div className="text-center max-w-md">
-          <UsersIcon className="mx-auto mb-4 text-gray-400" size={48} />
-          <p className="text-gray-600 mb-2 font-medium">Erro ao carregar dados</p>
-          <p className="text-sm text-gray-500 mb-4">
-            {error || 'Não foi possível carregar seu perfil. Verifique sua conexão ou tente novamente.'}
-          </p>
-          <Button onClick={() => window.location.reload()}>Tentar novamente</Button>
-        </div>
-      </div>
-    );
-  }
-
-  const nivelInfo = getNivelInfo();
+  const nivelInfo = data?.contador ? getNivelInfo() : null;
 
   return (
     <div className="min-h-screen bg-[#F5F6F8] text-[#0C1A2A] p-4">
-      {/* Header */}
+      {/* Header - RENDERIZA IMEDIATAMENTE */}
       <div className="bg-gradient-to-r from-[#0C1A2A] to-[#1C2F4A] rounded-2xl p-5 text-white mb-32">
         <div className="flex justify-between items-start mb-4">
           <div>
             <p className="text-sm text-gray-300">Bem-vindo,</p>
             <h1 className="text-lg font-semibold text-white">
-              {data.contador.nome}
+              {data?.contador?.nome || 'Usuário'}
             </h1>
-            {nivelInfo && (
+            {data && nivelInfo && (
               <span className={`text-sm font-medium ${nivelInfo.cor}`}>
                 Nível {nivelInfo.nome}
               </span>
@@ -353,24 +334,25 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Saldo */}
+        {/* Saldo - só mostra se tiver dados */}
+        {data?.resumo && (
         <div className="bg-white bg-opacity-10 backdrop-blur-sm p-4 rounded-xl mt-4">
           <p className="text-sm text-gray-200">Saldo Total</p>
           <h2 className="text-3xl font-bold text-white">
-            {formatCurrency(data.resumo.total_ganho)}
+            {formatCurrency(data.resumo.total_ganho || 0)}
           </h2>
 
           <div className="grid grid-cols-2 gap-2 mt-3 text-sm">
             <div>
               <p className="text-gray-300">A Receber</p>
               <p className="font-semibold text-yellow-300">
-                {formatCurrency(data.resumo.a_receber)}
+                {formatCurrency(data.resumo.a_receber || 0)}
               </p>
             </div>
             <div>
               <p className="text-gray-300">Pago</p>
               <p className="font-semibold text-green-300">
-                {formatCurrency(data.resumo.pago)}
+                {formatCurrency(data.resumo.pago || 0)}
               </p>
             </div>
           </div>
@@ -390,8 +372,16 @@ export default function Dashboard() {
             </Button>
           </div>
         </div>
+        )}
       </div>
 
+      {/* Conteúdo dinâmico - mostra skeleton se loading */}
+      {loading || error || !data ? (
+        <div className="-mt-28 px-1">
+          <DashboardSkeleton />
+        </div>
+      ) : (
+        <>
       {/* Cards */}
       <div className="-mt-28 px-1 grid grid-cols-2 gap-4 mb-6">
         {/* Comissoes Mes */}
@@ -671,6 +661,8 @@ export default function Dashboard() {
           </div>
         </DialogContent>
       </Dialog>
+      </>
+      )}
     </div>
   );
 }

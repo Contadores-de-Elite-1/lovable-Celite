@@ -96,9 +96,24 @@ const Auth = () => {
         }
       }
     } catch (error) {
+      let errorMessage = 'Erro desconhecido';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        
+        // Mensagem mais amigável para erros de conexão
+        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+          errorMessage = 'Não foi possível conectar ao servidor. O projeto Supabase pode estar pausado ou inicializando. Aguarde alguns minutos e tente novamente.';
+        } else if (error.message.includes('Invalid login credentials')) {
+          errorMessage = 'Email ou senha incorretos. Verifique suas credenciais.';
+        } else if (error.message.includes('Email not confirmed')) {
+          errorMessage = 'Por favor, confirme seu email antes de fazer login.';
+        }
+      }
+      
       toast({
         title: 'Erro',
-        description: error instanceof Error ? error.message : 'Erro desconhecido',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {

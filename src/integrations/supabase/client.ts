@@ -13,5 +13,18 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
-  }
+    detectSessionInUrl: true,
+  },
+  // Configurações para melhorar resiliência de conexão
+  global: {
+    headers: {
+      'x-client-info': 'lovable-celite@1.0.0',
+    },
+  },
+  // Retry automático em caso de falha de rede
+  realtime: {
+    params: {
+      eventsPerSecond: 10,
+    },
+  },
 });

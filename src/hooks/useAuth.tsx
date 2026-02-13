@@ -25,18 +25,56 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(false);
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    // Tentar obter sessão com retry em caso de erro de rede
+    const getSessionWithRetry = async (retries = 3) => {
+      for (let i = 0; i < retries; i++) {
+        try {
+          const { data: { session }, error } = await supabase.auth.getSession();
+          if (!error) {
+            setSession(session);
+            setUser(session?.user ?? null);
+            setLoading(false);
+            return;
+          }
+        } catch (err) {
+          if (i === retries - 1) {
+            console.error('[Auth] Erro ao obter sessão após', retries, 'tentativas:', err);
+            setLoading(false);
+          } else {
+            // Aguardar antes de tentar novamente (exponential backoff)
+            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+          }
+        }
+      }
+    };
+
+    getSessionWithRetry();
 
     return () => subscription.unsubscribe();
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error };
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      
+      // Tratar erro de conexão com mensagem mais clara
+      if (error) {
+        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+          return { 
+            error: new Error('Não foi possível conectar ao servidor. O projeto Supabase pode estar pausado. Aguarde alguns minutos ou entre em contato com o suporte.') 
+          };
+        }
+      }
+      
+      return { error };
+    } catch (err) {
+      if (err instanceof Error && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
+        return { 
+          error: new Error('Erro de conexão: Não foi possível conectar ao servidor. Verifique sua internet ou tente novamente em alguns minutos.') 
+        };
+      }
+      return { error: err instanceof Error ? err : new Error('Erro desconhecido ao fazer login') };
+    }
   };
 
   const signUp = async (email: string, password: string, nome: string) => {

@@ -305,6 +305,30 @@ export default function Dashboard() {
 
   const nivelInfo = data?.contador ? getNivelInfo() : null;
 
+  // Estado de erro: mostra tela explicativa em vez de skeleton
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#F5F6F8] flex items-center justify-center p-6">
+        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-sm w-full text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AwardIcon className="text-red-500" size={32} />
+          </div>
+          <h2 className="text-xl font-bold text-[#0C1A2A] mb-2">Perfil não encontrado</h2>
+          <p className="text-sm text-gray-500 mb-6">
+            {error}
+          </p>
+          <Button
+            onClick={signOut}
+            variant="outline"
+            className="w-full"
+          >
+            <LogOutIcon size={16} className="mr-2" /> Sair e tentar novamente
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#F5F6F8] text-[#0C1A2A] p-4">
       {/* Header - RENDERIZA IMEDIATAMENTE */}
@@ -376,7 +400,7 @@ export default function Dashboard() {
       </div>
 
       {/* Conteúdo dinâmico - mostra skeleton se loading */}
-      {loading || error || !data ? (
+      {loading || !data ? (
         <div className="-mt-28 px-1">
           <DashboardSkeleton />
         </div>

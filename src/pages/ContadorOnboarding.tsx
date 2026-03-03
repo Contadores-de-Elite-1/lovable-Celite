@@ -18,42 +18,28 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useQuery } from '@tanstack/react-query';
 
 export default function ContadorOnboarding() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, role, roleLoading } = useAuth();
   const [etapa, setEtapa] = useState(1);
   const [loading, setLoading] = useState(false);
   const [stripeAccountId, setStripeAccountId] = useState<string | null>(null);
   const [temLogomarca, setTemLogomarca] = useState<boolean | null>(null);
   const [logoArquivo, setLogoArquivo] = useState<File | null>(null);
 
-  // Verificar se é admin
-  const { data: isAdmin, isLoading: adminLoading } = useQuery({
-    queryKey: ['is-admin', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return false;
-      const { data } = await supabase.rpc('has_role', {
-        _user_id: user.id,
-        _role: 'admin',
-      });
-      return data || false;
-    },
-    enabled: !!user,
-  });
-
-  // Mostrar loading enquanto verifica admin
-  if (adminLoading || (user && isAdmin === undefined)) {
+  // Aguarda role carregar antes de decidir
+  if (roleLoading || (user && role === null)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0C1A2A] via-[#1a2f47] to-[#0C1A2A] flex items-center justify-center">
-        <div className="text-white text-lg">Verificando permissões...</div>
+        <div className="text-white text-lg">Carregando...</div>
       </div>
     );
   }
 
-  // Se não for admin, mostrar mensagem mas NÃO redirecionar
-  if (!adminLoading && user && !isAdmin) {
+  // Apenas contadores e admins acessam o onboarding de contador
+  const podeAcessar = role === 'contador' || role === 'admin';
+  if (user && !podeAcessar) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0C1A2A] via-[#1a2f47] to-[#0C1A2A] flex items-center justify-center p-4">
         <div className="bg-white rounded-xl p-8 max-w-md text-center">
@@ -61,13 +47,13 @@ export default function ContadorOnboarding() {
             Acesso Restrito
           </h1>
           <p className="text-gray-600 mb-6">
-            Esta área é restrita para administradores.
+            Esta área é exclusiva para Contadores.
           </p>
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/auth')}
             className="bg-[#0C1A2A] text-white px-6 py-2 rounded-lg hover:bg-[#1a2f47] transition-colors"
           >
-            Voltar ao Dashboard
+            Voltar ao início
           </button>
         </div>
       </div>

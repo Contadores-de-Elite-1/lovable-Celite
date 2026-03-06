@@ -4,16 +4,16 @@ overview: Análise comparativa entre o PRD v5.0 e o código atual, com gap analy
 todos:
   - id: fase1-migrations
     content: "Fase 1: Escrever migrations SQL para multi-perfil (enum user_roles), migração Asaas→Stripe, e criação das tabelas mpes, coworkings, indicacoes_coworking, mensalidades_coworking, transacoes_plataforma"
-    status: pending
+    status: completed
   - id: fase1-auth
     content: "Fase 1: Atualizar /auth com seleção de perfil no cadastro e atualizar ProtectedRoute + AppSidebar para navegação condicional por role"
-    status: pending
+    status: completed
   - id: fase1-webhook
     content: "Fase 1: Expandir webhook-stripe para substituir webhook-asaas, garantindo continuidade das 17 bonificações"
-    status: pending
+    status: completed
   - id: fase2-edge-functions
     content: "Fase 2: Criar Edge Functions indicacao-coworking e confirmar-conversao com taxa 20%"
-    status: pending
+    status: completed
   - id: fase2-pages
     content: "Fase 2: Criar páginas /indicacoes (Contador) e /coworking/indicacoes (Coworking) + atualizar Dashboard com KPIs de Marketplace"
     status: pending
